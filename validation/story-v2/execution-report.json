@@ -1,0 +1,513 @@
+{
+  "kind": "real-authored-prose-with-recorded-model-reviews",
+  "review_mode": "serial pipeline; separate fresh-context reader reviewed all twelve chapters once",
+  "pilot_approval": "test commissioning, not real author approval",
+  "source_hashes": {
+    "1": "8d34e203d4848105f9961a503be4a2ad4d19be30215c8c96a8a8d1033660f3f7",
+    "2": "05eb1b94067f3a1096ac21fad1c2fcfe2316a907b9ecbbf5695a63e4d6830e02",
+    "3": "862f743ee9572b7244c1e2245c54d24062db75c8d4822492ab47b160a24ef4d2",
+    "4": "dcc1b9792ef98738d15c08b2b240acc40f2227dd9f5836e64530ce4c31e75dab",
+    "5": "06d4d530fb02a68c08e09aa8aecd8bdcd2555ac203ac5bfaea46feff42d3d7d7",
+    "6": "2053a89dad5a59d08518307c3ab5cfb5f8926713faa1c4a258e40cd2b3864fbf",
+    "7": "87077420bbb94df0c1212af63f52bd9d72fb98a183a0831da485da7e485d6c3b",
+    "8": "7131aca9a24d049b3710aea71d57f1b029f4c12160b7d1525b660fd0d6395c5b",
+    "9": "65abf9536685232e05645d2fce5ffb3936566e7544530a1ec6dc2f4d29949b49",
+    "10": "1ff923efdd27d80818df8b192a101c0aea86bc84e2189516a153c6ed595c2fef",
+    "11": "09747d98b3adb2ca0fe5dd677394af1efaa03f2182f234fd12227f2379c40b4a",
+    "12": "23c3b2ca0cfd58191697258837edf0f05bda80a7e19b98570966dd7f84fa279e"
+  },
+  "result": {
+    "status": "completed",
+    "audit": {
+      "ok": true,
+      "branch": "main",
+      "chapters": 12,
+      "problems": [],
+      "han_characters": 4778,
+      "open_important_hooks": [],
+      "state_hash": "9f06311e3a14088ef7380592709c5ba4bb5ac7b125d6cee7f5644274e0c30827"
+    }
+  },
+  "tasks": [
+    {
+      "task": "a3bbbb580fb84062856881da2720cfab",
+      "chapter": 1,
+      "stage": "plan",
+      "accepted": true
+    },
+    {
+      "task": "d0f545d5652840f084c4a1a75f534a79",
+      "chapter": 1,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "da68d3b8011245fd842c50a25d0913c1",
+      "chapter": 1,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "ccd2f70070c64389a5d85c4b27224c2f",
+      "chapter": 1,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "6f6831541bb1468b8657233f506d30d7",
+      "chapter": 2,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "3367b34ace004e4996a8699259b3eec9",
+      "chapter": 2,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "1dc51de5639943c8bfa60de17e46eb58",
+      "chapter": 2,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "aa3902279d1a4d53b343e6e8ad3d94a2",
+      "chapter": 3,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "f56de801e6fe42bf8d29f03901baf168",
+      "chapter": 3,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "fe9484723b4747069bc2ac537027583e",
+      "chapter": 3,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "03a46eb4d5ac4ac596b2b0b857702f19",
+      "chapter": 4,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "84dd70bcc8eb43b1b82caadefe9e9f9c",
+      "chapter": 4,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "848121d7118b4b909651f1bcc80f3f61",
+      "chapter": 4,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "0e36b79209e44b01a629c2deed4d6431",
+      "chapter": 4,
+      "stage": "repair",
+      "accepted": true
+    },
+    {
+      "task": "324c5bbbd8ef46be8eb5b42853df5be1",
+      "chapter": 4,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "6f9c1287327e4e25b6aa31829cd16c75",
+      "chapter": 4,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "8245b915f2e04603910f5e6753f771a9",
+      "chapter": 5,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "5fc8925c8eed448a8db46fbff8b0a5cc",
+      "chapter": 5,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "7b08a502c55b4f359828350122ba8075",
+      "chapter": 5,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "cdad0f6b7a334d6993c35a1b556384a4",
+      "chapter": 6,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "fba1f65ed6be4d8fa36093809d91b76a",
+      "chapter": 6,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "84e8ddfa903145848658769e922a6325",
+      "chapter": 6,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "95452ca8893d4607b041871c97a9a788",
+      "chapter": 6,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "96e75c26406c477f83b4d68d9ff24ce2",
+      "chapter": 6,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "70474a1e2d6e4044811df73fb88d994d",
+      "chapter": 6,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "a6f1ee58f8134e8d9b8329784ec81143",
+      "chapter": 6,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "36de887286804789a0af805941facb44",
+      "chapter": 6,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "1ce50cc1941e4a159956041b56d81f95",
+      "chapter": 6,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "ea3a21450c074e5e83330b22e88b9c4b",
+      "chapter": 6,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "9cd98eb9ddf04843b06999a157dfaa07",
+      "chapter": 7,
+      "stage": "plan",
+      "accepted": true
+    },
+    {
+      "task": "ac06f462f20c4c26bddebc525353887b",
+      "chapter": 7,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "5025fc1b4c974434a7810bd159169367",
+      "chapter": 7,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "98558d8c939e4b128e0b3d2c536b250a",
+      "chapter": 7,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "55e7d46919844152a125c67703416f20",
+      "chapter": 8,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "bdefa023a3bd4ef3bc6ae821d7523115",
+      "chapter": 8,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "172c9b7336f94bb4808c9aadaf72c045",
+      "chapter": 8,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "6db02bf7ac0e43028b2ab54c54863347",
+      "chapter": 9,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "735620edf21c49fc8a519b8e8bd8d261",
+      "chapter": 9,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "217e7fc571b54879ad69f565909651bc",
+      "chapter": 9,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "a1e2b3677a604e05bc685ab97a28c093",
+      "chapter": 10,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "44b72d8f03f34ee39f1186e714d613db",
+      "chapter": 10,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "ffdc817cee264ad08c1ca423a58528d9",
+      "chapter": 10,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "d10df1c6f3f6494ebc41f798e650bab9",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "fd66275f48944d46af4067f381de24cd",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "a6412505a94f4b6bb15241033020dce9",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "0a8a2baf6be94901958c591777b536cb",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "74116f04bf644d53b39dd3602a72904e",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "bd4d7ec49dd74ffb9abc20b4d29ff336",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "d44ce8e7f27044c89377987bf694fee8",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "275344c39a15403f9f7ab46a0c8bff84",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "7785c2f5b918422cadaeb0ec89296f48",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "e13eb53782c941efb73aad3f40859e12",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "a292c8062a984f838c72ae24492c47b6",
+      "chapter": 10,
+      "stage": "batch_review",
+      "accepted": true
+    },
+    {
+      "task": "75326bafedc84046b47827b3ff729f66",
+      "chapter": 11,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "4bc5d4ff7aef4442857401bc0a3d0818",
+      "chapter": 11,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "20113e9606a4421391e83f364a9fa010",
+      "chapter": 11,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "21e34c5c2e47490db528e728406fabdb",
+      "chapter": 12,
+      "stage": "draft",
+      "accepted": true
+    },
+    {
+      "task": "72ae92c2c3a0404c8e276f3c5d7ea885",
+      "chapter": 12,
+      "stage": "facts",
+      "accepted": true
+    },
+    {
+      "task": "17d0d5ea9f3b40a796da860d77061ddf",
+      "chapter": 12,
+      "stage": "reader",
+      "accepted": true
+    },
+    {
+      "task": "c4ba21b8c4114115b4f7fe2b5bfc2f65",
+      "chapter": 12,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "ae29337d6c03477697dab166b3e72230",
+      "chapter": 12,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "4dd244f677234b1fa26b66d95c1a1a92",
+      "chapter": 12,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "754f073ecef34ef2aa20656401168f83",
+      "chapter": 12,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "ff98f9114c4c40a8b1d5f88d31b4efd1",
+      "chapter": 12,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "9133fde567e34df4b0517f0696839545",
+      "chapter": 12,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "b4f79bd85cc445d0b5ecdf42a05082fd",
+      "chapter": 12,
+      "stage": "volume_review",
+      "accepted": true
+    },
+    {
+      "task": "b964847a22b34c129ab6f9b36c17942b",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "3fca9d5740ad4f86a0934472014f0783",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "e3158fd89c504afabd1eb789b0cfe4b9",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "28f4c8a8513944b98c33c126474b3a12",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "357678377eea458aba695eec3fdcaa68",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "e245a9a2973147a18469ed12d6334007",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "f880006b6dd5494e835c76ffa0627cbc",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "4add34d1d618440c9c90a7c336b354c5",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "87f882cc2cb14b6ba056f0a09c98e552",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "a13452bffefb4164b38cdb8032334cd5",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "5a437540914b46019655eeea04cc3fd1",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "560320df9232475ba1ff8e544b5492e3",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    },
+    {
+      "task": "3f4a630080c6450399becf37c87d7359",
+      "chapter": 12,
+      "stage": "book_review",
+      "accepted": true
+    }
+  ],
+  "limitations": [
+    "compressed sample, not million-character validation",
+    "not cross-provider verification",
+    "chapter 4 original draft and actual independent finding exercise repair; other editorial changes preceded replay",
+    "long-range review supplied by implementing editor, not a second blind reader"
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "world_plan": {
+    "overview": "围绕市局档案交接展开城市调查，证据的取得与公开均需人物承担后果。",
+    "causal_spine": [
+      "记录差异促使周行核对原件",
+      "合作取得原件后，双方必须承担公开作证的风险"
+    ],
+    "factions": [
+      {
+        "name": "档案管理部门",
+        "drive": "维持记录的可信度与责任边界",
+        "limits": "不能让所有工作人员共享秘密或统一行动"
+      }
+    ],
+    "geography": {
+      "regions": [
+        "市局大楼及相邻街区"
+      ],
+      "connections": [
+        "楼层之间依靠已有楼梯和出入口，不预设万能暗道"
+      ]
+    },
+    "core_locations": [
+      {
+        "id": "design:office",
+        "name": "局长办公室",
+        "purpose": "让公事手续与私人信任产生碰撞",
+        "layout": [
+          "交接文件的办公区域；具体方位以当前地图为准"
+        ],
+        "constraints": [
+          "门内外的视线和听觉分别核对"
+        ]
+      }
+    ],
+    "ending_dependencies": [
+      "证据最终必须能被核实并公开，不能靠突然出现的第三份档案收尾"
+    ],
+    "open_questions": [
+      "原件缺失部分的形成原因，进入相关情节前再细化"
+    ],
+    "dependencies": [],
+    "canon_refs": [],
+    "event_spine": {
+      "main": [
+        {
+          "id": "sp:main-01",
+          "span": "第一幕",
+          "event": "记录差异浮出，双方被迫接触"
+        },
+        {
+          "id": "sp:main-02",
+          "span": "第二幕",
+          "event": "交换证据后共同承担公开风险"
+        }
+      ],
+      "subplot": [
+        {
+          "id": "sp:sub-01",
+          "span": "第一至二幕",
+          "event": "档案管理部门内部对缺页来源的分歧逐步显形"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "sp:time-01",
+          "span": "全书",
+          "event": "证据的保存期限与调阅流程构成外部时钟"
+        }
+      ],
+      "tension": [
+        {
+          "id": "sp:ten-01",
+          "span": "第一幕末",
+          "event": "双方各自亮出部分底牌，互信与互防同时升级"
+        }
+      ]
+    }
+  },
+  "volume_plan": {
+    "volume": "v1",
+    "purpose": "从记录差异进入有代价的合作",
+    "location_ids": [
+      "design:office"
+    ],
+    "new_locations": [],
+    "sequence": [
+      "门口试探后查验文件，再决定是否交换各自证据"
+    ],
+    "action_constraints": [
+      "原件由谁携带、谁能看到缺页，需要逐场景确认"
+    ],
+    "ending_setup": [
+      "保留交接与见证的证据，支撑后来责任结算"
+    ],
+    "open_questions": [],
+    "dependencies": [],
+    "canon_refs": [],
+    "carries_in": "承接开局的记录疑点：两人尚无信任，仅因手续被迫接触",
+    "climax": "对等交换成立，双方首次共同承担可追责的风险",
+    "handoff": "合作进入公开化阶段，交接记录成为下一卷结算的凭据"
+  },
+  "chapter_plan": {
+    "number": 1,
+    "volume": "v1",
+    "goal": "查看原件",
+    "conflict": "宋禾只愿提供复印件",
+    "change": "双方决定交换证据，合作成立并留下可追责记录",
+    "entities": [
+      "hero",
+      "ally"
+    ],
+    "reader_experience": "希望两人合作，同时感到他们都在保留退路",
+    "character_choices": [
+      {
+        "entity": "hero",
+        "desire": "核对被改动的记录",
+        "pressure": "空口请求换不来原件",
+        "choice": "交出自己掌握的收据",
+        "cost": "暴露自己的调查范围，承担经手责任"
+      }
+    ],
+    "scenes": [
+      {
+        "label": "局长办公室",
+        "design_location": "design:office",
+        "present": [
+          "hero",
+          "ally"
+        ],
+        "intent": "争取查看原件",
+        "conflict": "宋禾要求对等交换",
+        "turn": "周行交出收据，宋禾才展开文件",
+        "time_hint": "承接本卷开端，不虚构精确分钟",
+        "blocking": [
+          "具体站位服从正文已确立的布局"
+        ],
+        "perceptual_limits": [
+          "人物不知道的缺页原因不进入其内心独白"
+        ],
+        "props": [],
+        "speakers": [
+          "hero",
+          "ally"
+        ],
+        "dialogue_intents": [
+          {
+            "entity": "hero",
+            "to": "ally",
+            "seeks": "争取查看原件",
+            "withholds": "暂不透露另一条证据的来源",
+            "pressure": "时间有限，强逼会失去合作",
+            "tactic": "先说明可核实部分，再提供对等凭证",
+            "knowledge_topics": []
+          },
+          {
+            "entity": "ally",
+            "to": "hero",
+            "seeks": "获得可追责的交接承诺",
+            "withholds": "不替未经确认的缺页原因下结论",
+            "pressure": "交出原件后责任仍落在自己身上",
+            "tactic": "提出具体交换条件，观察对方是否愿意签字",
+            "knowledge_topics": []
+          }
+        ]
+      }
+    ],
+    "expression_space": [
+      "可调整场景顺序、对话和小动作",
+      "通过递交与迟疑表现戒备，避免旁白替人物解释"
+    ]
+  }
+}

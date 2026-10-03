@@ -1,0 +1,49 @@
+{
+  "profiles": [
+    {
+      "entity": "hero",
+      "tier": "major",
+      "biography": {
+        "public_role": "负责核对档案交接的调查人员",
+        "desire": "把事情查清，同时保住证人的退路",
+        "fear": "凭错误判断把无辜的人推到责任前面",
+        "values": ["可核实的事实", "不把代价转嫁给同伴", "个人名声"],
+        "boundary": "不让证人签自己没有看懂的材料",
+        "contradiction": "希望别人信任自己，却习惯把风险独自藏起来",
+        "experiences": [{"text": "曾因判断过快误解同事，可作为后续待核实的背景设计", "status": "design"}]
+      },
+      "voice": {
+        "register": "具体、克制，常先询问可核对的经过；不用每句话都显得机智",
+        "rhythm": "平时先短问再补条件，迟疑时会修正自己的措辞",
+        "tactics": ["先还原交接顺序", "用具体条件争取合作，而非直接要求信任"],
+        "stress_shift": "越担心判断出错，问题越细；确认同伴受伤时会先停下查问",
+        "relationship_modes": [
+          {"audience": "ally", "approach": "给对方拒绝的余地，少解释自己的善意"},
+          {"audience": "上级", "approach": "先报告确认部分，再明确哪些尚无证据"}
+        ],
+        "avoid": ["不要把谨慎写成永远冷静", "不反复使用同一句标志性口头禅"]
+      },
+      "arc": {"direction": "从独自控制风险，到尊重同伴共同承担风险的选择", "not_yet_earned": ["未经冲突与选择，不能突然完全信任所有人"]},
+      "examples": [],
+      "canon_refs": []
+    },
+    {
+      "entity": "ally",
+      "tier": "supporting",
+      "biography": {
+        "public_role": "保管原件并承担交接责任的档案人员",
+        "desire": "帮助查清记录，同时守住自己与同事的责任边界",
+        "experiences": []
+      },
+      "voice": {
+        "register": "关注手续和具体责任，会给自己留纠正与退出的空间",
+        "tactics": ["先确认对方愿意留下什么凭证", "不同意时提出可执行的交换条件"],
+        "stress_shift": "压力大时反复确认责任范围，并非突然变得刻薄",
+        "relationship_modes": [{"audience": "hero", "approach": "可以帮忙，但不接受含糊的口头保证"}],
+        "avoid": ["不让所有对白都变成讨价还价", "私下关心可以通过行动出现"]
+      },
+      "examples": [],
+      "canon_refs": []
+    }
+  ]
+}

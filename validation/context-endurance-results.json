@@ -1,0 +1,1070 @@
+{
+  "version": "1.5.0",
+  "date": "2026-10-02",
+  "scope": "Synthetic 1000-chapter history followed by actual next/submit preparation, draft, facts, reader and commit. No external model, no token/billing or literary quality claim.",
+  "cases": [
+    {
+      "case": "baseline",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "knowledge_records": 0,
+      "open_hooks": 0,
+      "tasks": 3,
+      "max_input_chars": 7668,
+      "trace": [
+        {
+          "stage": "draft",
+          "input_chars": 7668,
+          "input_limit": 24000,
+          "output_chars": 284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "facts",
+          "input_chars": 5114,
+          "input_limit": 24000,
+          "output_chars": 1507,
+          "output_limit": 12000
+        },
+        {
+          "stage": "reader",
+          "input_chars": 829,
+          "input_limit": 24000,
+          "output_chars": 1417,
+          "output_limit": 12000
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains unresolved debt, not a completed novel."
+    },
+    {
+      "case": "knowledge",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "knowledge_records": 1000,
+      "open_hooks": 0,
+      "tasks": 34,
+      "max_input_chars": 24000,
+      "trace": [
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2273,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2282,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 17621,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 5059,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 4329,
+          "input_limit": 24000,
+          "field": "design_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8388,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8392,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2535,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8395,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2536,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8385,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2536,
+          "output_limit": 12000
+        },
+        {
+          "stage": "draft",
+          "input_chars": 12300,
+          "input_limit": 24000,
+          "output_chars": 284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2273,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2283,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 19318,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2286,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 5228,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8558,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8558,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2534,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8563,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2537,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 6667,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2406,
+          "output_limit": 12000
+        },
+        {
+          "stage": "facts",
+          "input_chars": 11023,
+          "input_limit": 24000,
+          "output_chars": 1507,
+          "output_limit": 12000
+        },
+        {
+          "stage": "reader",
+          "input_chars": 829,
+          "input_limit": 24000,
+          "output_chars": 1417,
+          "output_limit": 12000
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains unresolved debt, not a completed novel."
+    },
+    {
+      "case": "hooks",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "knowledge_records": 0,
+      "open_hooks": 1000,
+      "tasks": 52,
+      "max_input_chars": 24000,
+      "trace": [
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2273,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2282,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2278,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2282,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2278,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2283,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2283,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2283,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 17031,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 5059,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 4329,
+          "input_limit": 24000,
+          "field": "design_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8386,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8391,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2536,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8393,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2536,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8393,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2536,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8394,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2535,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 6492,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2399,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8390,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8389,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2536,
+          "output_limit": 12000
+        },
+        {
+          "stage": "draft",
+          "input_chars": 8436,
+          "input_limit": 24000,
+          "output_chars": 284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2273,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2279,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2278,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2282,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2286,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2283,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 19568,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 5228,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8555,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8557,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2534,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8560,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2538,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8566,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2537,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8565,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2535,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 4772,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2267,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8559,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8559,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2537,
+          "output_limit": 12000
+        },
+        {
+          "stage": "facts",
+          "input_chars": 7158,
+          "input_limit": 24000,
+          "output_chars": 1507,
+          "output_limit": 12000
+        },
+        {
+          "stage": "reader",
+          "input_chars": 829,
+          "input_limit": 24000,
+          "output_chars": 1417,
+          "output_limit": 12000
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains unresolved debt, not a completed novel."
+    },
+    {
+      "case": "dependencies",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "knowledge_records": 0,
+      "open_hooks": 0,
+      "tasks": 11,
+      "max_input_chars": 24000,
+      "trace": [
+        {
+          "stage": "context_scan",
+          "input_chars": 2967,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2271,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 5059,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 5589,
+          "input_limit": 24000,
+          "field": "design_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "selected",
+          "output_chars": 2274,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "selected",
+          "output_chars": 2279,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 15369,
+          "input_limit": 24000,
+          "field": "selected",
+          "output_chars": 2278,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8380,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8384,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2532,
+          "output_limit": 12000
+        },
+        {
+          "stage": "draft",
+          "input_chars": 8547,
+          "input_limit": 24000,
+          "output_chars": 284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "facts",
+          "input_chars": 5114,
+          "input_limit": 24000,
+          "output_chars": 1507,
+          "output_limit": 12000
+        },
+        {
+          "stage": "reader",
+          "input_chars": 829,
+          "input_limit": 24000,
+          "output_chars": 1417,
+          "output_limit": 12000
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains unresolved debt, not a completed novel."
+    },
+    {
+      "case": "profiles",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "knowledge_records": 0,
+      "open_hooks": 0,
+      "tasks": 26,
+      "max_input_chars": 24000,
+      "trace": [
+        {
+          "stage": "context_scan",
+          "input_chars": 2967,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2271,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2273,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2282,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 23999,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2281,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 7013,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2286,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 4329,
+          "input_limit": 24000,
+          "field": "design_context",
+          "output_chars": 2272,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8383,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8392,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2536,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8389,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2533,
+          "output_limit": 12000
+        },
+        {
+          "stage": "draft",
+          "input_chars": 10326,
+          "input_limit": 24000,
+          "output_chars": 284,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 3136,
+          "input_limit": 24000,
+          "field": "state",
+          "output_chars": 2271,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2273,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2280,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2279,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2282,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 24000,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2283,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_scan",
+          "input_chars": 8197,
+          "input_limit": 24000,
+          "field": "character_context",
+          "output_chars": 2285,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8552,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2531,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 8559,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2534,
+          "output_limit": 12000
+        },
+        {
+          "stage": "context_reduce",
+          "input_chars": 6671,
+          "input_limit": 24000,
+          "field": "merged notes",
+          "output_chars": 2404,
+          "output_limit": 12000
+        },
+        {
+          "stage": "facts",
+          "input_chars": 9047,
+          "input_limit": 24000,
+          "output_chars": 1507,
+          "output_limit": 12000
+        },
+        {
+          "stage": "reader",
+          "input_chars": 829,
+          "input_limit": 24000,
+          "output_chars": 1417,
+          "output_limit": 12000
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains unresolved debt, not a completed novel."
+    }
+  ]
+}

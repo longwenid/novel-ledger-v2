@@ -1,0 +1,31 @@
+{
+  "test_type": "controlled_short_sample",
+  "baseline_skill_root": "/Users/longwen/AndroidStudioProjects/skills/novel-ledger",
+  "guidance_read": [
+    "/Users/longwen/AndroidStudioProjects/skills/novel-ledger/SKILL.md",
+    "/Users/longwen/AndroidStudioProjects/skills/novel-ledger/references/voices/shijing.content.md",
+    "/Users/longwen/AndroidStudioProjects/skills/novel-ledger/references/voices/shijing.md",
+    "/Users/longwen/AndroidStudioProjects/skills/novel-ledger/references/craft/tension-payoff.md",
+    "/Users/longwen/AndroidStudioProjects/skills/novel-ledger/references/craft/character-voice.md",
+    "/Users/longwen/AndroidStudioProjects/skills/novel-ledger/references/craft/reader-experience.md"
+  ],
+  "voice": "shijing",
+  "outputs": {
+    "01.md": 541,
+    "02.md": 535,
+    "03.md": 537
+  },
+  "checks": {
+    "each_sample_500_to_800_han": true,
+    "new_version_guidance_or_samples_read": false,
+    "external_works_consulted": false,
+    "database_or_full_pipeline_executed": false
+  },
+  "scope": "三段连续原创开篇，旧版写作指导的受控短样；不是完整旧版运行。",
+  "limitations": [
+    "未运行旧版数据库、章拍、分阶段隔离、提交闸门或长篇记忆流程。",
+    "三段由同一写作会话连续创作，不能据此评价长篇连续性与旧版整体流水线性能。",
+    "旧版文风手册内含外部小说技巧短摘；实际已读取手册，但未读取原作、未采用其人物、设定、台词或情节。",
+    "本记录只报告生成条件与汉字计数，不把自检当作读者评价或独立质量裁决。"
+  ]
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "case": "invalid slice",
+    "range": [
+      -1,
+      null
+    ],
+    "error": "candidate_range"
+  },
+  {
+    "case": "invalid slice",
+    "range": [
+      0,
+      16001
+    ],
+    "error": "candidate_range"
+  },
+  {
+    "case": "invalid slice",
+    "range": [
+      7587,
+      null
+    ],
+    "error": "candidate_range"
+  },
+  {
+    "case": "invalid slice",
+    "range": [
+      5,
+      4
+    ],
+    "error": "candidate_range"
+  },
+  {
+    "case": "invalid slice",
+    "range": [
+      true,
+      null
+    ],
+    "error": "candidate_range"
+  },
+  {
+    "case": "CLI completed-task slice",
+    "status": "pass",
+    "result": {
+      "task_id": "0e0c9c1e19614d58a4ade30140f5c42c",
+      "base_hash": "0fb600ca24c4466698b1a64fed5075e5bb74b531b72f311d99541d59f64d56d8",
+      "start": 21,
+      "end": 81,
+      "text": "逐项确认之后，将记录放回桌面。他逐项确认之后，将记录放回桌面。他逐项确认之后，将记录放回桌面。他逐项确认之后，将记录放回",
+      "total_chars": 7586,
+      "omitted_before": 21,
+      "omitted_after": 7505,
+      "status": "candidate_not_canon"
+    }
+  },
+  {
+    "case": "corrupt snapshot rejected and rolled back",
+    "error": "candidate_integrity"
+  },
+  {
+    "case": "interruption after draft SQL write",
+    "status": "pass",
+    "database_unchanged": true,
+    "same_pending_task_after_reopen": true,
+    "resubmit_stage": "facts"
+  }
+]

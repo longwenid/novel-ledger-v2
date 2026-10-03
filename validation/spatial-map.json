@@ -1,0 +1,273 @@
+{
+  "places": [
+    {
+      "id": "hall4",
+      "name": "市局四楼走廊",
+      "display_name": "市局四楼走廊",
+      "address": {
+        "place": "hall4",
+        "chain": [
+          "hq",
+          "hall4"
+        ],
+        "address": "临河路八号",
+        "floor": "4"
+      },
+      "source": {
+        "kind": "author_contract"
+      }
+    },
+    {
+      "id": "hq",
+      "name": "市局大楼",
+      "display_name": "市局大楼",
+      "address": {
+        "place": "hq",
+        "chain": [
+          "hq"
+        ],
+        "address": "临河路八号"
+      },
+      "source": {
+        "kind": "author_contract"
+      }
+    },
+    {
+      "id": "r3",
+      "name": "市局三楼505室",
+      "display_name": "市局大楼 / 3楼505室",
+      "address": {
+        "place": "r3",
+        "chain": [
+          "hq",
+          "r3"
+        ],
+        "address": "临河路八号",
+        "floor": "3",
+        "room_number": "505"
+      },
+      "source": {
+        "kind": "author_contract"
+      }
+    },
+    {
+      "id": "r4",
+      "name": "市局四楼101室",
+      "display_name": "市局大楼 / 4楼101室",
+      "address": {
+        "place": "r4",
+        "chain": [
+          "hq",
+          "r4"
+        ],
+        "address": "临河路八号",
+        "facing": "南",
+        "floor": "4",
+        "room_number": "101"
+      },
+      "source": {
+        "kind": "author_contract"
+      }
+    }
+  ],
+  "anchors": {
+    "office:office_place": {
+      "policy": "eventful",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "r4"
+    },
+    "hq:parent": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": null
+    },
+    "hq:address": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "临河路八号"
+    },
+    "r4:parent": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "hq"
+    },
+    "r4:facing": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "南"
+    },
+    "r4:floor": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "4"
+    },
+    "r4:room_number": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "101"
+    },
+    "r3:parent": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "hq"
+    },
+    "r3:floor": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "3"
+    },
+    "r3:room_number": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "505"
+    },
+    "hall4:parent": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "hq"
+    },
+    "hall4:floor": {
+      "policy": "fixed",
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "value": "4"
+    }
+  },
+  "function_bindings": {
+    "office:office_place": "r4"
+  },
+  "links": {
+    "office-door": {
+      "a": "r4",
+      "b": "hall4",
+      "kind": "path",
+      "directed": false,
+      "open": true,
+      "min_ticks": 1,
+      "label": "经办公室门",
+      "requires": {
+        "door:open": true
+      },
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "traversable_or_perceptible": false
+    },
+    "stairs": {
+      "a": "hall4",
+      "b": "r3",
+      "kind": "path",
+      "directed": false,
+      "open": true,
+      "min_ticks": 3,
+      "label": "走廊经楼梯至三楼505",
+      "requires": {},
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "traversable_or_perceptible": true
+    },
+    "look-in": {
+      "a": "hall4",
+      "b": "r4",
+      "kind": "sight",
+      "directed": true,
+      "open": true,
+      "min_ticks": null,
+      "label": "从门口看入办公室",
+      "requires": {
+        "door:open": true,
+        "lamp:lit": true
+      },
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_change": null,
+      "traversable_or_perceptible": false
+    }
+  },
+  "conditions": {
+    "door:open": false,
+    "lamp:lit": true
+  },
+  "placements": {
+    "hero": {
+      "position": {
+        "place": "r4"
+      },
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_arrival": null,
+      "effective_place": "r4"
+    },
+    "ally": {
+      "position": {
+        "place": "hall4"
+      },
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_arrival": null,
+      "effective_place": "hall4"
+    },
+    "key": {
+      "position": {
+        "holder": "hero"
+      },
+      "source": {
+        "kind": "author_contract"
+      },
+      "last_arrival": null,
+      "effective_place": "r4"
+    }
+  },
+  "map_scope": "selected places, ancestors and direct neighbors; partial, not to scale",
+  "absence_is_not_proof": true,
+  "unverified": [
+    "unregistered routes",
+    "unregistered barriers",
+    "unmeasured travel time",
+    "lighting/weather and human abilities require semantic review"
+  ],
+  "branch": "main",
+  "as_of_chapter": 0,
+  "diagram": "flowchart TD\n  p0[\"市局四楼走廊\"]\n  p1 -. \"包含\" .-> p0\n  p1[\"市局大楼\"]\n  p2[\"市局大楼 / 3楼505室\"]\n  p1 -. \"包含\" .-> p2\n  p3[\"市局大楼 / 4楼101室\"]\n  p1 -. \"包含\" .-> p3\n  p3 <-->|\"path: 经办公室门 (blocked) ≥1 ticks\"| p0\n  p0 <-->|\"path: 走廊经楼梯至三楼505 ≥3 ticks\"| p2\n  p0 -->|\"sight: 从门口看入办公室 (blocked)\"| p3"
+}

@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-02",
+  "version": "1.1.0",
+  "method": "Independent subagent invoked ledger, engine and CLI against temporary books; no external model API or network. Engineering review receipts are synthetic and make no literary claim.",
+  "initial_findings": [
+    {
+      "issue": "anchor writes location_id inconsistent with placements",
+      "reproduced_through_engine": true,
+      "audit_was_ok": true,
+      "retest": "protected_placement"
+    },
+    {
+      "issue": "unknown carrier erases known position and bypasses route",
+      "reproduced_through_engine": true,
+      "audit_was_ok": true,
+      "retest": "position_unknown"
+    },
+    {
+      "issue": "carried object loses arrival bound after drop",
+      "reproduced_through_engine": true,
+      "audit_was_ok": true,
+      "retest": "move_overlap"
+    }
+  ],
+  "retest": {
+    "rejected_at": "facts",
+    "canonical_chapters_after_rejection": 0,
+    "original_state_unchanged": true,
+    "pending_task_preserved": true,
+    "receiver_departing_before_handoff": "move_overlap",
+    "normal_handoff": {
+      "hero_arrives_hall": 100,
+      "key_given_to": "ally",
+      "ally_moves": [
+        100,
+        103
+      ],
+      "final_hero_place": "hall4",
+      "final_ally_place": "r3",
+      "final_key_place": "r3",
+      "canonical_chapters": 1,
+      "audit_ok": true
+    }
+  },
+  "other_checks_passed": [
+    "conflicting address assertion",
+    "closed route",
+    "minimum travel time",
+    "carried object follows holder",
+    "office relocation",
+    "room renumbering",
+    "work pack layout and conditions",
+    "CLI current and historical maps"
+  ],
+  "limitations": [
+    "No arbitrary natural language semantic guarantee",
+    "Cross-sentence address paraphrase can produce no lexical signal",
+    "Engineering review receipts do not prove literary quality",
+    "Other hosts and models not tested"
+  ]
+}

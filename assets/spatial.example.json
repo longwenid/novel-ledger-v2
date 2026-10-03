@@ -1,0 +1,198 @@
+{
+  "title": "办公室空间连续性示例",
+  "reader_promise": "凭证据推进的城市调查，人物选择有代价。",
+  "protagonist_drive": "周行查清一份记录为何被篡改。",
+  "world_rules": [
+    "空间、人物认知与物品归属遵循已出现的事实。"
+  ],
+  "ending": "关键记录获得核实，责任有明确结算。",
+  "arcs": [
+    "周行从凭印象推断到核实后行动。"
+  ],
+  "volumes": [
+    {
+      "id": "v1",
+      "purpose": "查证与结算"
+    }
+  ],
+  "word_range": [
+    1000000,
+    3000000
+  ],
+  "clock_unit": "分钟",
+  "entities": [
+    {
+      "id": "hero",
+      "name": "周行",
+      "kind": "person",
+      "aliases": [
+        "老周"
+      ]
+    },
+    {
+      "id": "ally",
+      "name": "宋禾",
+      "kind": "person"
+    },
+    {
+      "id": "office",
+      "name": "局长办公室",
+      "kind": "function"
+    },
+    {
+      "id": "hq",
+      "name": "市局大楼",
+      "kind": "place"
+    },
+    {
+      "id": "r4",
+      "name": "市局四楼101室",
+      "kind": "place"
+    },
+    {
+      "id": "r3",
+      "name": "市局三楼505室",
+      "kind": "place"
+    },
+    {
+      "id": "hall4",
+      "name": "市局四楼走廊",
+      "kind": "place"
+    },
+    {
+      "id": "door",
+      "name": "101室门",
+      "kind": "object"
+    },
+    {
+      "id": "lamp",
+      "name": "101室顶灯",
+      "kind": "object"
+    },
+    {
+      "id": "key",
+      "name": "档案柜钥匙",
+      "kind": "object"
+    }
+  ],
+  "initial_facts": [
+    {
+      "entity": "door",
+      "key": "open",
+      "value": false
+    },
+    {
+      "entity": "lamp",
+      "key": "lit",
+      "value": true
+    }
+  ],
+  "anchors": [
+    {
+      "entity": "office",
+      "key": "office_place",
+      "value": "r4",
+      "policy": "eventful"
+    },
+    {
+      "entity": "hero",
+      "key": "birth_date",
+      "value": "1990-04-02",
+      "policy": "fixed"
+    },
+    {
+      "entity": "key",
+      "key": "material",
+      "value": "黄铜",
+      "policy": "fixed"
+    }
+  ],
+  "places": [
+    {
+      "entity": "hq",
+      "parent": null,
+      "attributes": {
+        "address": "临河路八号"
+      }
+    },
+    {
+      "entity": "r4",
+      "parent": "hq",
+      "attributes": {
+        "floor": "4",
+        "room_number": "101",
+        "facing": "南"
+      }
+    },
+    {
+      "entity": "r3",
+      "parent": "hq",
+      "attributes": {
+        "floor": "3",
+        "room_number": "505"
+      }
+    },
+    {
+      "entity": "hall4",
+      "parent": "hq",
+      "attributes": {
+        "floor": "4"
+      }
+    }
+  ],
+  "links": [
+    {
+      "id": "office-door",
+      "a": "r4",
+      "b": "hall4",
+      "kind": "path",
+      "label": "经办公室门",
+      "min_ticks": 1,
+      "requires": {
+        "door:open": true
+      }
+    },
+    {
+      "id": "stairs",
+      "a": "hall4",
+      "b": "r3",
+      "kind": "path",
+      "label": "走廊经楼梯至三楼505",
+      "min_ticks": 3
+    },
+    {
+      "id": "look-in",
+      "a": "hall4",
+      "b": "r4",
+      "kind": "sight",
+      "directed": true,
+      "label": "从门口看入办公室",
+      "requires": {
+        "door:open": true,
+        "lamp:lit": true
+      }
+    }
+  ],
+  "placements": [
+    {
+      "entity": "hero",
+      "after": {
+        "place": "r4"
+      }
+    },
+    {
+      "entity": "ally",
+      "after": {
+        "place": "hall4"
+      }
+    },
+    {
+      "entity": "key",
+      "after": {
+        "holder": "hero"
+      }
+    }
+  ],
+  "planning_mode": "layered",
+  "character_mode": "profiled"
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "长篇小说账本 v2"
+  short_description: "跨模型连续创作长篇网文，以正文证据约束资源和人物漂移，审稿修订到完本"
+  default_prompt: "使用 $novel-ledger-v2 帮我设计一部长篇网文，试章定调后持续写作、审稿并验收完本。"

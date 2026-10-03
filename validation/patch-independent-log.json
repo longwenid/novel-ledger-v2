@@ -1,0 +1,282 @@
+[
+  {
+    "case": "facts local dispatch",
+    "status": "pass"
+  },
+  {
+    "case": "facts packet excludes full candidate/design",
+    "status": "pass",
+    "candidate_chars": 7586,
+    "excerpt_chars": 181,
+    "packet_json_chars": 4189,
+    "packet_json_utf8_bytes": 6319,
+    "omitted_chars": 7405
+  },
+  {
+    "case": "facts brief excludes candidate",
+    "status": "pass"
+  },
+  {
+    "case": "facts rejection patch_base",
+    "status": "pass",
+    "error": "patch_base",
+    "database_unchanged": true
+  },
+  {
+    "case": "facts rejection patch_anchor",
+    "status": "pass",
+    "error": "patch_anchor",
+    "database_unchanged": true
+  },
+  {
+    "case": "facts rejection patch_scope",
+    "status": "pass",
+    "error": "patch_scope",
+    "database_unchanged": true
+  },
+  {
+    "case": "facts rejection patch_overlap",
+    "status": "pass",
+    "error": "patch_overlap",
+    "database_unchanged": true
+  },
+  {
+    "case": "facts local full prose blocked",
+    "status": "pass",
+    "error": "patch_required",
+    "database_unchanged": true
+  },
+  {
+    "case": "facts candidate default 4000",
+    "status": "pass"
+  },
+  {
+    "case": "facts restart rematerializes immutable task",
+    "status": "pass"
+  },
+  {
+    "case": "facts patch composes without canon mutation",
+    "status": "pass"
+  },
+  {
+    "case": "facts identical replay idempotent",
+    "status": "pass"
+  },
+  {
+    "case": "facts changed replay blocked",
+    "status": "pass",
+    "error": "replay_conflict",
+    "database_unchanged": true
+  },
+  {
+    "case": "facts only exact duplicate changed",
+    "status": "pass"
+  },
+  {
+    "case": "facts output sizes",
+    "patch_result_json_chars": 350,
+    "full_prose_result_json_chars": 7985,
+    "patch_result_json_utf8_bytes": 426,
+    "full_prose_result_json_utf8_bytes": 22581,
+    "measurement": "字符/JSON 字节；未调用外部模型，不能视为实测 token 或费用节省。"
+  },
+  {
+    "case": "facts renewed full facts",
+    "status": "pass"
+  },
+  {
+    "case": "facts renewed full reader",
+    "status": "pass"
+  },
+  {
+    "case": "facts accepted double review",
+    "status": "pass"
+  },
+  {
+    "case": "facts old task immutable after commit",
+    "status": "pass"
+  },
+  {
+    "case": "reader local dispatch",
+    "status": "pass"
+  },
+  {
+    "case": "reader packet excludes full candidate/design",
+    "status": "pass",
+    "candidate_chars": 7586,
+    "excerpt_chars": 181,
+    "packet_json_chars": 2328,
+    "packet_json_utf8_bytes": 3274,
+    "omitted_chars": 7405
+  },
+  {
+    "case": "reader brief excludes candidate",
+    "status": "pass"
+  },
+  {
+    "case": "reader rejection patch_base",
+    "status": "pass",
+    "error": "patch_base",
+    "database_unchanged": true
+  },
+  {
+    "case": "reader rejection patch_anchor",
+    "status": "pass",
+    "error": "patch_anchor",
+    "database_unchanged": true
+  },
+  {
+    "case": "reader rejection patch_scope",
+    "status": "pass",
+    "error": "patch_scope",
+    "database_unchanged": true
+  },
+  {
+    "case": "reader rejection patch_overlap",
+    "status": "pass",
+    "error": "patch_overlap",
+    "database_unchanged": true
+  },
+  {
+    "case": "reader local full prose blocked",
+    "status": "pass",
+    "error": "patch_required",
+    "database_unchanged": true
+  },
+  {
+    "case": "reader candidate default 4000",
+    "status": "pass"
+  },
+  {
+    "case": "reader restart rematerializes immutable task",
+    "status": "pass"
+  },
+  {
+    "case": "reader patch composes without canon mutation",
+    "status": "pass"
+  },
+  {
+    "case": "reader identical replay idempotent",
+    "status": "pass"
+  },
+  {
+    "case": "reader changed replay blocked",
+    "status": "pass",
+    "error": "replay_conflict",
+    "database_unchanged": true
+  },
+  {
+    "case": "reader only exact duplicate changed",
+    "status": "pass"
+  },
+  {
+    "case": "reader output sizes",
+    "patch_result_json_chars": 350,
+    "full_prose_result_json_chars": 7985,
+    "patch_result_json_utf8_bytes": 426,
+    "full_prose_result_json_utf8_bytes": 22581,
+    "measurement": "字符/JSON 字节；未调用外部模型，不能视为实测 token 或费用节省。"
+  },
+  {
+    "case": "reader renewed full facts",
+    "status": "pass"
+  },
+  {
+    "case": "reader renewed full reader",
+    "status": "pass"
+  },
+  {
+    "case": "reader accepted double review",
+    "status": "pass"
+  },
+  {
+    "case": "reader old task immutable after commit",
+    "status": "pass"
+  },
+  {
+    "case": "expansion local dispatch",
+    "status": "pass"
+  },
+  {
+    "case": "expansion preserves draft and attempts",
+    "status": "pass",
+    "local_packet_json_chars": 2328,
+    "expanded_packet_json_chars": 9849,
+    "local_packet_utf8_bytes": 3274,
+    "expanded_packet_utf8_bytes": 25001
+  },
+  {
+    "case": "expansion cannot repeat",
+    "status": "pass",
+    "error": "repair_expand",
+    "database_unchanged": true
+  },
+  {
+    "case": "expanded patch renewed facts",
+    "status": "pass"
+  },
+  {
+    "case": "expanded patch renewed reader",
+    "status": "pass"
+  },
+  {
+    "case": "expanded patch accepted",
+    "status": "pass"
+  },
+  {
+    "case": "revision following original",
+    "status": "pass"
+  },
+  {
+    "case": "revision stale reuse rejected",
+    "status": "pass",
+    "error": "reuse_original",
+    "database_unchanged": true
+  },
+  {
+    "case": "reuse original renewed facts",
+    "status": "pass"
+  },
+  {
+    "case": "reuse original renewed reader",
+    "status": "pass"
+  },
+  {
+    "case": "revision pre-promotion canon intact",
+    "status": "pass"
+  },
+  {
+    "case": "revision suffix review",
+    "status": "pass",
+    "scope": "revision_chunk"
+  },
+  {
+    "case": "revision suffix review",
+    "status": "pass",
+    "scope": "revision_chunk"
+  },
+  {
+    "case": "revision suffix review",
+    "status": "pass",
+    "scope": "revision"
+  },
+  {
+    "case": "revision promoted after suffix coverage",
+    "status": "pass"
+  },
+  {
+    "case": "archived canon remains intact",
+    "status": "pass"
+  },
+  {
+    "case": "published freeze preserved",
+    "status": "pass",
+    "error": "published"
+  },
+  {
+    "case": "FINAL",
+    "status": "pass",
+    "checks": 53,
+    "scope": "合成工程审稿；无外部模型调用；非文学质量认证。"
+  }
+]

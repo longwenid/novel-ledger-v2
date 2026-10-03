@@ -1,0 +1,2733 @@
+[
+  {
+    "project": "normal",
+    "command": "init",
+    "args": [
+      "--contract",
+      "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/contract.json"
+    ],
+    "exit": 0,
+    "result": {
+      "project": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal",
+      "schema": "novel-ledger-v2/1",
+      "status": "ready"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "doctor",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "python": "3.10.12",
+      "sqlite": "3.43.2",
+      "python_path": "/Users/longwen/.pyenv/versions/3.10.12/bin/python3",
+      "session_mode": "serial",
+      "file_roundtrip": "database opened",
+      "automatic_after_chat_close": "requires externally configured driver",
+      "independent_review": false
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--state"
+    ],
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "9e2df244519845e0966d4e3f44887a01",
+      "stage": "world_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "e620c057bbb88f5f6238ba9376acd8f537b1818c2ffaf86265d77eacc7469d92",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9e2df244519845e0966d4e3f44887a01/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9e2df244519845e0966d4e3f44887a01/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9e2df244519845e0966d4e3f44887a01/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "9e2df244519845e0966d4e3f44887a01",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "9829145138ab413b902f17e9be657d9a",
+      "stage": "volume_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "9576879f6b0a97cb16b717b2fd99976d266d8d3437b29af6f5daebea644e52b0",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9829145138ab413b902f17e9be657d9a/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9829145138ab413b902f17e9be657d9a/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9829145138ab413b902f17e9be657d9a/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "9829145138ab413b902f17e9be657d9a",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--state"
+    ],
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "c578e6a3c4934c0a87d50c1c42f04b45",
+      "stage": "plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "35addbfb5bc2f4aa25132ec546b8f6437f7aabd125b8da10446731c2db67e010",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/c578e6a3c4934c0a87d50c1c42f04b45/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/c578e6a3c4934c0a87d50c1c42f04b45/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/c578e6a3c4934c0a87d50c1c42f04b45/result.json"
+    ],
+    "exit": 2,
+    "result": {
+      "ok": false,
+      "code": "design",
+      "message": "每批仅细化已准备的当前卷，跨卷前先完成分卷设计",
+      "details": null
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "c578e6a3c4934c0a87d50c1c42f04b45",
+      "stage": "plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "35addbfb5bc2f4aa25132ec546b8f6437f7aabd125b8da10446731c2db67e010",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/c578e6a3c4934c0a87d50c1c42f04b45/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/c578e6a3c4934c0a87d50c1c42f04b45/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/c578e6a3c4934c0a87d50c1c42f04b45/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "c578e6a3c4934c0a87d50c1c42f04b45",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "74ed044009814eadb1579adada4523f5",
+      "stage": "draft",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "f6baeb080522e4ba8b53544fe9bdaf77cfcf5fe21315648608aac3ad0a9f09bb",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/74ed044009814eadb1579adada4523f5/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/74ed044009814eadb1579adada4523f5/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/74ed044009814eadb1579adada4523f5/brief.md"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "74ed044009814eadb1579adada4523f5",
+      "stage": "draft",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "f6baeb080522e4ba8b53544fe9bdaf77cfcf5fe21315648608aac3ad0a9f09bb",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/74ed044009814eadb1579adada4523f5/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/74ed044009814eadb1579adada4523f5/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/74ed044009814eadb1579adada4523f5/brief.md"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/74ed044009814eadb1579adada4523f5/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "74ed044009814eadb1579adada4523f5",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "1c038449e59c4cafb972a31623972b2c",
+      "stage": "facts",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "b46a66f6f275e963da4e99ab561784df805b8cf369339853c5c5e436ec354f78",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/1c038449e59c4cafb972a31623972b2c/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/1c038449e59c4cafb972a31623972b2c/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/1c038449e59c4cafb972a31623972b2c/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "1c038449e59c4cafb972a31623972b2c",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "6447e8ddd107417ea03ad1f3c6376c6e",
+      "stage": "reader",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "9fd58f8911d627488a4684fc280467320cd864f9010bcf6b759338727426aba0",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/6447e8ddd107417ea03ad1f3c6376c6e/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/6447e8ddd107417ea03ad1f3c6376c6e/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/6447e8ddd107417ea03ad1f3c6376c6e/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "6447e8ddd107417ea03ad1f3c6376c6e",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "stage": "await_author",
+      "reason": "第一章已通过内部审稿，等待作者定调；认可后执行 approve。"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "approve",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "ec2fc15a8b214bf48ceb16a9b5330c29",
+      "stage": "volume_review",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "0a10c6b8d55a04eeb2fe4616ef000a64f000f4cb33fdf9ba057e0967a2db6f1a",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ec2fc15a8b214bf48ceb16a9b5330c29/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ec2fc15a8b214bf48ceb16a9b5330c29/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ec2fc15a8b214bf48ceb16a9b5330c29/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "ec2fc15a8b214bf48ceb16a9b5330c29",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "56578a13315c4d0ba0bab4d31b138b88",
+      "stage": "volume_review",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "57135efa536518b610ffa7154693aec2963f2ebb1ab0521da85e6260505d8204",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/56578a13315c4d0ba0bab4d31b138b88/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/56578a13315c4d0ba0bab4d31b138b88/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--chapter",
+      "1"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "main",
+      "number": 1,
+      "prose": "周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。",
+      "data": "{\"events\":[],\"facts_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"coverage\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"continuity\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"resources\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"knowledge\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"time\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"world_rules\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"spatial\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"events\":[],\"findings\":[],\"summary\":\"合成流程：交接证据，准备公开。\",\"verdict\":\"pass\"},\"prose_hash\":\"f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530\",\"reader_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"read_on\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"character\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"change\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"emotion_cost\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"language\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"repetition\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"findings\":[],\"first_read\":{\"change\":\"合成首读回执，仅验证工程。\",\"desire\":\"合成首读回执，仅验证工程。\",\"obstacle\":\"合成首读回执，仅验证工程。\",\"read_on_reason\":\"合成首读回执，仅验证工程。\"},\"verdict\":\"pass\"},\"summary\":\"合成流程：交接证据，准备公开。\",\"volume\":\"v1\"}",
+      "hash": "f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/56578a13315c4d0ba0bab4d31b138b88/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "56578a13315c4d0ba0bab4d31b138b88",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "2735c2afeed442bcbe647da859c270a0",
+      "stage": "volume_plan",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "af69deb98c7e4f55624c3edfc92d8fda1531e0a8ed180ce47469cf6b8718a8ff",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/2735c2afeed442bcbe647da859c270a0/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/2735c2afeed442bcbe647da859c270a0/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/2735c2afeed442bcbe647da859c270a0/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "2735c2afeed442bcbe647da859c270a0",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "1960505cad094dcb8736cbd0672e0f96",
+      "stage": "plan",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "0ad236ddba25f49fd9c308023ca11b5a38c34779d6122c5aed1b9d5527dd9b34",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/1960505cad094dcb8736cbd0672e0f96/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/1960505cad094dcb8736cbd0672e0f96/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/1960505cad094dcb8736cbd0672e0f96/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "1960505cad094dcb8736cbd0672e0f96",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "2f950691e44540698479538b19ccdeeb",
+      "stage": "draft",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "06f0fda3fc1448cffc18d725776944b3ee8182760b34ab5d30fe85e17eb2134d",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/2f950691e44540698479538b19ccdeeb/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/2f950691e44540698479538b19ccdeeb/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/2f950691e44540698479538b19ccdeeb/brief.md"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/2f950691e44540698479538b19ccdeeb/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "2f950691e44540698479538b19ccdeeb",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "177169d6e69a4b9db35de219334426b7",
+      "stage": "facts",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "c7b34503de1c78e3654f307603b09e65778f13c8d020713950a146f19242b260",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/177169d6e69a4b9db35de219334426b7/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/177169d6e69a4b9db35de219334426b7/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/177169d6e69a4b9db35de219334426b7/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "177169d6e69a4b9db35de219334426b7",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "d2c2eaea92c04ba79832a59d38604d93",
+      "stage": "reader",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "f42185a1a02257d42b2435f4bc4485f67cf045cdb8f1dcc50af7d5f30b327d47",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d2c2eaea92c04ba79832a59d38604d93/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d2c2eaea92c04ba79832a59d38604d93/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d2c2eaea92c04ba79832a59d38604d93/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "d2c2eaea92c04ba79832a59d38604d93",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "d3fa079c3170495c97f30181b5345854",
+      "stage": "volume_review",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "8dff537a172d89bff5e5f44201ef13370c31dbb1f179a0f1283c4a875d756ee4",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d3fa079c3170495c97f30181b5345854/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d3fa079c3170495c97f30181b5345854/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d3fa079c3170495c97f30181b5345854/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "d3fa079c3170495c97f30181b5345854",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "925ac0fcac394c4db47905ccf9a2dba3",
+      "stage": "volume_review",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "b741f577b8eb5623bd0b83fc1411b7b3f58aabb29185614490f486a328aa8944",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/925ac0fcac394c4db47905ccf9a2dba3/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/925ac0fcac394c4db47905ccf9a2dba3/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--chapter",
+      "2"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "main",
+      "number": 2,
+      "prose": "宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。",
+      "data": "{\"events\":[],\"facts_review\":{\"checks\":[{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"coverage\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"continuity\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"resources\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"knowledge\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"time\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"world_rules\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"spatial\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"events\":[],\"findings\":[],\"summary\":\"合成流程：交接证据，准备公开。\",\"verdict\":\"pass\"},\"prose_hash\":\"e9f6198fd115235cf4c433c483b6e1c9e3efd0e35f3bd6bbc7110e42ff0a212c\",\"reader_review\":{\"checks\":[{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"read_on\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"character\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"change\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"emotion_cost\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"language\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾把收据展在众人面前。周行承认自己经手，等候公开核验。\",\"start\":0}],\"id\":\"repetition\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"findings\":[],\"first_read\":{\"change\":\"合成首读回执，仅验证工程。\",\"desire\":\"合成首读回执，仅验证工程。\",\"obstacle\":\"合成首读回执，仅验证工程。\",\"read_on_reason\":\"合成首读回执，仅验证工程。\"},\"verdict\":\"pass\"},\"summary\":\"合成流程：交接证据，准备公开。\",\"volume\":\"v2\"}",
+      "hash": "e9f6198fd115235cf4c433c483b6e1c9e3efd0e35f3bd6bbc7110e42ff0a212c"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/925ac0fcac394c4db47905ccf9a2dba3/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "925ac0fcac394c4db47905ccf9a2dba3",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "4a9e1627e42c4e9e9eb9b13bd03336f8",
+      "stage": "book_review",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "1dbf636b4835e5915c03e518503a641897b2bfbe5828eb17143dbb5c89fdcfad",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/4a9e1627e42c4e9e9eb9b13bd03336f8/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/4a9e1627e42c4e9e9eb9b13bd03336f8/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/4a9e1627e42c4e9e9eb9b13bd03336f8/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "4a9e1627e42c4e9e9eb9b13bd03336f8",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "953a288472be4a6d8ec0f9571067bd00",
+      "stage": "book_review",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "2382df2228d3fb968d87f079e9f9a0179c2b11f7e0fa4974df3e0672573aec29",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/953a288472be4a6d8ec0f9571067bd00/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/953a288472be4a6d8ec0f9571067bd00/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/953a288472be4a6d8ec0f9571067bd00/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "953a288472be4a6d8ec0f9571067bd00",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "45129b5bb13a40ed9337bb09379ba804",
+      "stage": "book_review",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "ebf99b3107c65833ba1f58696d1777cc4b46bc3b3a3db1d825d3af843ea15768",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/45129b5bb13a40ed9337bb09379ba804/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/45129b5bb13a40ed9337bb09379ba804/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--chapter",
+      "1"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "main",
+      "number": 1,
+      "prose": "周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。",
+      "data": "{\"events\":[],\"facts_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"coverage\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"continuity\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"resources\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"knowledge\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"time\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"world_rules\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"spatial\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"events\":[],\"findings\":[],\"summary\":\"合成流程：交接证据，准备公开。\",\"verdict\":\"pass\"},\"prose_hash\":\"f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530\",\"reader_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"read_on\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"character\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"change\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"emotion_cost\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"language\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"repetition\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"findings\":[],\"first_read\":{\"change\":\"合成首读回执，仅验证工程。\",\"desire\":\"合成首读回执，仅验证工程。\",\"obstacle\":\"合成首读回执，仅验证工程。\",\"read_on_reason\":\"合成首读回执，仅验证工程。\"},\"verdict\":\"pass\"},\"summary\":\"合成流程：交接证据，准备公开。\",\"volume\":\"v1\"}",
+      "hash": "f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/45129b5bb13a40ed9337bb09379ba804/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "45129b5bb13a40ed9337bb09379ba804",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "status": "completed",
+      "audit": {
+        "ok": true,
+        "branch": "main",
+        "chapters": 2,
+        "problems": [],
+        "han_characters": 48,
+        "open_important_hooks": [],
+        "state_hash": "94c7bc374cd6452658f6ed6d5ff913f8d9af6c06796079858c159cfa4be7218b"
+      }
+    }
+  },
+  {
+    "project": "normal",
+    "command": "audit",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "ok": true,
+      "branch": "main",
+      "chapters": 2,
+      "problems": [],
+      "han_characters": 48,
+      "open_important_hooks": [],
+      "state_hash": "94c7bc374cd6452658f6ed6d5ff913f8d9af6c06796079858c159cfa4be7218b"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "design",
+    "args": [
+      "--scope",
+      "v2",
+      "--branch",
+      "main"
+    ],
+    "exit": 0,
+    "result": {
+      "current": {
+        "active": true,
+        "based_on_chapter": 1,
+        "data": {
+          "action_constraints": [
+            "原件由谁携带、谁能看到缺页，需要逐场景确认"
+          ],
+          "canon_refs": [],
+          "dependencies": [
+            1
+          ],
+          "ending_setup": [
+            "保留交接与见证的证据，支撑后来责任结算"
+          ],
+          "location_ids": [
+            "design:office"
+          ],
+          "new_locations": [],
+          "open_questions": [],
+          "purpose": "从记录差异进入有代价的合作",
+          "sequence": [
+            "门口试探后查验文件，再决定是否交换各自证据"
+          ],
+          "volume": "v2"
+        },
+        "hash": "9af42b39414f4707cc8ff85b50672274672d802d78d885d9afdb902f2da74689",
+        "revision": 1,
+        "scope": "v2",
+        "sources": {
+          "1": "f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530"
+        },
+        "status": "proposal_not_canon",
+        "task_id": "2735c2afeed442bcbe647da859c270a0",
+        "world_hash": "75e0eb7a89daf29564e354f45a19f107b2c4e8c0d6b78b40fcc6f4546665519e"
+      },
+      "status": "proposal_not_canon"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "revise",
+    "args": [
+      "--from-chapter",
+      "2",
+      "--reason",
+      "SYNTHETIC CHANGE: 公开核验先于签字"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "rev-159b931af0fa",
+      "start": 2,
+      "through": 2
+    }
+  },
+  {
+    "project": "normal",
+    "command": "design",
+    "args": [
+      "--scope",
+      "v2",
+      "--branch",
+      "main"
+    ],
+    "exit": 0,
+    "result": {
+      "current": {
+        "active": true,
+        "based_on_chapter": 1,
+        "data": {
+          "action_constraints": [
+            "原件由谁携带、谁能看到缺页，需要逐场景确认"
+          ],
+          "canon_refs": [],
+          "dependencies": [
+            1
+          ],
+          "ending_setup": [
+            "保留交接与见证的证据，支撑后来责任结算"
+          ],
+          "location_ids": [
+            "design:office"
+          ],
+          "new_locations": [],
+          "open_questions": [],
+          "purpose": "从记录差异进入有代价的合作",
+          "sequence": [
+            "门口试探后查验文件，再决定是否交换各自证据"
+          ],
+          "volume": "v2"
+        },
+        "hash": "9af42b39414f4707cc8ff85b50672274672d802d78d885d9afdb902f2da74689",
+        "revision": 1,
+        "scope": "v2",
+        "sources": {
+          "1": "f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530"
+        },
+        "status": "proposal_not_canon",
+        "task_id": "2735c2afeed442bcbe647da859c270a0",
+        "world_hash": "75e0eb7a89daf29564e354f45a19f107b2c4e8c0d6b78b40fcc6f4546665519e"
+      },
+      "status": "proposal_not_canon"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "design",
+    "args": [
+      "--scope",
+      "world",
+      "--branch",
+      "rev-159b931af0fa"
+    ],
+    "exit": 0,
+    "result": {
+      "current": {
+        "active": true,
+        "based_on_chapter": 0,
+        "data": {
+          "canon_refs": [],
+          "causal_spine": [
+            "记录差异促使周行核对原件",
+            "合作取得原件后，双方必须承担公开作证的风险"
+          ],
+          "core_locations": [
+            {
+              "constraints": [
+                "门内外的视线和听觉分别核对"
+              ],
+              "id": "design:office",
+              "layout": [
+                "交接文件的办公区域；具体方位以当前地图为准"
+              ],
+              "name": "局长办公室",
+              "purpose": "让公事手续与私人信任产生碰撞"
+            }
+          ],
+          "dependencies": [],
+          "ending_dependencies": [
+            "证据最终必须能被核实并公开，不能靠突然出现的第三份档案收尾"
+          ],
+          "factions": [
+            {
+              "drive": "维持记录的可信度与责任边界",
+              "limits": "不能让所有工作人员共享秘密或统一行动",
+              "name": "档案管理部门"
+            }
+          ],
+          "geography": {
+            "connections": [
+              "楼层之间依靠已有楼梯和出入口，不预设万能暗道"
+            ],
+            "regions": [
+              "市局大楼及相邻街区"
+            ]
+          },
+          "open_questions": [
+            "原件缺失部分的形成原因，进入相关情节前再细化"
+          ],
+          "overview": "围绕市局档案交接展开城市调查，证据的取得与公开均需人物承担后果。"
+        },
+        "hash": "75e0eb7a89daf29564e354f45a19f107b2c4e8c0d6b78b40fcc6f4546665519e",
+        "revision": 1,
+        "scope": "world",
+        "sources": {},
+        "status": "proposal_not_canon",
+        "task_id": "9e2df244519845e0966d4e3f44887a01",
+        "world_hash": null
+      },
+      "status": "proposal_not_canon"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "design",
+    "args": [
+      "--scope",
+      "v2",
+      "--branch",
+      "rev-159b931af0fa"
+    ],
+    "exit": 0,
+    "result": {
+      "current": {
+        "active": false,
+        "based_on_chapter": 1,
+        "data": {
+          "action_constraints": [
+            "原件由谁携带、谁能看到缺页，需要逐场景确认"
+          ],
+          "canon_refs": [],
+          "dependencies": [
+            1
+          ],
+          "ending_setup": [
+            "保留交接与见证的证据，支撑后来责任结算"
+          ],
+          "location_ids": [
+            "design:office"
+          ],
+          "new_locations": [],
+          "open_questions": [],
+          "purpose": "从记录差异进入有代价的合作",
+          "sequence": [
+            "门口试探后查验文件，再决定是否交换各自证据"
+          ],
+          "volume": "v2"
+        },
+        "hash": "9af42b39414f4707cc8ff85b50672274672d802d78d885d9afdb902f2da74689",
+        "invalidation_reason": "正文候选修订，需要重审受影响设计",
+        "revision": 1,
+        "scope": "v2",
+        "sources": {
+          "1": "f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530"
+        },
+        "status": "proposal_not_canon",
+        "task_id": "2735c2afeed442bcbe647da859c270a0",
+        "world_hash": "75e0eb7a89daf29564e354f45a19f107b2c4e8c0d6b78b40fcc6f4546665519e"
+      },
+      "status": "proposal_not_canon"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "d4c880bd9d3448a698afdbef56d44e08",
+      "stage": "volume_plan",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "865f9896ad98e61b76b2511dc15d68f4da7dc96bbfb7932d15d9a4c0b4fe54c2",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d4c880bd9d3448a698afdbef56d44e08/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d4c880bd9d3448a698afdbef56d44e08/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/d4c880bd9d3448a698afdbef56d44e08/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "d4c880bd9d3448a698afdbef56d44e08",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "ae48f4179e3a441a95763cc30834c36b",
+      "stage": "plan",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "d0470509d0a2934bf6eaf9b5eda09048665ad932e2309736c3279442c2460d71",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ae48f4179e3a441a95763cc30834c36b/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ae48f4179e3a441a95763cc30834c36b/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ae48f4179e3a441a95763cc30834c36b/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "ae48f4179e3a441a95763cc30834c36b",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "cb8bb87a8873420285b9a3ef5025124e",
+      "stage": "draft",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "6552bf85a74e65b75a1a3618ff16d9597b318303959580b9ed0e7aa9ad217666",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/cb8bb87a8873420285b9a3ef5025124e/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/cb8bb87a8873420285b9a3ef5025124e/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/cb8bb87a8873420285b9a3ef5025124e/brief.md"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/cb8bb87a8873420285b9a3ef5025124e/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "cb8bb87a8873420285b9a3ef5025124e",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "4aa2b008f55848d7b9f24c2b6600672a",
+      "stage": "facts",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "e0e51eee6d615676b0311337a3a81a2125c2897c287932b3a7e84c756c947acf",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/4aa2b008f55848d7b9f24c2b6600672a/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/4aa2b008f55848d7b9f24c2b6600672a/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/4aa2b008f55848d7b9f24c2b6600672a/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "4aa2b008f55848d7b9f24c2b6600672a",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "9bd706493d6f4fa289f0207811cb89d2",
+      "stage": "reader",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "b12b4da7da5d0204e5c8199449ac3b9290564e06ba313a1c28b93182751cd7cb",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9bd706493d6f4fa289f0207811cb89d2/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9bd706493d6f4fa289f0207811cb89d2/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/9bd706493d6f4fa289f0207811cb89d2/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "9bd706493d6f4fa289f0207811cb89d2",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "a50073d7d64f46eba2de873891aa297d",
+      "stage": "volume_review",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "6f51a8ccb6dc61775233fbcd0e5ab1993aff2403f8e2f9d98333d4918e9e88bd",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/a50073d7d64f46eba2de873891aa297d/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/a50073d7d64f46eba2de873891aa297d/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/a50073d7d64f46eba2de873891aa297d/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "a50073d7d64f46eba2de873891aa297d",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "ab3ace23b0d0493998a5682522455a91",
+      "stage": "volume_review",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "9da78e7213590f400a0c5226080d8a6ac35fc14def1cbc2d3cb8fa75c170fd12",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ab3ace23b0d0493998a5682522455a91/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ab3ace23b0d0493998a5682522455a91/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--chapter",
+      "2"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "rev-159b931af0fa",
+      "number": 2,
+      "prose": "宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。",
+      "data": "{\"events\":[],\"facts_review\":{\"checks\":[{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"coverage\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"continuity\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"resources\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"knowledge\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"time\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"world_rules\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"spatial\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"events\":[],\"findings\":[],\"summary\":\"合成流程：交接证据，准备公开。\",\"verdict\":\"pass\"},\"prose_hash\":\"6af1e372da5429ddb201d2af06e87cce9fa76703853e1416ed403dc1fd687e10\",\"reader_review\":{\"checks\":[{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"read_on\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"character\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"change\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"emotion_cost\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"language\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"repetition\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"findings\":[],\"first_read\":{\"change\":\"合成首读回执，仅验证工程。\",\"desire\":\"合成首读回执，仅验证工程。\",\"obstacle\":\"合成首读回执，仅验证工程。\",\"read_on_reason\":\"合成首读回执，仅验证工程。\"},\"verdict\":\"pass\"},\"summary\":\"合成流程：交接证据，准备公开。\",\"volume\":\"v2\"}",
+      "hash": "6af1e372da5429ddb201d2af06e87cce9fa76703853e1416ed403dc1fd687e10"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/ab3ace23b0d0493998a5682522455a91/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "ab3ace23b0d0493998a5682522455a91",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "175d63b38cca45c1bb01ff05f7ab7635",
+      "stage": "revision_review",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "aed700ad5d0fbbf96901d423a6bb0d123cdd5b83b1e5696b7f8b7ad618f5e605",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/175d63b38cca45c1bb01ff05f7ab7635/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/175d63b38cca45c1bb01ff05f7ab7635/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/175d63b38cca45c1bb01ff05f7ab7635/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "175d63b38cca45c1bb01ff05f7ab7635",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "af5386dfe54f48cdaee5058415156278",
+      "stage": "revision_review",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "3dce5d6228a31840b5e1eba76a6635528c8b856d4122d6acea1be68f12567e46",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/af5386dfe54f48cdaee5058415156278/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/af5386dfe54f48cdaee5058415156278/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--chapter",
+      "2"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "rev-159b931af0fa",
+      "number": 2,
+      "prose": "宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。",
+      "data": "{\"events\":[],\"facts_review\":{\"checks\":[{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"coverage\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"continuity\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"resources\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"knowledge\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"time\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"world_rules\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"spatial\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"events\":[],\"findings\":[],\"summary\":\"合成流程：交接证据，准备公开。\",\"verdict\":\"pass\"},\"prose_hash\":\"6af1e372da5429ddb201d2af06e87cce9fa76703853e1416ed403dc1fd687e10\",\"reader_review\":{\"checks\":[{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"read_on\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"character\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"change\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"emotion_cost\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"language\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":2,\"quote\":\"宋禾先请众人核验收据。周行等核验完毕，才签名承担经手责任。\",\"start\":0}],\"id\":\"repetition\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"findings\":[],\"first_read\":{\"change\":\"合成首读回执，仅验证工程。\",\"desire\":\"合成首读回执，仅验证工程。\",\"obstacle\":\"合成首读回执，仅验证工程。\",\"read_on_reason\":\"合成首读回执，仅验证工程。\"},\"verdict\":\"pass\"},\"summary\":\"合成流程：交接证据，准备公开。\",\"volume\":\"v2\"}",
+      "hash": "6af1e372da5429ddb201d2af06e87cce9fa76703853e1416ed403dc1fd687e10"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/af5386dfe54f48cdaee5058415156278/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "af5386dfe54f48cdaee5058415156278",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "stage": "revision_promoted",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "rev-159b931af0fa",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "5f57d0be8ee7440cbc6cd33036d8bf76",
+      "stage": "book_review",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "81fd22b4255bd6474a61253585d8cbfef4abde98a170f38a5e6f5a17908200ce",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/5f57d0be8ee7440cbc6cd33036d8bf76/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/5f57d0be8ee7440cbc6cd33036d8bf76/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/5f57d0be8ee7440cbc6cd33036d8bf76/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "5f57d0be8ee7440cbc6cd33036d8bf76",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "rev-159b931af0fa",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "6cb6a826a53a466bad9062ee96ccdbfb",
+      "stage": "book_review",
+      "chapter": 2,
+      "branch": "rev-159b931af0fa",
+      "input_hash": "e1333faa0fbe93bec1b9d7ce3e4c6c68c2dad8af7f74145bf2e0c186cda4643e",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/6cb6a826a53a466bad9062ee96ccdbfb/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/6cb6a826a53a466bad9062ee96ccdbfb/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "recall",
+    "args": [
+      "--chapter",
+      "1"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "rev-159b931af0fa",
+      "number": 1,
+      "prose": "周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。",
+      "data": "{\"events\":[],\"facts_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"coverage\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"continuity\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"resources\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"knowledge\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"time\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"world_rules\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"spatial\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"events\":[],\"findings\":[],\"summary\":\"合成流程：交接证据，准备公开。\",\"verdict\":\"pass\"},\"prose_hash\":\"f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530\",\"reader_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"read_on\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"character\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"change\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"emotion_cost\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"language\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。宋禾按下指印，答应明天公开作证。\",\"start\":0}],\"id\":\"repetition\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"findings\":[],\"first_read\":{\"change\":\"合成首读回执，仅验证工程。\",\"desire\":\"合成首读回执，仅验证工程。\",\"obstacle\":\"合成首读回执，仅验证工程。\",\"read_on_reason\":\"合成首读回执，仅验证工程。\"},\"verdict\":\"pass\"},\"summary\":\"合成流程：交接证据，准备公开。\",\"volume\":\"v1\"}",
+      "hash": "f13fe3c757e1640c10578693f2885fae8a8f8a584a01cdcdb4981eae13514530"
+    }
+  },
+  {
+    "project": "normal",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/normal/work/6cb6a826a53a466bad9062ee96ccdbfb/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "6cb6a826a53a466bad9062ee96ccdbfb",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "rev-159b931af0fa",
+      "work_branch": "rev-159b931af0fa",
+      "committed": 2,
+      "work_committed": 2,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "normal",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "status": "completed",
+      "audit": {
+        "ok": true,
+        "branch": "rev-159b931af0fa",
+        "chapters": 2,
+        "problems": [],
+        "han_characters": 49,
+        "open_important_hooks": [],
+        "state_hash": "94c7bc374cd6452658f6ed6d5ff913f8d9af6c06796079858c159cfa4be7218b"
+      }
+    }
+  },
+  {
+    "project": "normal",
+    "command": "audit",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "ok": true,
+      "branch": "rev-159b931af0fa",
+      "chapters": 2,
+      "problems": [],
+      "han_characters": 49,
+      "open_important_hooks": [],
+      "state_hash": "94c7bc374cd6452658f6ed6d5ff913f8d9af6c06796079858c159cfa4be7218b"
+    }
+  },
+  {
+    "project": "replan",
+    "command": "init",
+    "args": [
+      "--contract",
+      "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/contract.json"
+    ],
+    "exit": 0,
+    "result": {
+      "project": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan",
+      "schema": "novel-ledger-v2/1",
+      "status": "ready"
+    }
+  },
+  {
+    "project": "replan",
+    "command": "doctor",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "python": "3.10.12",
+      "sqlite": "3.43.2",
+      "python_path": "/Users/longwen/.pyenv/versions/3.10.12/bin/python3",
+      "session_mode": "serial",
+      "file_roundtrip": "database opened",
+      "automatic_after_chat_close": "requires externally configured driver",
+      "independent_review": false
+    }
+  },
+  {
+    "project": "replan",
+    "command": "recall",
+    "args": [
+      "--state"
+    ],
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "replan",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "8096ad6a407240ce9e410295ce6e95e4",
+      "stage": "world_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "e620c057bbb88f5f6238ba9376acd8f537b1818c2ffaf86265d77eacc7469d92",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/8096ad6a407240ce9e410295ce6e95e4/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/8096ad6a407240ce9e410295ce6e95e4/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "replan",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/8096ad6a407240ce9e410295ce6e95e4/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "8096ad6a407240ce9e410295ce6e95e4",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "replan",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "a537374ca6f74f8dbb95671eb206aaa9",
+      "stage": "volume_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "619c6c19889ee09429881f65856e482dbe9c119b6c745b9bb6ae04a1e8a550cf",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/a537374ca6f74f8dbb95671eb206aaa9/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/a537374ca6f74f8dbb95671eb206aaa9/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "replan",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/a537374ca6f74f8dbb95671eb206aaa9/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "a537374ca6f74f8dbb95671eb206aaa9",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "replan",
+    "command": "recall",
+    "args": [
+      "--state"
+    ],
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "replan",
+    "command": "replan",
+    "args": [
+      "--scope",
+      "world",
+      "--reason",
+      "SYNTHETIC: 增设公开核验候选场所"
+    ],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "replan",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "3f4a58bbab914acdb4608b17c8e71b00",
+      "stage": "world_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "f3c8701ee88fc8a45130c3080dc12a9431a498991135d67c5def018ef0a0c417",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/3f4a58bbab914acdb4608b17c8e71b00/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/3f4a58bbab914acdb4608b17c8e71b00/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "replan",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/3f4a58bbab914acdb4608b17c8e71b00/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "3f4a58bbab914acdb4608b17c8e71b00",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "replan",
+    "command": "design",
+    "args": [
+      "--scope",
+      "world",
+      "--history"
+    ],
+    "exit": 0,
+    "result": {
+      "current": {
+        "active": true,
+        "based_on_chapter": 0,
+        "data": {
+          "canon_refs": [],
+          "causal_spine": [
+            "记录差异促使周行核对原件",
+            "合作取得原件后，双方必须承担公开作证的风险"
+          ],
+          "core_locations": [
+            {
+              "constraints": [
+                "门内外的视线和听觉分别核对"
+              ],
+              "id": "design:office",
+              "layout": [
+                "交接文件的办公区域；具体方位以当前地图为准"
+              ],
+              "name": "局长办公室",
+              "purpose": "让公事手续与私人信任产生碰撞"
+            }
+          ],
+          "dependencies": [],
+          "ending_dependencies": [
+            "证据最终必须能被核实并公开，不能靠突然出现的第三份档案收尾"
+          ],
+          "factions": [
+            {
+              "drive": "维持记录的可信度与责任边界",
+              "limits": "不能让所有工作人员共享秘密或统一行动",
+              "name": "档案管理部门"
+            }
+          ],
+          "geography": {
+            "connections": [
+              "楼层之间依靠已有楼梯和出入口，不预设万能暗道"
+            ],
+            "regions": [
+              "市局大楼及相邻街区",
+              "公开核验所"
+            ]
+          },
+          "open_questions": [
+            "原件缺失部分的形成原因，进入相关情节前再细化"
+          ],
+          "overview": "围绕市局档案交接展开城市调查，证据的取得与公开均需人物承担后果。"
+        },
+        "hash": "af6b93d8b6d5634410aaa828faa3a79704029d2634d155fed62f7790335a8baf",
+        "revision": 2,
+        "scope": "world",
+        "sources": {},
+        "status": "proposal_not_canon",
+        "task_id": "3f4a58bbab914acdb4608b17c8e71b00",
+        "world_hash": null
+      },
+      "versions": [
+        {
+          "task_id": "8096ad6a407240ce9e410295ce6e95e4",
+          "branch": "main",
+          "data": {
+            "canon_refs": [],
+            "causal_spine": [
+              "记录差异促使周行核对原件",
+              "合作取得原件后，双方必须承担公开作证的风险"
+            ],
+            "core_locations": [
+              {
+                "constraints": [
+                  "门内外的视线和听觉分别核对"
+                ],
+                "id": "design:office",
+                "layout": [
+                  "交接文件的办公区域；具体方位以当前地图为准"
+                ],
+                "name": "局长办公室",
+                "purpose": "让公事手续与私人信任产生碰撞"
+              }
+            ],
+            "dependencies": [],
+            "ending_dependencies": [
+              "证据最终必须能被核实并公开，不能靠突然出现的第三份档案收尾"
+            ],
+            "factions": [
+              {
+                "drive": "维持记录的可信度与责任边界",
+                "limits": "不能让所有工作人员共享秘密或统一行动",
+                "name": "档案管理部门"
+              }
+            ],
+            "geography": {
+              "connections": [
+                "楼层之间依靠已有楼梯和出入口，不预设万能暗道"
+              ],
+              "regions": [
+                "市局大楼及相邻街区"
+              ]
+            },
+            "open_questions": [
+              "原件缺失部分的形成原因，进入相关情节前再细化"
+            ],
+            "overview": "围绕市局档案交接展开城市调查，证据的取得与公开均需人物承担后果。"
+          }
+        },
+        {
+          "task_id": "3f4a58bbab914acdb4608b17c8e71b00",
+          "branch": "main",
+          "data": {
+            "canon_refs": [],
+            "causal_spine": [
+              "记录差异促使周行核对原件",
+              "合作取得原件后，双方必须承担公开作证的风险"
+            ],
+            "core_locations": [
+              {
+                "constraints": [
+                  "门内外的视线和听觉分别核对"
+                ],
+                "id": "design:office",
+                "layout": [
+                  "交接文件的办公区域；具体方位以当前地图为准"
+                ],
+                "name": "局长办公室",
+                "purpose": "让公事手续与私人信任产生碰撞"
+              }
+            ],
+            "dependencies": [],
+            "ending_dependencies": [
+              "证据最终必须能被核实并公开，不能靠突然出现的第三份档案收尾"
+            ],
+            "factions": [
+              {
+                "drive": "维持记录的可信度与责任边界",
+                "limits": "不能让所有工作人员共享秘密或统一行动",
+                "name": "档案管理部门"
+              }
+            ],
+            "geography": {
+              "connections": [
+                "楼层之间依靠已有楼梯和出入口，不预设万能暗道"
+              ],
+              "regions": [
+                "市局大楼及相邻街区",
+                "公开核验所"
+              ]
+            },
+            "open_questions": [
+              "原件缺失部分的形成原因，进入相关情节前再细化"
+            ],
+            "overview": "围绕市局档案交接展开城市调查，证据的取得与公开均需人物承担后果。"
+          }
+        }
+      ],
+      "status": "proposal_not_canon"
+    }
+  },
+  {
+    "project": "replan",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "1febc6519b8840bebc7fda425fc03731",
+      "stage": "volume_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "42082dbbdec17e256908df02880bb2d041a04eba166b07439af8fbeb58ef4760",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/1febc6519b8840bebc7fda425fc03731/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/replan/work/1febc6519b8840bebc7fda425fc03731/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "init",
+    "args": [
+      "--contract",
+      "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/contract.json"
+    ],
+    "exit": 0,
+    "result": {
+      "project": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe",
+      "schema": "novel-ledger-v2/1",
+      "status": "ready"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "doctor",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "python": "3.10.12",
+      "sqlite": "3.43.2",
+      "python_path": "/Users/longwen/.pyenv/versions/3.10.12/bin/python3",
+      "session_mode": "serial",
+      "file_roundtrip": "database opened",
+      "automatic_after_chat_close": "requires externally configured driver",
+      "independent_review": false
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "recall",
+    "args": [
+      "--state"
+    ],
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "b292f53325f34f9d9d1ceb49c885eb21",
+      "stage": "world_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "e620c057bbb88f5f6238ba9376acd8f537b1818c2ffaf86265d77eacc7469d92",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b292f53325f34f9d9d1ceb49c885eb21/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b292f53325f34f9d9d1ceb49c885eb21/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b292f53325f34f9d9d1ceb49c885eb21/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "b292f53325f34f9d9d1ceb49c885eb21",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "362bf8fbc39e4491ac5fdee19dc9b9f3",
+      "stage": "volume_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "05916a99acf2fffb46745b750a02443674ab69aca8f39fc6c9bdf7fc647df84c",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/362bf8fbc39e4491ac5fdee19dc9b9f3/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/362bf8fbc39e4491ac5fdee19dc9b9f3/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/362bf8fbc39e4491ac5fdee19dc9b9f3/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "362bf8fbc39e4491ac5fdee19dc9b9f3",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "recall",
+    "args": [
+      "--state"
+    ],
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "b19ffcbbdd2643de8b1d73dd9c22d90c",
+      "stage": "plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "1a57b74947328cbdc5992a9c690523e43c8e3b10c5c873c7d2e3a09f0e50d21f",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b19ffcbbdd2643de8b1d73dd9c22d90c/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b19ffcbbdd2643de8b1d73dd9c22d90c/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b19ffcbbdd2643de8b1d73dd9c22d90c/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "b19ffcbbdd2643de8b1d73dd9c22d90c",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "4ae3b64cfe1c4f2ea56700c3560a609f",
+      "stage": "draft",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "5df437da8e0a2779533c8abfaa316efd7cff5a0c9be2418dece7c0a8ddf7f7b4",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/4ae3b64cfe1c4f2ea56700c3560a609f/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/4ae3b64cfe1c4f2ea56700c3560a609f/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/4ae3b64cfe1c4f2ea56700c3560a609f/brief.md"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/4ae3b64cfe1c4f2ea56700c3560a609f/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "4ae3b64cfe1c4f2ea56700c3560a609f",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "d6632f56314246b6a7f2348bce48871e",
+      "stage": "facts",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "267efeb9953c33f487b03aa1f1af3ddd8a16b5ce0c680f8ee98207b3706e0d6b",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/d6632f56314246b6a7f2348bce48871e/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/d6632f56314246b6a7f2348bce48871e/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/d6632f56314246b6a7f2348bce48871e/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "d6632f56314246b6a7f2348bce48871e",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "a0838b1c7f4e45e3b09bc754e0fe0875",
+      "stage": "reader",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "592ea68b1d66087c9d245efeb6eadd55026dc2bc7b38fe137f71f0e1bce22b8d",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/a0838b1c7f4e45e3b09bc754e0fe0875/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/a0838b1c7f4e45e3b09bc754e0fe0875/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/a0838b1c7f4e45e3b09bc754e0fe0875/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "a0838b1c7f4e45e3b09bc754e0fe0875",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "approve",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "2f13a184e59048ff9048cb81352f9669",
+      "stage": "volume_review",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "aa71ebb15b9d45ff0b3e7cf50d8c12617d2297eb8075a5fe6a980ebdfd3c8df3",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/2f13a184e59048ff9048cb81352f9669/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/2f13a184e59048ff9048cb81352f9669/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/2f13a184e59048ff9048cb81352f9669/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "2f13a184e59048ff9048cb81352f9669",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "69c4579db13949f09fce40299552fe4f",
+      "stage": "volume_review",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "f656f51aa467798e60b4f02cbc43f93559fc83d72f360b1a8d329aa9308a6ebc",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/69c4579db13949f09fce40299552fe4f/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/69c4579db13949f09fce40299552fe4f/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "recall",
+    "args": [
+      "--chapter",
+      "1"
+    ],
+    "exit": 0,
+    "result": {
+      "branch": "main",
+      "number": 1,
+      "prose": "周行把收据交给宋禾。第一卷的交接结束。",
+      "data": "{\"events\":[],\"facts_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"coverage\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"continuity\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"resources\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"knowledge\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"time\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"world_rules\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"spatial\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"events\":[],\"findings\":[],\"summary\":\"合成流程：交接证据，准备公开。\",\"verdict\":\"pass\"},\"prose_hash\":\"e24dd11f641ec631c1e2bb8b3104f184dad8155e38c17142cd453be47c007b68\",\"reader_review\":{\"checks\":[{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"read_on\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"character\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"change\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"emotion_cost\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"language\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"},{\"evidence\":[{\"chapter\":1,\"quote\":\"周行把收据交给宋禾。第一卷的交接结束。\",\"start\":0}],\"id\":\"repetition\",\"reason\":\"SYNTHETIC ENGINE RECEIPT ONLY; NOT LITERARY QUALITY EVIDENCE.\",\"result\":\"pass\"}],\"findings\":[],\"first_read\":{\"change\":\"合成首读回执，仅验证工程。\",\"desire\":\"合成首读回执，仅验证工程。\",\"obstacle\":\"合成首读回执，仅验证工程。\",\"read_on_reason\":\"合成首读回执，仅验证工程。\"},\"verdict\":\"pass\"},\"summary\":\"合成流程：交接证据，准备公开。\",\"volume\":\"v1\"}",
+      "hash": "e24dd11f641ec631c1e2bb8b3104f184dad8155e38c17142cd453be47c007b68"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/69c4579db13949f09fce40299552fe4f/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "69c4579db13949f09fce40299552fe4f",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "89bf36477b8649279ec52ad8f5536149",
+      "stage": "draft",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "d8a03ef84c233cc0ddfbed79b0b0c7738e0a447eedb12cc5e05c2e2649bdb9a7",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/89bf36477b8649279ec52ad8f5536149/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/89bf36477b8649279ec52ad8f5536149/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/89bf36477b8649279ec52ad8f5536149/brief.md"
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "submit",
+    "args": [
+      "--result",
+      "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/89bf36477b8649279ec52ad8f5536149/result.json"
+    ],
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "89bf36477b8649279ec52ad8f5536149",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 1,
+      "work_committed": 1,
+      "pilot_approved": true,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "volume_end_probe",
+    "command": "next",
+    "args": [],
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "b72bd1c62dd34b8986045f14b4adfa4c",
+      "stage": "facts",
+      "chapter": 2,
+      "branch": "main",
+      "input_hash": "d1928ac2d330182ae4df3f0e7e6575662e3a74587f489c13da640b844137d9a5",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b72bd1c62dd34b8986045f14b4adfa4c/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-run-800h0u35/volume_end_probe/work/b72bd1c62dd34b8986045f14b4adfa4c/result.json",
+      "state": "pending"
+    }
+  }
+]

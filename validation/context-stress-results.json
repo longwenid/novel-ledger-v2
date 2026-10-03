@@ -1,0 +1,1190 @@
+{
+  "version": "1.4.1",
+  "date": "2026-10-02",
+  "scope": "Synthetic pack/retrieval/runtime stress; no model API, no literary quality or billed tokens measured.",
+  "budget_unit": "Python characters in compact JSON, not tokens",
+  "cases": [
+    {
+      "kind": "baseline",
+      "chapters": 1000,
+      "chapter_text_chars": 3000,
+      "corpus_chars": 3000000,
+      "samples": [
+        {
+          "history_chapters": 1,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0014,
+          "accepted": true,
+          "compact_chars": 7177,
+          "file_chars": 11801,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 1,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1008,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 83,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 174,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1305,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 1
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 10,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0017,
+          "accepted": true,
+          "compact_chars": 7347,
+          "file_chars": 12087,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 2,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1009,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 249,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 175,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1306,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 10
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 9
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 8
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 100,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0059,
+          "accepted": true,
+          "compact_chars": 7357,
+          "file_chars": 12097,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 255,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 176,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 100
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 99
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 98
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 150,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0081,
+          "accepted": true,
+          "compact_chars": 7361,
+          "file_chars": 12101,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 259,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 176,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 150
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 149
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 148
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 200,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0101,
+          "accepted": true,
+          "compact_chars": 7361,
+          "file_chars": 12101,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 259,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 176,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 200
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 199
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 198
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 300,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0148,
+          "accepted": true,
+          "compact_chars": 7361,
+          "file_chars": 12101,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 259,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 176,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 300
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 299
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 298
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 500,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0236,
+          "accepted": true,
+          "compact_chars": 7361,
+          "file_chars": 12101,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 259,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 176,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 500
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 499
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 498
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 1000,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.051,
+          "accepted": true,
+          "compact_chars": 7370,
+          "file_chars": 12110,
+          "knowledge_items": 0,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 4,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1012,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 261,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 177,
+            "character_context": 2053,
+            "design_context": 1406,
+            "writer_brief": 1308,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 1000
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 999
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 998
+            }
+          ],
+          "omitted": []
+        }
+      ],
+      "event_chain_replay_verified": true,
+      "corpus_han": 2638107,
+      "book_review_chunk": {
+        "history_chapters": 999,
+        "stage": "book_review",
+        "budget_chars": 48000,
+        "seconds": 0.0119,
+        "accepted": true,
+        "compact_chars": 7020,
+        "file_chars": 9336,
+        "knowledge_items": 0,
+        "hook_items": 0,
+        "fields_chars": {
+          "schema": 24,
+          "stage": 13,
+          "chapter": 4,
+          "branch": 6,
+          "contract": 838,
+          "plan": 1012,
+          "payload": 3345,
+          "retrieval": 64,
+          "selected": 2,
+          "omitted": 2,
+          "budget_chars": 5,
+          "volume_budget": 1551,
+          "chars": 4
+        },
+        "selected": [],
+        "omitted": [],
+        "scope": "book_chunk",
+        "total_job_seconds": 0.012
+      },
+      "book_review_synthesis": {
+        "history_chapters": 999,
+        "stage": "book_review",
+        "budget_chars": 48000,
+        "seconds": 0.012,
+        "accepted": true,
+        "compact_chars": 4064,
+        "file_chars": 6446,
+        "knowledge_items": 0,
+        "hook_items": 0,
+        "fields_chars": {
+          "schema": 24,
+          "stage": 13,
+          "chapter": 4,
+          "branch": 6,
+          "contract": 838,
+          "plan": 1012,
+          "payload": 389,
+          "retrieval": 64,
+          "selected": 2,
+          "omitted": 2,
+          "budget_chars": 5,
+          "volume_budget": 1551,
+          "chars": 4
+        },
+        "selected": [],
+        "omitted": [],
+        "scope": "book",
+        "total_job_seconds": 6.3348
+      },
+      "sixteen_design_dependencies": {
+        "history_chapters": 1000,
+        "stage": "draft",
+        "budget_chars": 48000,
+        "seconds": 0.0159,
+        "accepted": false,
+        "error": "context_overflow",
+        "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+      }
+    },
+    {
+      "kind": "knowledge",
+      "chapters": 1000,
+      "chapter_text_chars": 3000,
+      "corpus_chars": 3000000,
+      "samples": [
+        {
+          "history_chapters": 1,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0016,
+          "accepted": true,
+          "compact_chars": 7697,
+          "file_chars": 12608,
+          "knowledge_items": 1,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 1,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1008,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 433,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 344,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1305,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 1
+            },
+            {
+              "kind": "history",
+              "chapter": 1
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 10,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0034,
+          "accepted": true,
+          "compact_chars": 12566,
+          "file_chars": 20131,
+          "knowledge_items": 10,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 2,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1009,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 3754,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 1888,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1306,
+            "chars": 5
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 10
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 9
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 8
+            },
+            {
+              "kind": "history",
+              "chapter": 1
+            },
+            {
+              "kind": "history",
+              "chapter": 2
+            },
+            {
+              "kind": "history",
+              "chapter": 3
+            },
+            {
+              "kind": "history",
+              "chapter": 4
+            },
+            {
+              "kind": "history",
+              "chapter": 5
+            },
+            {
+              "kind": "history",
+              "chapter": 6
+            },
+            {
+              "kind": "history",
+              "chapter": 7
+            },
+            {
+              "kind": "history",
+              "chapter": 8
+            },
+            {
+              "kind": "history",
+              "chapter": 9
+            },
+            {
+              "kind": "history",
+              "chapter": 10
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 100,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0176,
+          "accepted": true,
+          "compact_chars": 31880,
+          "file_chars": 50265,
+          "knowledge_items": 100,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 7310,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 17643,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 5
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 100
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 99
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 98
+            },
+            {
+              "kind": "history",
+              "chapter": 1
+            },
+            {
+              "kind": "history",
+              "chapter": 2
+            },
+            {
+              "kind": "history",
+              "chapter": 3
+            },
+            {
+              "kind": "history",
+              "chapter": 4
+            },
+            {
+              "kind": "history",
+              "chapter": 5
+            },
+            {
+              "kind": "history",
+              "chapter": 6
+            },
+            {
+              "kind": "history",
+              "chapter": 7
+            },
+            {
+              "kind": "history",
+              "chapter": 8
+            },
+            {
+              "kind": "history",
+              "chapter": 9
+            },
+            {
+              "kind": "history",
+              "chapter": 10
+            },
+            {
+              "kind": "history",
+              "chapter": 11
+            },
+            {
+              "kind": "history",
+              "chapter": 12
+            },
+            {
+              "kind": "history",
+              "chapter": 13
+            },
+            {
+              "kind": "history",
+              "chapter": 14
+            },
+            {
+              "kind": "history",
+              "chapter": 15
+            },
+            {
+              "kind": "history",
+              "chapter": 16
+            },
+            {
+              "kind": "history",
+              "chapter": 17
+            },
+            {
+              "kind": "history",
+              "chapter": 18
+            },
+            {
+              "kind": "history",
+              "chapter": 19
+            },
+            {
+              "kind": "history",
+              "chapter": 20
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 150,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0247,
+          "accepted": true,
+          "compact_chars": 40834,
+          "file_chars": 64219,
+          "knowledge_items": 150,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 7314,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 26593,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 5
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 150
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 149
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 148
+            },
+            {
+              "kind": "history",
+              "chapter": 1
+            },
+            {
+              "kind": "history",
+              "chapter": 2
+            },
+            {
+              "kind": "history",
+              "chapter": 3
+            },
+            {
+              "kind": "history",
+              "chapter": 4
+            },
+            {
+              "kind": "history",
+              "chapter": 5
+            },
+            {
+              "kind": "history",
+              "chapter": 6
+            },
+            {
+              "kind": "history",
+              "chapter": 7
+            },
+            {
+              "kind": "history",
+              "chapter": 8
+            },
+            {
+              "kind": "history",
+              "chapter": 9
+            },
+            {
+              "kind": "history",
+              "chapter": 10
+            },
+            {
+              "kind": "history",
+              "chapter": 11
+            },
+            {
+              "kind": "history",
+              "chapter": 12
+            },
+            {
+              "kind": "history",
+              "chapter": 13
+            },
+            {
+              "kind": "history",
+              "chapter": 14
+            },
+            {
+              "kind": "history",
+              "chapter": 15
+            },
+            {
+              "kind": "history",
+              "chapter": 16
+            },
+            {
+              "kind": "history",
+              "chapter": 17
+            },
+            {
+              "kind": "history",
+              "chapter": 18
+            },
+            {
+              "kind": "history",
+              "chapter": 19
+            },
+            {
+              "kind": "history",
+              "chapter": 20
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 200,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0308,
+          "accepted": true,
+          "compact_chars": 47373,
+          "file_chars": 74521,
+          "knowledge_items": 200,
+          "hook_items": 0,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 4829,
+            "omitted": 76,
+            "budget_chars": 5,
+            "state": 35543,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 5
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 200
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 199
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 198
+            },
+            {
+              "kind": "history",
+              "chapter": 1
+            },
+            {
+              "kind": "history",
+              "chapter": 2
+            },
+            {
+              "kind": "history",
+              "chapter": 3
+            },
+            {
+              "kind": "history",
+              "chapter": 4
+            },
+            {
+              "kind": "history",
+              "chapter": 5
+            },
+            {
+              "kind": "history",
+              "chapter": 6
+            },
+            {
+              "kind": "history",
+              "chapter": 7
+            },
+            {
+              "kind": "history",
+              "chapter": 8
+            },
+            {
+              "kind": "history",
+              "chapter": 9
+            },
+            {
+              "kind": "history",
+              "chapter": 10
+            },
+            {
+              "kind": "history",
+              "chapter": 11
+            },
+            {
+              "kind": "history",
+              "chapter": 12
+            },
+            {
+              "kind": "history",
+              "chapter": 13
+            }
+          ],
+          "omitted": [
+            {
+              "kind": "history",
+              "count": 7,
+              "retrieve": "recall with entity/topic/chapter"
+            }
+          ]
+        },
+        {
+          "history_chapters": 300,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0117,
+          "accepted": false,
+          "error": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        },
+        {
+          "history_chapters": 500,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0192,
+          "accepted": false,
+          "error": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        },
+        {
+          "history_chapters": 1000,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0407,
+          "accepted": false,
+          "error": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        }
+      ],
+      "event_chain_replay_verified": true,
+      "corpus_han": 2638107,
+      "runtime_overflow": {
+        "status": "paused",
+        "reason": {
+          "code": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        },
+        "resume_status": "ready",
+        "next_after_resume": "context_overflow",
+        "new_tasks": 0,
+        "committed_chapters": 1000
+      },
+      "full_state_compact_chars": 178748,
+      "entity_recall_first_chapters": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "kind": "hooks",
+      "chapters": 1000,
+      "chapter_text_chars": 3000,
+      "corpus_chars": 3000000,
+      "samples": [
+        {
+          "history_chapters": 1,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0013,
+          "accepted": true,
+          "compact_chars": 7430,
+          "file_chars": 12234,
+          "knowledge_items": 0,
+          "hook_items": 1,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 1,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1008,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 83,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 427,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1305,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 1
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 10,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0025,
+          "accepted": true,
+          "compact_chars": 9898,
+          "file_chars": 16393,
+          "knowledge_items": 0,
+          "hook_items": 10,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 2,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1009,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 249,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 2726,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1306,
+            "chars": 4
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 10
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 9
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 8
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 100,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0136,
+          "accepted": true,
+          "compact_chars": 33411,
+          "file_chars": 55656,
+          "knowledge_items": 0,
+          "hook_items": 100,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 255,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 26229,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 5
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 100
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 99
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 98
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 150,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0196,
+          "accepted": true,
+          "compact_chars": 46815,
+          "file_chars": 77810,
+          "knowledge_items": 0,
+          "hook_items": 150,
+          "fields_chars": {
+            "schema": 24,
+            "stage": 7,
+            "chapter": 3,
+            "branch": 6,
+            "contract": 838,
+            "plan": 1010,
+            "payload": 2,
+            "retrieval": 64,
+            "selected": 259,
+            "omitted": 2,
+            "budget_chars": 5,
+            "state": 39629,
+            "character_context": 2053,
+            "design_context": 1404,
+            "writer_brief": 1307,
+            "chars": 5
+          },
+          "selected": [
+            {
+              "kind": "recent_summary",
+              "chapter": 150
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 149
+            },
+            {
+              "kind": "recent_summary",
+              "chapter": 148
+            }
+          ],
+          "omitted": []
+        },
+        {
+          "history_chapters": 200,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0066,
+          "accepted": false,
+          "error": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        },
+        {
+          "history_chapters": 300,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0096,
+          "accepted": false,
+          "error": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        },
+        {
+          "history_chapters": 500,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0163,
+          "accepted": false,
+          "error": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        },
+        {
+          "history_chapters": 1000,
+          "stage": "draft",
+          "budget_chars": 48000,
+          "seconds": 0.0336,
+          "accepted": false,
+          "error": "context_overflow",
+          "message": "必需材料超过工作包预算；提高 context_chars 或缩小本次场景/复核范围，不得静默截断"
+        }
+      ],
+      "event_chain_replay_verified": true,
+      "corpus_han": 2638107
+    }
+  ]
+}

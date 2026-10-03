@@ -1,0 +1,428 @@
+[
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "init",
+    "exit": 0,
+    "result": {
+      "project": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+      "schema": "novel-ledger-v2/1",
+      "status": "ready"
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "next",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "5ae7845ba2d14e3d9829416f3b8df75d",
+      "stage": "world_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "6c4e8cf9e40a0c7e28ca063bac18bcbad2a0ab40fef06ac5346afbf7ff7ef172",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/5ae7845ba2d14e3d9829416f3b8df75d/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/5ae7845ba2d14e3d9829416f3b8df75d/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "submit",
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "5ae7845ba2d14e3d9829416f3b8df75d",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "next",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "5206a37d40874f689612116edf7362a2",
+      "stage": "volume_plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "bd97302026cead7c0df0f5b76d4b5fc4bc4db50b39476a44b92074bf05ad5db3",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/5206a37d40874f689612116edf7362a2/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/5206a37d40874f689612116edf7362a2/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "submit",
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "5206a37d40874f689612116edf7362a2",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "next",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "187c0acf31794c9fbbba06039df81c0d",
+      "stage": "plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "0dadfec0f6231b7c2b435dd6ab085567ea319f9da11b7342de494af8781b9d75",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/187c0acf31794c9fbbba06039df81c0d/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/187c0acf31794c9fbbba06039df81c0d/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "status",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": {
+        "id": "187c0acf31794c9fbbba06039df81c0d",
+        "stage": "plan",
+        "chapter": 1,
+        "branch": "main",
+        "lease_until": null
+      },
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "recall",
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "submit",
+    "exit": 2,
+    "result": {
+      "ok": false,
+      "code": "plan",
+      "message": "分层计划的卷末必须是本批最后一章，不能在卷审后继续同卷",
+      "details": null
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "next",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "187c0acf31794c9fbbba06039df81c0d",
+      "stage": "plan",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "0dadfec0f6231b7c2b435dd6ab085567ea319f9da11b7342de494af8781b9d75",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/187c0acf31794c9fbbba06039df81c0d/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/187c0acf31794c9fbbba06039df81c0d/result.json",
+      "state": "pending"
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "status",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": {
+        "id": "187c0acf31794c9fbbba06039df81c0d",
+        "stage": "plan",
+        "chapter": 1,
+        "branch": "main",
+        "lease_until": null
+      },
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "recall",
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "submit",
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "187c0acf31794c9fbbba06039df81c0d",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "next",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "a62b580efb9e47768058cacff80f5a5f",
+      "stage": "draft",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "623c2e0f00c753a122869d9273533bf184c6d3fbdb3135bd6acc2be0c730e126",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/a62b580efb9e47768058cacff80f5a5f/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/a62b580efb9e47768058cacff80f5a5f/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/a62b580efb9e47768058cacff80f5a5f/brief.md"
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "status",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": {
+        "id": "a62b580efb9e47768058cacff80f5a5f",
+        "stage": "draft",
+        "chapter": 1,
+        "branch": "main",
+        "lease_until": null
+      },
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "recall",
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "submit",
+    "exit": 2,
+    "result": {
+      "ok": false,
+      "code": "plan_update",
+      "message": "plan_update 仅用于 redesign；其他阶段不能静默更改章计划",
+      "details": null
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "next",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "a62b580efb9e47768058cacff80f5a5f",
+      "stage": "draft",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "623c2e0f00c753a122869d9273533bf184c6d3fbdb3135bd6acc2be0c730e126",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/a62b580efb9e47768058cacff80f5a5f/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/a62b580efb9e47768058cacff80f5a5f/result.json",
+      "state": "pending",
+      "brief_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/a62b580efb9e47768058cacff80f5a5f/brief.md"
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "status",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": {
+        "id": "a62b580efb9e47768058cacff80f5a5f",
+        "stage": "draft",
+        "chapter": 1,
+        "branch": "main",
+        "lease_until": null
+      },
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "recall",
+    "exit": 0,
+    "result": {
+      "entities": {
+        "hero": {
+          "id": "hero",
+          "kind": "person",
+          "name": "周行"
+        },
+        "ally": {
+          "id": "ally",
+          "kind": "person",
+          "name": "宋禾"
+        }
+      },
+      "facts": {},
+      "knowledge": {},
+      "resources": {},
+      "hooks": {},
+      "clock": 0
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "submit",
+    "exit": 0,
+    "result": {
+      "accepted": true,
+      "task_id": "a62b580efb9e47768058cacff80f5a5f",
+      "schema": "novel-ledger-v2.status/1",
+      "status": "ready",
+      "active_branch": "main",
+      "work_branch": "main",
+      "committed": 0,
+      "work_committed": 0,
+      "pilot_approved": false,
+      "task": null,
+      "session_mode": "serial",
+      "reason": null,
+      "runner": null,
+      "context_chars": 48000
+    }
+  },
+  {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project",
+    "command": "next",
+    "exit": 0,
+    "result": {
+      "schema": "novel-ledger-v2.task/1",
+      "task_id": "70b9262dad094665add488e602e080dc",
+      "stage": "facts",
+      "chapter": 1,
+      "branch": "main",
+      "input_hash": "b1335d09497c451bc2e3aafa6a1119c13f376405caf3b4a4d183b33ae8c9cd46",
+      "input_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/70b9262dad094665add488e602e080dc/input.json",
+      "output_path": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-layered-retest-3tvx8srb/project/work/70b9262dad094665add488e602e080dc/result.json",
+      "state": "pending"
+    }
+  }
+]

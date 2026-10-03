@@ -1,0 +1,17 @@
+{
+  "scope": "工程合成归并结构验证，不代表语义判断",
+  "checks": [
+    {
+      "case": "kept_but_all_notes_omitted_rejected",
+      "pass": true
+    },
+    {
+      "case": "rejected_reduce_retains_pending",
+      "pass": true
+    },
+    {
+      "case": "rejected_reduce_canon_unchanged",
+      "pass": true
+    }
+  ]
+}

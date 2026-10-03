@@ -1,0 +1,16 @@
+{
+  "version": "1.3.0",
+  "stages": [
+    "world_plan",
+    "volume_plan",
+    "plan",
+    "character_plan",
+    "draft"
+  ],
+  "profiles": [
+    "hero",
+    "ally"
+  ],
+  "canonical_chapters": 0,
+  "scope": "Real CLI preparation and derived writing material; no literary quality claim."
+}

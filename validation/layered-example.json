@@ -1,0 +1,14 @@
+{
+  "version": "1.2.0",
+  "stages_executed": [
+    "world_plan",
+    "volume_plan",
+    "plan",
+    "draft"
+  ],
+  "task_binding": "task/1 + result/1 input_hash",
+  "design_history_versions": 1,
+  "canon_chapters": 0,
+  "brief_generated": true,
+  "scope": "CLI preparation and writer packet only; full synthetic lifecycle is covered separately by engineering tests."
+}

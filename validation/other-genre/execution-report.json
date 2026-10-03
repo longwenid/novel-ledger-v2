@@ -1,0 +1,51 @@
+{
+  "result": {
+    "status": "completed",
+    "audit": {
+      "ok": true,
+      "branch": "main",
+      "chapters": 1,
+      "problems": [],
+      "han_characters": 440,
+      "open_important_hooks": [],
+      "state_hash": "e561c70d722d9f6ba2f515c3aef20a1b439d8266bc476cba95942f4bf0bf0291"
+    }
+  },
+  "tasks": [
+    {
+      "task": "4d874ce4408740238358f09ee77349ba",
+      "stage": "plan"
+    },
+    {
+      "task": "a2e04d3c38f6498f900d8866c1b21a81",
+      "stage": "draft"
+    },
+    {
+      "task": "1bea05446a944f01ab26fb3e46f2c185",
+      "stage": "facts"
+    },
+    {
+      "task": "7e64b518e25f4cf4aed8027160ee76b4",
+      "stage": "reader"
+    },
+    {
+      "task": "8ef970a52c6f467687ce412826831ef2",
+      "stage": "volume_review"
+    },
+    {
+      "task": "27ca869801784d60bdf5281987b65052",
+      "stage": "volume_review"
+    },
+    {
+      "task": "583055b7d56e4249b57a8eb0abff4be9",
+      "stage": "book_review"
+    },
+    {
+      "task": "df0bbec10d2d44d9a7cd2a53c6fe3e2a",
+      "stage": "book_review"
+    }
+  ],
+  "source_hash": "c4c1f2782d04514ab87b8edee030b3b27ce9a47c1c497c427ab95b61c5abee72",
+  "review_mode": "serial core, independent reader artifact",
+  "industry_claims": "fictional internal consistency only"
+}

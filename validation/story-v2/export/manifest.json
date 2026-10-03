@@ -1,0 +1,67 @@
+{
+  "branch": "main",
+  "title": "借火簿",
+  "chapters": [
+    {
+      "chapter": 1,
+      "file": "0001.md",
+      "hash": "8d34e203d4848105f9961a503be4a2ad4d19be30215c8c96a8a8d1033660f3f7"
+    },
+    {
+      "chapter": 2,
+      "file": "0002.md",
+      "hash": "05eb1b94067f3a1096ac21fad1c2fcfe2316a907b9ecbbf5695a63e4d6830e02"
+    },
+    {
+      "chapter": 3,
+      "file": "0003.md",
+      "hash": "862f743ee9572b7244c1e2245c54d24062db75c8d4822492ab47b160a24ef4d2"
+    },
+    {
+      "chapter": 4,
+      "file": "0004.md",
+      "hash": "dcc1b9792ef98738d15c08b2b240acc40f2227dd9f5836e64530ce4c31e75dab"
+    },
+    {
+      "chapter": 5,
+      "file": "0005.md",
+      "hash": "06d4d530fb02a68c08e09aa8aecd8bdcd2555ac203ac5bfaea46feff42d3d7d7"
+    },
+    {
+      "chapter": 6,
+      "file": "0006.md",
+      "hash": "2053a89dad5a59d08518307c3ab5cfb5f8926713faa1c4a258e40cd2b3864fbf"
+    },
+    {
+      "chapter": 7,
+      "file": "0007.md",
+      "hash": "87077420bbb94df0c1212af63f52bd9d72fb98a183a0831da485da7e485d6c3b"
+    },
+    {
+      "chapter": 8,
+      "file": "0008.md",
+      "hash": "7131aca9a24d049b3710aea71d57f1b029f4c12160b7d1525b660fd0d6395c5b"
+    },
+    {
+      "chapter": 9,
+      "file": "0009.md",
+      "hash": "65abf9536685232e05645d2fce5ffb3936566e7544530a1ec6dc2f4d29949b49"
+    },
+    {
+      "chapter": 10,
+      "file": "0010.md",
+      "hash": "1ff923efdd27d80818df8b192a101c0aea86bc84e2189516a153c6ed595c2fef"
+    },
+    {
+      "chapter": 11,
+      "file": "0011.md",
+      "hash": "09747d98b3adb2ca0fe5dd677394af1efaa03f2182f234fd12227f2379c40b4a"
+    },
+    {
+      "chapter": 12,
+      "file": "0012.md",
+      "hash": "23c3b2ca0cfd58191697258837edf0f05bda80a7e19b98570966dd7f84fa279e"
+    }
+  ],
+  "status": "completed"
+}

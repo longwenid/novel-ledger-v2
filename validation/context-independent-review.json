@@ -1,0 +1,255 @@
+{
+  "scope": "工程合成；未运行外部模型或文学语义审稿",
+  "checks": [
+    {
+      "case": "implicit_pending_retrieval_charged",
+      "pass": true,
+      "results": [
+        {
+          "exit": 0,
+          "chars": 3674,
+          "code": null
+        },
+        {
+          "exit": 0,
+          "chars": 3674,
+          "code": null
+        },
+        {
+          "exit": 0,
+          "chars": 549,
+          "code": null
+        },
+        {
+          "exit": 2,
+          "chars": 0,
+          "code": "context_retrieval"
+        },
+        {
+          "exit": 2,
+          "chars": 0,
+          "code": "context_retrieval"
+        }
+      ]
+    },
+    {
+      "case": "input_charged_on_dispatch",
+      "pass": true,
+      "used": 5193
+    },
+    {
+      "case": "failed_outputs_remain_charged",
+      "pass": true,
+      "used": 44781
+    },
+    {
+      "case": "pending_task_waits_at_session_limit",
+      "pass": true
+    },
+    {
+      "case": "session_restart_preserves_pending",
+      "pass": true
+    },
+    {
+      "case": "after_done_reads_charge_session",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_0",
+      "pass": true
+    },
+    {
+      "case": "bad_scan_coverage_rejected",
+      "pass": true
+    },
+    {
+      "case": "scan_restart_same_task",
+      "pass": true
+    },
+    {
+      "case": "forged_scan_source_rejected",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_0",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_1",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_1",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_2",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_2",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_3",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_3",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_4",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_4",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_5",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_5",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_6",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_6",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_7",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_7",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_8",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_8",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_9",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_9",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_10",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_10",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_11",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_11",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_12",
+      "pass": true
+    },
+    {
+      "case": "reduce_missing_accounting_rejected",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_12",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_13",
+      "pass": true
+    },
+    {
+      "case": "reduce_missing_accounting_rejected",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_13",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_14",
+      "pass": true
+    },
+    {
+      "case": "reduce_missing_accounting_rejected",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_14",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_15",
+      "pass": true
+    },
+    {
+      "case": "reduce_missing_accounting_rejected",
+      "pass": true
+    },
+    {
+      "case": "duplicate_receipt_15",
+      "pass": true
+    },
+    {
+      "case": "wire_budget_16",
+      "pass": true
+    },
+    {
+      "case": "scan_reduce_converges",
+      "pass": true,
+      "counts": {
+        "context_scan": 12,
+        "context_reduce": 4,
+        "draft": 1
+      }
+    },
+    {
+      "case": "canon_unchanged_by_preparation",
+      "pass": true
+    },
+    {
+      "case": "final_notes_have_original_evidence",
+      "pass": true
+    },
+    {
+      "case": "context_more_preserves_draft_0",
+      "pass": true
+    },
+    {
+      "case": "context_more_preserves_draft_1",
+      "pass": true
+    },
+    {
+      "case": "context_more_preserves_draft_2",
+      "pass": true
+    },
+    {
+      "case": "context_more_fourth_rejected",
+      "pass": true
+    },
+    {
+      "case": "stale_first_receipt_conflicts",
+      "pass": true
+    }
+  ]
+}

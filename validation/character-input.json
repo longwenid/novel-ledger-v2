@@ -1,0 +1,891 @@
+{
+  "branch": "main",
+  "budget_chars": 48000,
+  "chapter": 1,
+  "character_context": {
+    "developments": {
+      "ally": [],
+      "hero": []
+    },
+    "instruction": "先分清小传设计、已有正文依据和本场景意图；成长不是违约，突变须有因果。人物言语还取决于对话对象、所知和当下目的。",
+    "omitted_developments": {},
+    "profiles": {
+      "ally": {
+        "active": true,
+        "based_on_chapter": 0,
+        "data": {
+          "biography": {
+            "desire": "帮助查清记录，同时守住自己与同事的责任边界",
+            "experiences": [],
+            "public_role": "保管原件并承担交接责任的档案人员"
+          },
+          "canon_refs": [],
+          "entity": "ally",
+          "examples": [],
+          "tier": "supporting",
+          "voice": {
+            "avoid": [
+              "不让所有对白都变成讨价还价",
+              "私下关心可以通过行动出现"
+            ],
+            "register": "关注手续和具体责任，会给自己留纠正与退出的空间",
+            "relationship_modes": [
+              {
+                "approach": "可以帮忙，但不接受含糊的口头保证",
+                "audience": "hero"
+              }
+            ],
+            "stress_shift": "压力大时反复确认责任范围，并非突然变得刻薄",
+            "tactics": [
+              "先确认对方愿意留下什么凭证",
+              "不同意时提出可执行的交换条件"
+            ]
+          }
+        },
+        "growth_count": 0,
+        "growth_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "hash": "78f56c0730721829910c939072367af60818b75dd74d2a11c78e0e22f98bc1f5",
+        "revision": 1,
+        "sources": {},
+        "status": "interpretation_and_design_not_canon",
+        "task_id": "f5f24e22f4f84d53a1cba2381d0c2822"
+      },
+      "hero": {
+        "active": true,
+        "based_on_chapter": 0,
+        "data": {
+          "arc": {
+            "direction": "从独自控制风险，到尊重同伴共同承担风险的选择",
+            "not_yet_earned": [
+              "未经冲突与选择，不能突然完全信任所有人"
+            ]
+          },
+          "biography": {
+            "boundary": "不让证人签自己没有看懂的材料",
+            "contradiction": "希望别人信任自己，却习惯把风险独自藏起来",
+            "desire": "把事情查清，同时保住证人的退路",
+            "experiences": [
+              {
+                "status": "design",
+                "text": "曾因判断过快误解同事，可作为后续待核实的背景设计"
+              }
+            ],
+            "fear": "凭错误判断把无辜的人推到责任前面",
+            "public_role": "负责核对档案交接的调查人员",
+            "values": [
+              "可核实的事实",
+              "不把代价转嫁给同伴",
+              "个人名声"
+            ]
+          },
+          "canon_refs": [],
+          "entity": "hero",
+          "examples": [],
+          "tier": "major",
+          "voice": {
+            "avoid": [
+              "不要把谨慎写成永远冷静",
+              "不反复使用同一句标志性口头禅"
+            ],
+            "register": "具体、克制，常先询问可核对的经过；不用每句话都显得机智",
+            "relationship_modes": [
+              {
+                "approach": "给对方拒绝的余地，少解释自己的善意",
+                "audience": "ally"
+              },
+              {
+                "approach": "先报告确认部分，再明确哪些尚无证据",
+                "audience": "上级"
+              }
+            ],
+            "rhythm": "平时先短问再补条件，迟疑时会修正自己的措辞",
+            "stress_shift": "越担心判断出错，问题越细；确认同伴受伤时会先停下查问",
+            "tactics": [
+              "先还原交接顺序",
+              "用具体条件争取合作，而非直接要求信任"
+            ]
+          }
+        },
+        "growth_count": 0,
+        "growth_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "hash": "5007fa094d24e968a7faf3c6cbd2606e71aefb647d89d56bf95588005f697463",
+        "revision": 1,
+        "sources": {},
+        "status": "interpretation_and_design_not_canon",
+        "task_id": "f5f24e22f4f84d53a1cba2381d0c2822"
+      }
+    },
+    "status": "interpretation_and_design_not_canon",
+    "validity": {
+      "ally": true,
+      "hero": true
+    }
+  },
+  "chars": 12150,
+  "continuity": {
+    "absence_is_not_proof": true,
+    "anchors": {
+      "hall4:floor": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "4"
+      },
+      "hall4:parent": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "hq"
+      },
+      "hero:birth_date": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "1990-04-02"
+      },
+      "hq:address": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "临河路八号"
+      },
+      "hq:parent": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": null
+      },
+      "key:material": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "黄铜"
+      },
+      "office:office_place": {
+        "last_change": null,
+        "policy": "eventful",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "r4"
+      },
+      "r3:floor": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "3"
+      },
+      "r3:parent": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "hq"
+      },
+      "r3:room_number": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "505"
+      },
+      "r4:facing": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "南"
+      },
+      "r4:floor": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "4"
+      },
+      "r4:parent": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "hq"
+      },
+      "r4:room_number": {
+        "last_change": null,
+        "policy": "fixed",
+        "source": {
+          "kind": "author_contract"
+        },
+        "value": "101"
+      }
+    },
+    "conditions": {
+      "door:open": false,
+      "lamp:lit": true
+    },
+    "function_bindings": {
+      "office:office_place": "r4"
+    },
+    "links": {
+      "look-in": {
+        "a": "hall4",
+        "b": "r4",
+        "directed": true,
+        "kind": "sight",
+        "label": "从门口看入办公室",
+        "last_change": null,
+        "min_ticks": null,
+        "open": true,
+        "requires": {
+          "door:open": true,
+          "lamp:lit": true
+        },
+        "source": {
+          "kind": "author_contract"
+        },
+        "traversable_or_perceptible": false
+      },
+      "office-door": {
+        "a": "r4",
+        "b": "hall4",
+        "directed": false,
+        "kind": "path",
+        "label": "经办公室门",
+        "last_change": null,
+        "min_ticks": 1,
+        "open": true,
+        "requires": {
+          "door:open": true
+        },
+        "source": {
+          "kind": "author_contract"
+        },
+        "traversable_or_perceptible": false
+      },
+      "stairs": {
+        "a": "hall4",
+        "b": "r3",
+        "directed": false,
+        "kind": "path",
+        "label": "走廊经楼梯至三楼505",
+        "last_change": null,
+        "min_ticks": 3,
+        "open": true,
+        "requires": {},
+        "source": {
+          "kind": "author_contract"
+        },
+        "traversable_or_perceptible": true
+      }
+    },
+    "map_scope": "selected places, ancestors and direct neighbors; partial, not to scale",
+    "placements": {
+      "ally": {
+        "effective_place": "hall4",
+        "last_arrival": null,
+        "position": {
+          "place": "hall4"
+        },
+        "source": {
+          "kind": "author_contract"
+        }
+      },
+      "hero": {
+        "effective_place": "r4",
+        "last_arrival": null,
+        "position": {
+          "place": "r4"
+        },
+        "source": {
+          "kind": "author_contract"
+        }
+      },
+      "key": {
+        "effective_place": "r4",
+        "last_arrival": null,
+        "position": {
+          "holder": "hero"
+        },
+        "source": {
+          "kind": "author_contract"
+        }
+      }
+    },
+    "places": [
+      {
+        "address": {
+          "address": "临河路八号",
+          "chain": [
+            "hq",
+            "hall4"
+          ],
+          "floor": "4",
+          "place": "hall4"
+        },
+        "display_name": "市局四楼走廊",
+        "id": "hall4",
+        "name": "市局四楼走廊",
+        "source": {
+          "kind": "author_contract"
+        }
+      },
+      {
+        "address": {
+          "address": "临河路八号",
+          "chain": [
+            "hq"
+          ],
+          "place": "hq"
+        },
+        "display_name": "市局大楼",
+        "id": "hq",
+        "name": "市局大楼",
+        "source": {
+          "kind": "author_contract"
+        }
+      },
+      {
+        "address": {
+          "address": "临河路八号",
+          "chain": [
+            "hq",
+            "r3"
+          ],
+          "floor": "3",
+          "place": "r3",
+          "room_number": "505"
+        },
+        "display_name": "市局大楼 / 3楼505室",
+        "id": "r3",
+        "name": "市局三楼505室",
+        "source": {
+          "kind": "author_contract"
+        }
+      },
+      {
+        "address": {
+          "address": "临河路八号",
+          "chain": [
+            "hq",
+            "r4"
+          ],
+          "facing": "南",
+          "floor": "4",
+          "place": "r4",
+          "room_number": "101"
+        },
+        "display_name": "市局大楼 / 4楼101室",
+        "id": "r4",
+        "name": "市局四楼101室",
+        "source": {
+          "kind": "author_contract"
+        }
+      }
+    ],
+    "unverified": [
+      "unregistered routes",
+      "unregistered barriers",
+      "unmeasured travel time",
+      "lighting/weather and human abilities require semantic review"
+    ]
+  },
+  "contract": {
+    "anchors": [
+      {
+        "entity": "office",
+        "key": "office_place",
+        "policy": "eventful",
+        "value": "r4"
+      },
+      {
+        "entity": "hero",
+        "key": "birth_date",
+        "policy": "fixed",
+        "value": "1990-04-02"
+      },
+      {
+        "entity": "key",
+        "key": "material",
+        "policy": "fixed",
+        "value": "黄铜"
+      }
+    ],
+    "arcs": [
+      "周行从凭印象推断到核实后行动。"
+    ],
+    "character_mode": "profiled",
+    "clock_unit": "分钟",
+    "ending": "关键记录获得核实，责任有明确结算。",
+    "entities": [
+      {
+        "aliases": [
+          "老周"
+        ],
+        "id": "hero",
+        "kind": "person",
+        "name": "周行"
+      },
+      {
+        "id": "ally",
+        "kind": "person",
+        "name": "宋禾"
+      },
+      {
+        "id": "office",
+        "kind": "function",
+        "name": "局长办公室"
+      },
+      {
+        "id": "hq",
+        "kind": "place",
+        "name": "市局大楼"
+      },
+      {
+        "id": "r4",
+        "kind": "place",
+        "name": "市局四楼101室"
+      },
+      {
+        "id": "r3",
+        "kind": "place",
+        "name": "市局三楼505室"
+      },
+      {
+        "id": "hall4",
+        "kind": "place",
+        "name": "市局四楼走廊"
+      },
+      {
+        "id": "door",
+        "kind": "object",
+        "name": "101室门"
+      },
+      {
+        "id": "lamp",
+        "kind": "object",
+        "name": "101室顶灯"
+      },
+      {
+        "id": "key",
+        "kind": "object",
+        "name": "档案柜钥匙"
+      }
+    ],
+    "initial_facts": [
+      {
+        "entity": "door",
+        "key": "open",
+        "value": false
+      },
+      {
+        "entity": "lamp",
+        "key": "lit",
+        "value": true
+      }
+    ],
+    "links": [
+      {
+        "a": "r4",
+        "b": "hall4",
+        "id": "office-door",
+        "kind": "path",
+        "label": "经办公室门",
+        "min_ticks": 1,
+        "requires": {
+          "door:open": true
+        }
+      },
+      {
+        "a": "hall4",
+        "b": "r3",
+        "id": "stairs",
+        "kind": "path",
+        "label": "走廊经楼梯至三楼505",
+        "min_ticks": 3
+      },
+      {
+        "a": "hall4",
+        "b": "r4",
+        "directed": true,
+        "id": "look-in",
+        "kind": "sight",
+        "label": "从门口看入办公室",
+        "requires": {
+          "door:open": true,
+          "lamp:lit": true
+        }
+      }
+    ],
+    "placements": [
+      {
+        "after": {
+          "place": "r4"
+        },
+        "entity": "hero"
+      },
+      {
+        "after": {
+          "place": "hall4"
+        },
+        "entity": "ally"
+      },
+      {
+        "after": {
+          "holder": "hero"
+        },
+        "entity": "key"
+      }
+    ],
+    "places": [
+      {
+        "attributes": {
+          "address": "临河路八号"
+        },
+        "entity": "hq",
+        "parent": null
+      },
+      {
+        "attributes": {
+          "facing": "南",
+          "floor": "4",
+          "room_number": "101"
+        },
+        "entity": "r4",
+        "parent": "hq"
+      },
+      {
+        "attributes": {
+          "floor": "3",
+          "room_number": "505"
+        },
+        "entity": "r3",
+        "parent": "hq"
+      },
+      {
+        "attributes": {
+          "floor": "4"
+        },
+        "entity": "hall4",
+        "parent": "hq"
+      }
+    ],
+    "planning_mode": "layered",
+    "protagonist_drive": "周行查清一份记录为何被篡改。",
+    "reader_promise": "凭证据推进的城市调查，人物选择有代价。",
+    "title": "办公室空间连续性示例",
+    "volumes": [
+      {
+        "id": "v1",
+        "purpose": "查证与结算"
+      }
+    ],
+    "word_range": [
+      1000000,
+      3000000
+    ],
+    "world_rules": [
+      "空间、人物认知与物品归属遵循已出现的事实。"
+    ]
+  },
+  "design_context": {
+    "status": "proposal_not_canon",
+    "volume": {
+      "active": true,
+      "based_on_chapter": 0,
+      "data": {
+        "action_constraints": [
+          "原件由谁携带、谁能看到缺页，需要逐场景确认"
+        ],
+        "canon_refs": [],
+        "dependencies": [],
+        "ending_setup": [
+          "保留交接与见证的证据，支撑后来责任结算"
+        ],
+        "location_ids": [
+          "design:office"
+        ],
+        "new_locations": [],
+        "open_questions": [],
+        "purpose": "从记录差异进入有代价的合作",
+        "sequence": [
+          "门口试探后查验文件，再决定是否交换各自证据"
+        ],
+        "volume": "v1"
+      },
+      "hash": "684327f14335bd08c41b166375e7ad5ae2d70ec518f372a004b9b3442765bb26",
+      "revision": 1,
+      "scope": "v1",
+      "sources": {},
+      "status": "proposal_not_canon",
+      "task_id": "9b320797a467462c96dca9650059c0bc",
+      "world_hash": "29cde1266acfbc5c6ec53c301a217f404e57eb3ce12d77e9d9ef8b106cd68c57"
+    },
+    "world": {
+      "active": true,
+      "based_on_chapter": 0,
+      "data": {
+        "canon_refs": [],
+        "causal_spine": [
+          "记录差异促使周行核对原件",
+          "合作取得原件后，双方必须承担公开作证的风险"
+        ],
+        "core_locations": [
+          {
+            "constraints": [
+              "门内外的视线和听觉分别核对"
+            ],
+            "id": "design:office",
+            "layout": [
+              "交接文件的办公区域；具体方位以当前地图为准"
+            ],
+            "name": "局长办公室",
+            "purpose": "让公事手续与私人信任产生碰撞"
+          }
+        ],
+        "dependencies": [],
+        "ending_dependencies": [
+          "证据最终必须能被核实并公开，不能靠突然出现的第三份档案收尾"
+        ],
+        "factions": [
+          {
+            "drive": "维持记录的可信度与责任边界",
+            "limits": "不能让所有工作人员共享秘密或统一行动",
+            "name": "档案管理部门"
+          }
+        ],
+        "geography": {
+          "connections": [
+            "楼层之间依靠已有楼梯和出入口，不预设万能暗道"
+          ],
+          "regions": [
+            "市局大楼及相邻街区"
+          ]
+        },
+        "open_questions": [
+          "原件缺失部分的形成原因，进入相关情节前再细化"
+        ],
+        "overview": "围绕市局档案交接展开城市调查，证据的取得与公开均需人物承担后果。"
+      },
+      "hash": "29cde1266acfbc5c6ec53c301a217f404e57eb3ce12d77e9d9ef8b106cd68c57",
+      "revision": 1,
+      "scope": "world",
+      "sources": {},
+      "status": "proposal_not_canon",
+      "task_id": "b55ff05b7c0343d4b459019b041e37df",
+      "world_hash": null
+    }
+  },
+  "omitted": [],
+  "payload": {},
+  "plan": {
+    "_design_versions": {
+      "volume": "684327f14335bd08c41b166375e7ad5ae2d70ec518f372a004b9b3442765bb26",
+      "world": "29cde1266acfbc5c6ec53c301a217f404e57eb3ce12d77e9d9ef8b106cd68c57"
+    },
+    "change": "双方决定交换证据，合作成立并留下可追责记录",
+    "character_choices": [
+      {
+        "choice": "交出自己掌握的收据",
+        "cost": "暴露自己的调查范围，承担经手责任",
+        "desire": "核对被改动的记录",
+        "entity": "hero",
+        "pressure": "空口请求换不来原件"
+      }
+    ],
+    "conflict": "宋禾只愿提供复印件",
+    "entities": [
+      "hero",
+      "ally"
+    ],
+    "expression_space": [
+      "可调整场景顺序、对话和小动作",
+      "通过递交与迟疑表现戒备，避免旁白替人物解释"
+    ],
+    "goal": "查看原件",
+    "number": 1,
+    "reader_experience": "希望两人合作，同时感到他们都在保留退路",
+    "scenes": [
+      {
+        "blocking": [
+          "具体站位服从正文已确立的布局"
+        ],
+        "conflict": "宋禾要求对等交换",
+        "design_location": "design:office",
+        "dialogue_intents": [
+          {
+            "entity": "hero",
+            "knowledge_topics": [],
+            "pressure": "时间有限，强逼会失去合作",
+            "seeks": "争取查看原件",
+            "tactic": "先说明可核实部分，再提供对等凭证",
+            "to": "ally",
+            "withholds": "暂不透露另一条证据的来源"
+          },
+          {
+            "entity": "ally",
+            "knowledge_topics": [],
+            "pressure": "交出原件后责任仍落在自己身上",
+            "seeks": "获得可追责的交接承诺",
+            "tactic": "提出具体交换条件，观察对方是否愿意签字",
+            "to": "hero",
+            "withholds": "不替未经确认的缺页原因下结论"
+          }
+        ],
+        "intent": "争取查看原件",
+        "perceptual_limits": [
+          "人物不知道的缺页原因不进入其内心独白"
+        ],
+        "place": "r4",
+        "present": [
+          "hero",
+          "ally"
+        ],
+        "props": [
+          "key"
+        ],
+        "speakers": [
+          "hero",
+          "ally"
+        ],
+        "time_hint": "承接本卷开端，不虚构精确分钟",
+        "turn": "周行交出收据，宋禾才展开文件"
+      }
+    ],
+    "volume": "v1"
+  },
+  "retrieval": {
+    "absence_is_not_proof": true,
+    "branch": "main",
+    "command": "recall"
+  },
+  "schema": "novel-ledger-v2.pack/1",
+  "selected": [],
+  "stage": "draft",
+  "state": {
+    "clock": 0,
+    "entities": {
+      "ally": {
+        "id": "ally",
+        "kind": "person",
+        "name": "宋禾"
+      },
+      "hero": {
+        "aliases": [
+          "老周"
+        ],
+        "id": "hero",
+        "kind": "person",
+        "name": "周行"
+      },
+      "key": {
+        "id": "key",
+        "kind": "object",
+        "name": "档案柜钥匙"
+      }
+    },
+    "facts": {
+      "hero:birth_date": "1990-04-02",
+      "key:material": "黄铜"
+    },
+    "hooks": {},
+    "knowledge": {},
+    "resources": {}
+  },
+  "writer_brief": {
+    "chapter": 1,
+    "continuity_sources": {
+      "character_profiles": "character_context",
+      "current_state": "state",
+      "historical_evidence": "selected",
+      "layout": "continuity",
+      "prospective_world": "design_context"
+    },
+    "dramatic_task": {
+      "character_choices": [
+        {
+          "choice": "交出自己掌握的收据",
+          "cost": "暴露自己的调查范围，承担经手责任",
+          "desire": "核对被改动的记录",
+          "entity": "hero",
+          "pressure": "空口请求换不来原件"
+        }
+      ],
+      "conflict": "宋禾只愿提供复印件",
+      "goal": "查看原件",
+      "necessary_change": "双方决定交换证据，合作成立并留下可追责记录",
+      "reader_experience": "希望两人合作，同时感到他们都在保留退路"
+    },
+    "expression_space": [
+      "可调整场景顺序、对话和小动作",
+      "通过递交与迟疑表现戒备，避免旁白替人物解释"
+    ],
+    "instruction": "场景提案、人物选择和必要变化是创作方向，未发生前不是事实。结合当前状态写完整小说正文；可调整场景顺序、动作与对话，新细节须在事实审稿中提取。不要把任务书写成正文或替自己审稿。",
+    "scene_proposals": [
+      {
+        "blocking": [
+          "具体站位服从正文已确立的布局"
+        ],
+        "conflict": "宋禾要求对等交换",
+        "design_location": "design:office",
+        "dialogue_intents": [
+          {
+            "entity": "hero",
+            "knowledge_topics": [],
+            "pressure": "时间有限，强逼会失去合作",
+            "seeks": "争取查看原件",
+            "tactic": "先说明可核实部分，再提供对等凭证",
+            "to": "ally",
+            "withholds": "暂不透露另一条证据的来源"
+          },
+          {
+            "entity": "ally",
+            "knowledge_topics": [],
+            "pressure": "交出原件后责任仍落在自己身上",
+            "seeks": "获得可追责的交接承诺",
+            "tactic": "提出具体交换条件，观察对方是否愿意签字",
+            "to": "hero",
+            "withholds": "不替未经确认的缺页原因下结论"
+          }
+        ],
+        "intent": "争取查看原件",
+        "perceptual_limits": [
+          "人物不知道的缺页原因不进入其内心独白"
+        ],
+        "place": "r4",
+        "present": [
+          "hero",
+          "ally"
+        ],
+        "props": [
+          "key"
+        ],
+        "speakers": [
+          "hero",
+          "ally"
+        ],
+        "time_hint": "承接本卷开端，不虚构精确分钟",
+        "turn": "周行交出收据，宋禾才展开文件"
+      }
+    ],
+    "schema": "novel-ledger-v2.writer-brief/1"
+  }
+}
