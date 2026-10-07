@@ -56,6 +56,19 @@ class DesignTests(unittest.TestCase):
         text=fw['payload']['prose'];data=review(fw['payload']['checks'],text);data.update(events=[],summary='交付凭证')
         self.submit(f,data);reader=self.task();rw=json.loads(rpath(reader, 'input_path').read_text(encoding='utf-8'))
         for key in ('writer_brief','design_context','plan','contract','state','continuity'):self.assertNotIn(key,rw)
+    def test_volume_outline_requires_adjudication_log(self):
+        a=self.task();self.submit(a,EXAMPLE['world_plan']);t=self.task()
+        bad=copy.deepcopy(EXAMPLE['volume_plan']);bad.pop('choice_log',None)
+        with self.assertRaises(Error) as exc:self.submit(t,bad)
+        self.assertEqual(exc.exception.code,'design')
+        wild=copy.deepcopy(EXAMPLE['volume_plan']);wild['choice_log'][0]['candidates'][1]['wild']=False
+        with self.assertRaises(Error) as exc:self.submit(t,wild)
+        self.assertIn('wild',str(exc.exception))
+        beatless=copy.deepcopy(EXAMPLE['volume_plan']);beatless['choice_log'].append({'kind':'beat','mode':'unattended','candidates':[{'direction':'a','payoff':'p','cost':'c','risk':'r'},{'direction':'b','payoff':'p','cost':'c','risk':'r','wild':True}],'chosen':'b','reason':'ok'})
+        with self.assertRaises(Error) as exc:self.submit(t,beatless)
+        self.assertIn('序号',str(exc.exception))
+        self.submit(t,EXAMPLE['volume_plan']);self.assertEqual(self.task()['stage'],'plan')
+
     def test_unprepared_cross_volume_batch_is_atomic(self):
         self.prepare();task=self.task()
         with self.assertRaises(Error):self.submit(task,{'chapters':[self.plan(end=True),self.plan(2,'v2')]})

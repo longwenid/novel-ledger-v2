@@ -80,6 +80,18 @@
   "volume_plan": {
     "volume": "v1",
     "purpose": "从记录差异进入有代价的合作",
+    "choice_log": [
+        {
+            "kind": "direction",
+            "mode": "interactive",
+            "candidates": [
+                {"direction": "公开对质，逼出文件出处", "payoff": "立场对立快速立起，追读钩子硬", "cost": "主角的调查能力过早暴露", "risk": "后续冲突升级过快", "wild": false},
+                {"direction": "假意合作，各留一手交换假证据", "payoff": "双方博弈贯穿整卷，可反复回收", "cost": "主角须承受「同谋」的账面代价", "risk": "读者对伪装的耐心有限", "wild": true}
+            ],
+            "chosen": "假意合作，各留一手交换假证据",
+            "reason": "作者裁决：博弈过程能持续供给卷纲节拍，且代价真实"
+        }
+    ],
     "location_ids": [
       "design:office"
     ],

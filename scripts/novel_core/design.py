@@ -121,6 +121,24 @@ def locations(items,state):
     return set(ids)
 
 
+def choices(entries):
+    """Adjudication trail for volume-outline reasoning: the direction and
+    pivotal-beat options that were presented, which was chosen, and why.
+    Unattended runs self-adjudicate within the hatched outline and log it here."""
+    require(isinstance(entries,list) and entries,'design','choice_log 至少记录一次裁决')
+    for entry in entries:
+        require(isinstance(entry,dict) and entry.get('kind') in ('direction','beat'),'design','choice_log 条目 kind 为 direction/beat')
+        require(entry.get('mode') in ('interactive','unattended'),'design','choice_log mode 为 interactive/unattended')
+        if entry['kind']=='beat':
+            require(type(entry.get('beat')) is int and entry['beat']>=1,'design','beat 裁决需要 1 起的序号')
+        require(text(entry.get('chosen')) and text(entry.get('reason')),'design','choice_log 需要 chosen 与 reason')
+        candidates=entry.get('candidates')
+        require(isinstance(candidates,list) and len(candidates)>=2,'design','方向候选至少两个')
+        require(any(isinstance(c,dict) and c.get('wild') is True for c in candidates),'design','候选须含至少一个 wild 脑爆项')
+        for c in candidates:
+            require(isinstance(c,dict) and all(text(c.get(k)) for k in ('direction','payoff','cost','risk')),'design','候选需要 direction/payoff/cost/risk')
+
+
 def save(db,branch,scope,chapter,data,task_id):
     require(enabled(db),'design','本书未启用分层设计')
     state=replay(db,branch)
@@ -138,7 +156,7 @@ def save(db,branch,scope,chapter,data,task_id):
         locations(data['core_locations'],state)
         world_hash=None
     else:
-        allowed=common|{'volume','purpose','carries_in','climax','handoff','location_ids','new_locations','sequence','action_constraints','ending_setup'}
+        allowed=common|{'volume','purpose','carries_in','climax','handoff','location_ids','new_locations','sequence','action_constraints','ending_setup','choice_log'}
         require(set(data)<=allowed,'design','分卷设计包含未知字段')
         require(usable(db,branch,'world'),'design','先完成有效全书设计')
         require(data.get('volume')==scope and text(data.get('purpose')),'design','分卷用途或 ID 不匹配任务')
@@ -147,6 +165,7 @@ def save(db,branch,scope,chapter,data,task_id):
         require(text(data.get('carries_in')) and text(data.get('climax')) and text(data.get('handoff')),'design',
                 '卷纲需要 carries_in（承接上卷）、climax（卷高潮/结尾方向）、handoff（下卷交接；末卷写如何收束到终局）')
         require(strings(data.get('sequence'),True) and strings(data.get('action_constraints')) and strings(data.get('ending_setup')),'design','本卷需要因果顺序、行动约束及终局铺设数组')
+        choices(data.get('choice_log'))
         world=current(db,branch,'world');world_hash=world['hash']
         known={i['id'] for i in world['data']['core_locations']}
         new=locations(data.get('new_locations',[]),state)

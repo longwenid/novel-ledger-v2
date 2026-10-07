@@ -26,6 +26,15 @@
 
 已有办公室在四楼101时，候选布局中的“三楼505”不能获得更高优先级。合法搬迁必须走 [空间协议](spatial-continuity.md)。规划者应通过 `recall --state`、定向检索和 `map` 核实所引用的当前场所；不能只看开书时的初态。`canon_refs` 检查显式引用的当前值；自由文本中的语义冲突仍需模型判断。
 
+## 卷纲选择链：推进方向与关键拍按候选裁决
+
+开书裁决的是每卷过程形态；每卷开写前的卷纲细化沿用同一规则，并把裁决留痕进设计：
+
+- **方向候选**：2～3 个本卷推进方向，至少一个脑爆项（透镜见 [脑爆工具箱](hatch-ideas.md) 卷纲节）；候选差异落在人物选择、代价或关系后果上，且不得推翻开书已裁决的过程形态——那是约定的上界。
+- **关键拍内容选择**：只对改变卷走向的节拍（通常 1～3 个）给内容候选；普通拍直接编排，不为凑数提问。
+- **裁决方式**：作者在线时按选择链询问（`A/B/C`、`换一组`、`D`、`返回`）；无人值守已授权连写时不等待，规划者按约定方向自主裁决并留痕。
+- **留痕与追溯**：候选、裁决与理由写入 `choice_log`；作者事后用 `design --history` 审阅，不同意则 `replan --scope volume` 重新细化，已写正文不受影响。
+
 ## 设计任务回执
 
 沿用 task/1 与 result/1 信封。示例 [design.example.json](../assets/design.example.json) 中的 `world_plan`、`volume_plan` 分别放进对应任务的 `data`，不能把整个示例文件直接提交。
@@ -46,6 +55,7 @@
 - 卷纲三件套（必填）：`carries_in` 承接上卷结尾的状态与债务；`climax` 本卷高潮与结尾方向；`handoff` 下卷交接——末卷写明如何收束到已约定终局。三件套是卷提案的签发部分，先于本卷任何章计划存在。
 - `location_ids` 引用全书候选场所或本卷 `new_locations`；新地点格式同 core_locations，不能覆盖已有候选 ID。
 - `sequence` 为非空因果推进数组；`action_constraints` 为行动条件数组；`ending_setup` 为终局铺设数组。后两项没有需要时可空。
+- `choice_log`：卷纲推理的裁决留痕数组，必填。每项 `kind`（`direction`/`beat`，`beat` 附 1 起的节拍序号）、`mode`（`interactive`/`unattended`）、`candidates`（至少两项，必含一项 `"wild": true` 的脑爆项，每项 `direction/payoff/cost/risk`）、`chosen` 与 `reason`。方向裁决必填；关键拍按需追加；无人值守由规划者自主裁决留痕。
 
 两者均可包含：
 
