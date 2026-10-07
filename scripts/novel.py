@@ -139,8 +139,15 @@ def dispatch_raw(args):
         if cmd=='doctor':
             from novel_core.contextflow import limits,enabled
             import platform, shutil
+            anchors=limits(db);session_used=get(db,'context_session_used',0)
+            headroom=max(0,anchors['capacity']-session_used)
+            metered=enabled(db) and get(db,'session_mode')=='serial'
+            next_cost=anchors['output']+anchors['retrieval']+anchors['input']+anchors['overhead']
             return {'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
                     'context_mode':get(db,'context_mode','bounded'),'declared_capacity_chars':get(db,'context_chars'),'sizing_anchors':limits(db),
+                    'session_capacity':{'metered':metered,'used_chars':session_used if metered else None,'headroom_chars':headroom if metered else None,
+                        'pressure':('handoff_imminent' if headroom<next_cost else 'ok') if metered else 'not_metered',
+                        'note':'bounded serial：headroom 低于下一任务成本时将转为 await_session 交接；宿主无法提供真实新会话时改用 serial 模式或重新校准声明容量'},
                     'explosion_control':'structural rules: single-task visibility, scoped pagination, prepare-then-enter, load-once, one unit per receipt, growth-triggered handoff',
                     'usage':{'tasks':get(db,'usage_tasks',0),'session_handoffs':get(db,'usage_handoffs',0),'input_chars':get(db,'usage_input_chars',0),
                              'result_chars':get(db,'usage_result_chars',0),'read_chars':get(db,'usage_read_chars',0)},

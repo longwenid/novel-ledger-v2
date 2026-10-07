@@ -775,7 +775,7 @@ def promote(db):
 def audit(db,branch=None,strict=False):
     branch=branch or get(db,'active_branch')
     require(db.execute('PRAGMA integrity_check').fetchone()[0]=='ok','integrity','SQLite 完整性检查失败')
-    state=replay(db,branch)
+    state=replay(db,branch,verify=True)
     rows=chapters(db,branch)
     problems=[]
     for i,row in enumerate(rows,1):

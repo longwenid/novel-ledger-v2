@@ -79,7 +79,8 @@ def pack(db, branch, chapter, stage, payload):
     base = {'schema': 'novel-ledger-v2.pack/1', 'stage': stage, 'chapter': chapter, 'branch': branch,
             'contract': contract, 'plan': plan, 'payload': payload,
             'discipline': dict(DISCIPLINE),
-            'retrieval': {'command': 'recall', 'branch': branch, 'absence_is_not_proof': True},
+            'retrieval': {'command': 'recall', 'branch': branch, 'absence_is_not_proof': True,
+                          'fact_boundary': '事实只能来自有效正文与作者约定；recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的账本为准'},
             'selected': [], 'omitted': [],
             'context_anchors': {'unit': 'unicode_characters_not_tokens', 'package_chars': budget}}
     if stage.endswith('_review'):
@@ -200,9 +201,9 @@ def pack(db, branch, chapter, stage, payload):
     if stage!='reader' and not stage.endswith('_review'):
         for row in db.execute('SELECT number,data FROM chapters WHERE branch=? AND number<? ORDER BY number DESC LIMIT 3', (branch,chapter)):
             data = json.loads(row['data'])
-            candidates.append({'kind':'recent_summary','chapter':row['number'],'text':data['summary'], 'source_chapters':[row['number']]})
+            candidates.append({'kind':'recent_summary','chapter':row['number'],'text':data['summary'], 'source_chapters':[row['number']], 'derived_view':True})
         for row in db.execute('SELECT * FROM memories WHERE branch=? ORDER BY through DESC LIMIT 2', (branch,)):
-            candidates.append({'kind':'memory','scope':row['scope'],'through':row['through'],'content':json.loads(row['data'])})
+            candidates.append({'kind':'memory','scope':row['scope'],'through':row['through'],'content':json.loads(row['data']), 'derived_view':True})
         # Blanket history dumps fill the pack without improving continuity; a
         # newest-first bounded slice plus omitted accounting keeps retrieval targeted.
         history_budget = 6000

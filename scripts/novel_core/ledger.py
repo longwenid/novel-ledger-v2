@@ -186,7 +186,39 @@ def apply(state, event, prose, chapter):
         raise Error('event_op', f'未知事件类型：{op}')
 
 
-def replay(db, branch, through=None):
+_REPLAY_CACHE = {}
+_REPLAY_CACHE_LIMIT = 8
+
+
+def _chain_key(db, branch):
+    from .store import get
+    last = db.execute('SELECT hash FROM events WHERE branch=? ORDER BY chapter DESC, idx DESC LIMIT 1', (branch,)).fetchone()
+    count = db.execute('SELECT COUNT(*) FROM events WHERE branch=?', (branch,)).fetchone()[0]
+    # The contract is part of the seed state; include it so distinct projects
+    # can never share a cache entry, and appends cannot collide across books.
+    return (branch, last[0] if last else 'genesis', count, digest(get(db, 'contract')))
+
+
+def replay(db, branch, through=None, verify=False):
+    """Reconstruct canonical state. Events are hash-chained and append-only,
+    so (branch, last hash, event count, contract digest) identifies the state:
+    repeated reads (per-entity recall, profiles, html) reuse the verified
+    result instead of replaying the whole chain every call. Audit and
+    historical views pass verify/through to force full chain verification."""
+    if through is not None or verify:
+        return _replay(db, branch, through)
+    key = _chain_key(db, branch)
+    cached = _REPLAY_CACHE.get(key)
+    if cached is not None:
+        return copy.deepcopy(cached)
+    state = _replay(db, branch)
+    if len(_REPLAY_CACHE) >= _REPLAY_CACHE_LIMIT:
+        _REPLAY_CACHE.clear()
+    _REPLAY_CACHE[key] = copy.deepcopy(state)
+    return state
+
+
+def _replay(db, branch, through=None):
     from .store import get
     state = seed(get(db, 'contract'))
     previous = 'genesis'

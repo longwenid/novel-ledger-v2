@@ -59,9 +59,14 @@ class DisciplineTests(unittest.TestCase):
         self.assertEqual(st['skill_version'],VERSION)
         self.assertEqual(st['db_version'],VERSION)  # fresh init pins the creating version
         import novel
+        put(self.db,'context_mode','bounded');put(self.db,'session_mode','serial')
         out=novel.dispatch(novel.parser().parse_args(['doctor','--project',str(self.path)]))
         self.assertTrue(out['skill_root'].endswith('novel-ledger-v2'))
         self.assertEqual(out['skill_version'],VERSION)
+        cap=out['session_capacity']
+        self.assertTrue(cap['metered'])  # bounded + serial is the default
+        self.assertEqual(cap['pressure'],'ok')
+        self.assertIsInstance(cap['headroom_chars'],int)
 
 
 if __name__=='__main__':unittest.main()
