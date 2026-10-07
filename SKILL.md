@@ -12,7 +12,7 @@ description: >-
 
 `ROOT` 为本 SKILL.md 所在目录；`PROJECT` 是独立小说项目绝对路径，是所有路由的基准：工具返回的 `input_path/output_path/brief_path` 一律是 PROJECT 相对 posix 路径，宿主拼接 PROJECT 后读写；`submit --result` 的相对路径同样按 `--project` 解析。Python 3.9+，只用标准库。命令入口为 `python3 "$ROOT/scripts/novel.py"`（Windows 宿主用 `python`）。派发子代理时可用 `NOVEL_LEDGER_SKILL_ROOT` 环境变量固定安装位置，子代理提示引用 `$NOVEL_LEDGER_SKILL_ROOT/scripts/novel.py`，避免在多个 prompt 里硬编码绝对路径；`status`/`doctor` 返回 `skill_version/skill_root` 供核对。不要写入 skill 自身目录来保存用户的书。任务产物归集在 `work/ch<章号>/<阶段>-<短ID>/`，已完成任务的目录会自动清理（保留最近 3 个供排查，`tidy` 可全部清空；输入与回执始终在数据库里）。每个工作包自带 `discipline` 块（审稿取值、账本前值、hooks 上限、clock 证据等硬规则）——子代理与 worker 先读它，不必在 prompt 里重述。
 
-- **新书**：读 [开书与规划](references/creation.md)，补齐少量关键偏好，提出约定、全书方向和各卷大致篇幅分配；按 [分层设计与任务书](references/design-and-brief.md) 先准备世界、本卷和近期场景；使用 [约定模板](assets/contract.example.json) 的字段创建项目，试写第一章并让作者定调。
+- **新书**：读 [开书与规划](references/creation.md) 按八门选择链开书——每门给 2～3 个候选且必含一个高概念脑爆项（透镜见 [脑爆工具箱](references/hatch-ideas.md)），补齐少量关键偏好，提出约定、全书方向和各卷大致篇幅分配；按 [分层设计与任务书](references/design-and-brief.md) 先准备世界、本卷和近期场景；使用 [约定模板](assets/contract.example.json) 的字段创建项目，试写第一章并让作者定调。
 - **续写或恢复**：先 `status --project "$PROJECT"`，必要时 `audit`；从 `next` 返回的任务继续，不凭聊天回忆判断进度。
 - **连续无人值守**：读 [执行与恢复](references/runtime.md) 和 [长历史与有界上下文](references/context-runtime.md)。用户已授权连写后，在既定方向内持续处理任务至完本或实际阻碍，不在每章后询问是否继续。
 - **简单返修**：读 [局部修订](references/repairs.md)，按定位片段提交版本绑定补丁，避免整章重复输出；合成后仍完成事实与读者审稿。
@@ -47,6 +47,7 @@ description: >-
 | 使用时机 | 读取资料 |
 |---|---|
 | 选方向、试章、滚动扩纲 | [creation](references/creation.md) |
+| 开书候选不够脑爆、换一组重开 | [hatch-ideas](references/hatch-ideas.md) |
 | 开书选声线、定文风基准、人味写作 | [voices](references/voices.md) |
 | 全书/分卷世界设计、子 agent 场景任务书 | [design-and-brief](references/design-and-brief.md) |
 | 人物小传、声线、对白差异与成长 | [characters](references/characters.md) |
