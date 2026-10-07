@@ -132,7 +132,7 @@ def run(db,project,config,max_tasks=0):
             last_error=None
             for attempt in range(config.get('max_retries',2)+1):
                 from .contextflow import session_checkpoint,charge_input,charge_failed_attempt
-                work=json.loads((task_root/'input.json').read_text())
+                work=json.loads((task_root/'input.json').read_text(encoding='utf-8'))
                 checkpoint=session_checkpoint(db,work,task['task_id'],replay_input=attempt>0)
                 if checkpoint:return checkpoint
                 if attempt:

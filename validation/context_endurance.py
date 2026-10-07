@@ -59,7 +59,7 @@ def build(path,kind):
 def step(db,path,trace):
     task=engine.next_task(db,path)
     assert task.get('task_id'),task
-    raw=Path(task['input_path']).read_text();work=json.loads(raw)
+    raw=Path(task['input_path']).read_text(encoding='utf-8');work=json.loads(raw)
     assert len(raw)==work['chars']<=work['context_capacity']['package_chars']
     stage=task['stage']
     entry={'stage':stage,'input_chars':len(raw),'input_limit':work['context_capacity']['package_chars']}

@@ -41,7 +41,7 @@ class BookTests(unittest.TestCase):
         t=self.task();respond(self.db,self.path,t)
         t=self.task();respond(self.db,self.path,t)
         t=self.task();respond(self.db,self.path,t)
-        t=self.task();p=json.loads(rpath(t, 'input_path').read_text())['payload']['prose']
+        t=self.task();p=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']['prose']
         bad=review(engine.READER_CHECKS,p);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']={'desire':'目标','obstacle':'阻力','change':'变化','read_on_reason':'不想读'}
         bad['findings']=[{'severity':'quality','impact':'人物没有选择，场面像汇报','goal':'呈现犹豫与选择','evidence':ev(p)}]
@@ -49,7 +49,7 @@ class BookTests(unittest.TestCase):
         self.assertEqual(head(self.db,'main'),0);self.assertEqual(self.task()['stage'],'repair')
     def test_bad_evidence_transaction_rolls_back(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
-        t=self.task();p=json.loads(rpath(t, 'input_path').read_text())['payload']['prose']
+        t=self.task();p=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']['prose']
         data=review(engine.FACT_CHECKS,p);data.update(summary='摘要',events=[{'op':'state','entity':'hero','key':'alive','before':None,'after':False,'evidence':{'chapter':1,'start':0,'quote':'不存在'}}])
         with self.assertRaises(Error):engine.submit(self.db,result(t,data))
         self.assertEqual(self.task()['task_id'],t['task_id']);self.assertEqual(head(self.db,'main'),0)
@@ -90,8 +90,8 @@ class BookTests(unittest.TestCase):
         self.assertLessEqual(len(dump(p)),4096);self.assertTrue(p['retrieval']['absence_is_not_proof'])
         with self.assertRaises(Error):pack(self.db,'main',1,'draft',{'prose':'字'*5000})
     def test_file_tampering_does_not_change_database(self):
-        t=self.task();rpath(t, 'input_path').write_text('{}')
-        t=self.task();self.assertIn('contract',json.loads(rpath(t, 'input_path').read_text()))
+        t=self.task();rpath(t, 'input_path').write_text('{}', encoding='utf-8')
+        t=self.task();self.assertIn('contract',json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
     def test_length_not_self_reported(self):
         c=get(self.db,'contract');c['word_range']=[10000,20000]
         with transaction(self.db):put(self.db,'contract',c)

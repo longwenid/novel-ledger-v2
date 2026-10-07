@@ -39,7 +39,7 @@ def review(checks,prose,n=1):
 
 def respond(db,project,task,prose=None,events=None,ending=False):
     stage=task['stage']; n=task['chapter']
-    pack=json.loads(rpath(task).read_text())
+    pack=json.loads(rpath(task).read_text(encoding='utf-8'))
     if stage=='plan': data={'chapters':[plan(n,ending)]}
     elif stage in ('draft','repair','redesign'):
         text=prose or f'第{n}章，周行把收据交给宋禾。她看了许久，终于按下指印。'

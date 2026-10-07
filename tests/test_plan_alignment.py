@@ -14,7 +14,7 @@ from novel_core import design, engine
 from novel_core.memory import pack
 from novel_core.store import Error, put
 
-EXAMPLE=json.loads((Path(__file__).resolve().parents[1]/'assets/design.example.json').read_text())
+EXAMPLE=json.loads((Path(__file__).resolve().parents[1]/'assets/design.example.json').read_text(encoding='utf-8'))
 SHAPES=design.CLOSING_SHAPES
 
 
@@ -38,7 +38,7 @@ class PlanAlignmentTests(unittest.TestCase):
     def chapter(self,n=1,**over):
         self.submit(self.task(),{'chapters':[self.plan(n,**over)]})
         respond(self.db,self.path,self.task())
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text());text=w['payload']['prose']
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));text=w['payload']['prose']
         data=review(w['payload']['checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
         self.submit(t,data);respond(self.db,self.path,self.task())
 
@@ -80,12 +80,12 @@ class PlanAlignmentTests(unittest.TestCase):
 
     def test_writer_brief_and_discipline_carry_the_new_dimensions(self):
         self.submit(self.task(),{'chapters':[self.plan(1)]})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text())
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(w['discipline']['plan'].count('ending_shape'),1)
         self.assertIn('sequence_refs',w['discipline']['plan'])
         brief=w['writer_brief']
         self.assertEqual(brief['dramatic_task']['ending_shape'],self.plan(1)['ending_shape'])
-        self.assertIn('收束形态',rpath(t, 'brief_path').read_text())
+        self.assertIn('收束形态',rpath(t, 'brief_path').read_text(encoding='utf-8'))
 
 
 if __name__=='__main__':unittest.main()

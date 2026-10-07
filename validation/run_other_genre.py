@@ -11,7 +11,7 @@ from novel_core.store import initialize,connect,digest,write_json
 def main():
     p=argparse.ArgumentParser();p.add_argument('--project',required=True);args=p.parse_args()
     root=Path(__file__).resolve().parent/'other-genre'
-    prose=(root/'夜班退件.md').read_text().rstrip();reader=json.loads((root/'review.json').read_text())
+    prose=(root/'夜班退件.md').read_text(encoding='utf-8').rstrip();reader=json.loads((root/'review.json').read_text(encoding='utf-8'))
     assert reader['source_hash']==digest(prose) and reader['verdict']=='pass'
     contract={'context_mode':'legacy','title':'夜班退件','reader_promise':'职业场景中的责任、压力与有限选择','protagonist_drive':'不为尚不能确认的测量签字',
               'world_rules':['现实题材；不把传闻、怀疑或新读数当成已检验结论。'],'ending':'装车暂缓，复核启动，后续处罚与产品最终结论保持未知。',
@@ -29,7 +29,7 @@ def main():
                 assert task['status']=='completed'
                 write_json(root/'execution-report.json',{'result':task,'tasks':trace,'source_hash':digest(prose),'review_mode':'serial core, independent reader artifact','industry_claims':'fictional internal consistency only'})
                 return
-            stage=task['stage'];pack=json.loads(Path(task['input_path']).read_text());info=pack['payload']
+            stage=task['stage'];pack=json.loads(Path(task['input_path']).read_text(encoding='utf-8'));info=pack['payload']
             if stage=='plan':data={'chapters':[{'number':1,'volume':'night','goal':'核实可疑读数','conflict':'出厂倒计时和签字责任','change':'暂缓装车并启动重测','entities':['zhou','lead','repair'],'volume_end':True,'book_end':True}]}
             elif stage=='draft':data={'prose':prose}
             else:

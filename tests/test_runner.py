@@ -14,13 +14,13 @@ class RunnerTests(unittest.TestCase):
             root=Path(temp);initialize(root,contract());db=connect(root)
             worker=root/'worker.py'
             worker.write_text('''import json,os,pathlib
-p=pathlib.Path(os.environ['NOVEL_TASK_FILE']);t=json.loads(p.read_text());f=json.loads(pathlib.Path(os.environ['NOVEL_FEEDBACK_FILE']).read_text())
+p=pathlib.Path(os.environ['NOVEL_TASK_FILE']);t=json.loads(p.read_text(encoding='utf-8'));f=json.loads(pathlib.Path(os.environ['NOVEL_FEEDBACK_FILE']).read_text(encoding='utf-8'))
 if t['attempt']==0: raise SystemExit(3)
 assert f['previous_error']['code']=='driver_exit'
 plan={'number':1,'goal':'找到收据','conflict':'失去证人','change':'决定自己作证','volume':'v1','entities':['hero']}
 r={'schema':'novel-ledger-v2.result/1','task_id':t['task_id'],'input_hash':t['input_hash'],'lease_owner':t['lease_owner'],'data':{'chapters':[plan]}}
-pathlib.Path(os.environ['NOVEL_RESULT_FILE']).write_text(json.dumps(r,ensure_ascii=False))
-''')
+pathlib.Path(os.environ['NOVEL_RESULT_FILE']).write_text(json.dumps(r,ensure_ascii=False), encoding='utf-8')
+''', encoding='utf-8')
             try:
                 result=run(db,root,{'argv':[sys.executable,str(worker)],'timeout':10,'max_retries':1},1)
                 self.assertEqual(result['tasks_completed'],1)

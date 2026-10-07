@@ -7,7 +7,7 @@ from pathlib import Path
 from support import *
 from novel_core import design, engine
 from novel_core.store import Error, put, transaction, head
-EXAMPLE=json.loads((Path(__file__).resolve().parents[1]/'assets/design.example.json').read_text())
+EXAMPLE=json.loads((Path(__file__).resolve().parents[1]/'assets/design.example.json').read_text(encoding='utf-8'))
 
 
 class SpineTests(unittest.TestCase):
@@ -55,7 +55,7 @@ class SpineTests(unittest.TestCase):
 
     def finish_chapter(self,n=1):
         respond(self.db,self.path,self.task())                        # draft
-        t=self.task();w=json.loads(rpath(t,'input_path').read_text());text=w['payload']['prose']
+        t=self.task();w=json.loads(rpath(t,'input_path').read_text(encoding='utf-8'));text=w['payload']['prose']
         data=review(w['payload']['checks'],text,n);data.update(events=[],summary='s');self.submit(t,data)
         respond(self.db,self.path,self.task())                        # reader
         return head(self.db,'main')

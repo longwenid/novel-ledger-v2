@@ -13,7 +13,7 @@ from novel_core.store import initialize,connect,get,dump,digest,write_json
 
 ROOT=Path(__file__).resolve().parent
 STORY=ROOT/'story-v2'
-PROSE={n:(STORY/'chapters'/f'{n:02}.md').read_text().rstrip() for n in range(1,13)}
+PROSE={n:(STORY/'chapters'/f'{n:02}.md').read_text(encoding='utf-8').rstrip() for n in range(1,13)}
 
 
 def evidence(n,quote=None,text=None):
@@ -193,12 +193,12 @@ def long_review(info,reader):
 def main():
     import argparse
     p=argparse.ArgumentParser();p.add_argument('--project',required=True);args=p.parse_args()
-    review=json.loads((STORY/'reader-review.json').read_text())
-    initial_review=json.loads((STORY/'initial/reader-review.json').read_text())
+    review=json.loads((STORY/'reader-review.json').read_text(encoding='utf-8'))
+    initial_review=json.loads((STORY/'initial/reader-review.json').read_text(encoding='utf-8'))
     assert review.get('source_hashes')=={f'{n:02}.md':digest(s) for n,s in PROSE.items()}, 'reader receipts are stale'
     if review['book']['verdict']!='pass' or any(r['verdict']!='pass' for r in review['chapters']):
         raise SystemExit('Independent reader requests revision; resolve and re-review before replay.')
-    contract=json.loads((ROOT.parent/'assets/contract.example.json').read_text())
+    contract=json.loads((ROOT.parent/'assets/contract.example.json').read_text(encoding='utf-8'))
     contract['context_mode']='legacy' # Replay the recorded pre-context-task experiment.
     contract['character_mode']='legacy'
     contract['planning_mode']='legacy' # Reproduce the recorded v1.0 experiment, without inventing design receipts.
@@ -218,12 +218,12 @@ def main():
                 report={'kind':'real-authored-prose-with-recorded-model-reviews','review_mode':'serial pipeline; separate fresh-context reader reviewed all twelve chapters once','pilot_approval':'test commissioning, not real author approval','source_hashes':{str(n):digest(s) for n,s in PROSE.items()},'result':task,'tasks':trace,'limitations':['compressed sample, not million-character validation','not cross-provider verification','chapter 4 original draft and actual independent finding exercise repair; other editorial changes preceded replay','long-range review supplied by implementing editor, not a second blind reader']}
                 write_json(STORY/'execution-report.json',report)
                 return
-            stage,n=task['stage'],task['chapter'];info=json.loads(Path(task['input_path']).read_text())['payload']
+            stage,n=task['stage'],task['chapter'];info=json.loads(Path(task['input_path']).read_text(encoding='utf-8'))['payload']
             if stage=='plan':data={'chapters':[planned(i) for i in range(n,min(n+5,12)+1)]}
             elif stage=='draft':
                 text=PROSE[n]
                 if n==4:
-                    text=(STORY/'initial/04.md').read_text().rstrip()
+                    text=(STORY/'initial/04.md').read_text(encoding='utf-8').rstrip()
                 data={'prose':text}
             elif stage in ('repair','redesign'):data={'prose':PROSE[n],'repair_note':'按独立读者发现改正水位与桥洞净空关系，保持水尺只是线索。','design_change':'调查基于运输路径，刀痕不再被当作未经核实的暗号。'}
             elif stage=='facts':data=fact_review(n,info['prose'])

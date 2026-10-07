@@ -21,22 +21,22 @@ class StyleAnchorTests(unittest.TestCase):
         with transaction(self.db):put(self.db,'style_anchor',anchor|{'source':'author'})
         respond(self.db,self.path,self.task())                     # plan
         t=self.task();self.assertEqual(t['stage'],'draft')
-        work=json.loads(rpath(t, 'input_path').read_text())
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(work['style_anchor']['traits'],anchor['traits'])
         self.assertEqual(work['style_anchor']['sample'],anchor['sample'])
         respond(self.db,self.path,t)
         t=self.task();self.assertEqual(t['stage'],'facts')
-        self.assertNotIn('style_anchor',json.loads(rpath(t, 'input_path').read_text()))
+        self.assertNotIn('style_anchor',json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
         respond(self.db,self.path,t)
         t=self.task();self.assertEqual(t['stage'],'reader')
-        work=json.loads(rpath(t, 'input_path').read_text())
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertIn('voice_match',work['payload']['checks'])
         self.assertIn('style_anchor',work)
 
     def test_no_anchor_no_voice_check(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
         t=self.task();self.assertEqual(t['stage'],'reader')
-        work=json.loads(rpath(t, 'input_path').read_text())
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertNotIn('voice_match',work['payload']['checks'])
 
     def test_approve_snapshots_pilot_as_anchor(self):
@@ -54,14 +54,14 @@ class StyleAnchorTests(unittest.TestCase):
             if t.get('stage')=='reader':break
             self.assertTrue(t.get('task_id'))
             respond(self.db,self.path,t)
-        work=json.loads(rpath(t, 'input_path').read_text())
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertIn('voice_match',work['payload']['checks'])
         self.assertEqual(work['style_anchor']['sample'],anchor['sample'])
 
     def test_voice_match_requires_evidence(self):
         with transaction(self.db):put(self.db,'style_anchor',{'traits':['短句'],'sample':'雨未停。','source':'author'})
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
-        t=self.task();work=json.loads(rpath(t, 'input_path').read_text())
+        t=self.task();work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         data=review(work['payload']['checks'],work['payload']['prose'])
         row=next(r for r in data['checks'] if r['id']=='voice_match');row['evidence']=[]
         row['not_applicable']='跳过'
@@ -104,7 +104,7 @@ class TokenBoundingTests(unittest.TestCase):
         for n in (1,2,3):
             self._commit_chapter(n)
         t=self.task();self.assertEqual(t['stage'],'draft')
-        work=json.loads(rpath(t, 'input_path').read_text())
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         history=[s for s in work['selected'] if s['kind']=='history']
         spent=sum(len(dump(h)) for h in history)
         self.assertLessEqual(spent,6400)
@@ -113,7 +113,7 @@ class TokenBoundingTests(unittest.TestCase):
 
     def test_memories_capped_at_two(self):
         self._commit_chapter(1)
-        t=self.task();work=json.loads(rpath(t, 'input_path').read_text())
+        t=self.task();work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(len([s for s in work['selected'] if s['kind']=='memory']),2)
 
     def test_usage_counters_surface_in_status_and_doctor(self):
@@ -145,7 +145,7 @@ class TokenBoundingTests(unittest.TestCase):
         for _ in range(50):
             t=self.task()
             if not t.get('task_id'):break
-            pack=json.loads(rpath(t, 'input_path').read_text())
+            pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
             if t['stage'].endswith('_review') and not pack['payload'].get('scope','').endswith('_chunk'):
                 seen=pack['payload']['checks'];break
             respond(self.db,self.path,t,ending=t['chapter']==1)

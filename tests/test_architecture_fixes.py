@@ -77,7 +77,7 @@ class ArchitectureTests(unittest.TestCase):
         respond(self.db,self.path,self.task())                     # plan
         t=self.task();respond(self.db,self.path,t)                 # draft
         t=self.task()                                              # facts
-        pack=json.loads(rpath(t, 'input_path').read_text());prose=pack['payload']['prose']
+        pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack['payload']['prose']
         data=review(pack['payload']['checks'],prose)
         data.update(summary='登记两条事件。',events=[
             {'op':'state','entity':'hero','key':'mood','before':None,'after':'坚定','evidence':ev(prose)},
@@ -94,13 +94,13 @@ class ArchitectureTests(unittest.TestCase):
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
         engine.submit(self.db,result(t,bad))
         t=self.task();self.assertEqual(t['stage'],'repair')
-        pack=json.loads(rpath(t, 'input_path').read_text());payload=pack['payload']
+        pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
         base=payload['base_hash'];full=get(self.db,'candidate_text:'+base)
         start=full.index('收据');end=start+len('收据')
         engine.submit(self.db,result(t,{'base_hash':base,'repair_note':'替换关键道具词',
                                         'patches':[{'start':start,'end':end,'text':'密信'}]}))
         t=self.task();self.assertEqual(t['stage'],'facts')
-        self.assertIn('密信',json.loads(rpath(t, 'input_path').read_text())['payload']['prose'])
+        self.assertIn('密信',json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']['prose'])
 
     def test_repair_patch_invalid_span_not_converted(self):
         t,prose=self._draft_with_events()
@@ -109,7 +109,7 @@ class ArchitectureTests(unittest.TestCase):
         bad['first_read']={'desire':'目标','obstacle':'阻力','change':'变化','read_on_reason':'悬念'}
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
         engine.submit(self.db,result(t,bad))
-        t=self.task();pack=json.loads(rpath(t, 'input_path').read_text());payload=pack['payload']
+        t=self.task();pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
         with self.assertRaises(Error) as exc:
             engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'repair_note':'越界',
                                             'patches':[{'start':0,'end':10**9,'text':'越界'}]}))
@@ -122,11 +122,11 @@ class ArchitectureTests(unittest.TestCase):
         bad['first_read']={'desire':'目标','obstacle':'阻力','change':'变化','read_on_reason':'悬念'}
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
         engine.submit(self.db,result(t,bad))
-        t=self.task();pack=json.loads(rpath(t, 'input_path').read_text());payload=pack['payload']
+        t=self.task();pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
         full=get(self.db,'candidate_text:'+payload['base_hash'])
         engine.submit(self.db,result(t,{'prose':full+'宋禾低声补了一句。','repair_note':'补一个动作'}))
         t=self.task();self.assertEqual(t['stage'],'facts')
-        return t,json.loads(rpath(t, 'input_path').read_text()),full
+        return t,json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')),full
 
     def test_post_repair_auto_carry_needs_no_dispositions(self):
         t,work,full=self._reach_post_repair_facts()
@@ -171,13 +171,13 @@ class ArchitectureTests(unittest.TestCase):
         bad['first_read']={'desire':'目标','obstacle':'阻力','change':'变化','read_on_reason':'悬念'}
         bad['findings']=[{'severity':'quality','impact':'道具不实','goal':'换核心道具','evidence':ev(prose)}]
         engine.submit(self.db,result(t,bad))
-        t=self.task();payload=json.loads(rpath(t, 'input_path').read_text())['payload']
+        t=self.task();payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
         base=get(self.db,'candidate_text:'+payload['base_hash'])
         start=base.index('收据')
         engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'repair_note':'换核心道具',
                                         'patches':[{'start':start,'old':'收据','new':'密信'}]}))
         t=self.task();self.assertEqual(t['stage'],'facts')
-        return t,json.loads(rpath(t, 'input_path').read_text())
+        return t,json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
 
     def test_post_repair_broken_evidence_requires_disposition(self):
         t,work=self._reach_patched_facts()
@@ -215,13 +215,13 @@ class ArchitectureTests(unittest.TestCase):
         self.assertEqual(head(self.db,'main'),1)
         engine.begin_revision(self.db,1,'复核传播')
         t=self.task();self.assertEqual(t['stage'],'draft')
-        work=json.loads(rpath(t, 'input_path').read_text());payload=work['payload']
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=work['payload']
         from novel_core.patches import source
         base=source(self.db,{'stage':'draft','payload':payload})
         engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'repair_note':'微调措辞',
                                         'patches':[{'start':0,'old':prose[:4],'new':prose[:3]+'二'}]}))
         t=self.task();self.assertEqual(t['stage'],'facts')
-        work=json.loads(rpath(t, 'input_path').read_text())
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(work['payload']['prior_events_source'],'revision')
         self.assertEqual(len(work['payload']['prior_events']),2)
 
@@ -231,7 +231,7 @@ class ArchitectureTests(unittest.TestCase):
             if t.get('stage')=='await_author': engine.approve(self.db);continue
             if t.get('stage')=='revision_promoted':continue
             if not t.get('task_id'):break
-            pack=json.loads(rpath(t, 'input_path').read_text())
+            pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
             if t['stage'].endswith('_review') and pack['payload'].get('scope')=='book':
                 source=db_prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
                                                 (t['branch'],pack['payload']['first'])).fetchone()[0]

@@ -9,7 +9,7 @@ from novel_core.memory import pack
 from novel_core.ledger import replay
 from novel_core.store import Error, digest, head
 
-EXAMPLE=json.loads((Path(__file__).resolve().parents[1]/'assets/design.example.json').read_text())
+EXAMPLE=json.loads((Path(__file__).resolve().parents[1]/'assets/design.example.json').read_text(encoding='utf-8'))
 
 
 class DesignTests(unittest.TestCase):
@@ -31,7 +31,7 @@ class DesignTests(unittest.TestCase):
     def chapter(self,n=1,volume='v1',end=False):
         self.submit(self.task(),{'chapters':[self.plan(n,volume,end)]})
         respond(self.db,self.path,self.task())
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text());text=w['payload']['prose']
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));text=w['payload']['prose']
         data=review(w['payload']['checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
         self.submit(t,data);respond(self.db,self.path,self.task())
     def test_world_is_reserved_design_scope(self):
@@ -46,15 +46,15 @@ class DesignTests(unittest.TestCase):
         self.assertEqual(self.task()['stage'],'plan');self.assertEqual(before,digest(replay(self.db,'main')))
     def test_writer_receives_script_brief_reader_does_not(self):
         self.prepare();self.submit(self.task(),{'chapters':[self.plan()]})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text())
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(w['writer_brief']['dramatic_task']['necessary_change'],self.plan()['change'])
         self.assertEqual(w['design_context']['status'],'proposal_not_canon');self.assertTrue(rpath(t, 'brief_path').exists())
-        rpath(t, 'brief_path').write_text('人为修改的视图')
-        self.assertEqual(self.task()['input_hash'],t['input_hash']);self.assertIn('场景任务书',rpath(t, 'brief_path').read_text())
-        respond(self.db,self.path,t);f=self.task();fw=json.loads(rpath(f, 'input_path').read_text())
+        rpath(t, 'brief_path').write_text('人为修改的视图', encoding='utf-8')
+        self.assertEqual(self.task()['input_hash'],t['input_hash']);self.assertIn('场景任务书',rpath(t, 'brief_path').read_text(encoding='utf-8'))
+        respond(self.db,self.path,t);f=self.task();fw=json.loads(rpath(f, 'input_path').read_text(encoding='utf-8'))
         self.assertNotIn('writer_brief',fw);self.assertNotIn('design_context',fw)
         text=fw['payload']['prose'];data=review(fw['payload']['checks'],text);data.update(events=[],summary='交付凭证')
-        self.submit(f,data);reader=self.task();rw=json.loads(rpath(reader, 'input_path').read_text())
+        self.submit(f,data);reader=self.task();rw=json.loads(rpath(reader, 'input_path').read_text(encoding='utf-8'))
         for key in ('writer_brief','design_context','plan','contract','state','continuity'):self.assertNotIn(key,rw)
     def test_unprepared_cross_volume_batch_is_atomic(self):
         self.prepare();task=self.task()
@@ -93,7 +93,7 @@ class DesignTests(unittest.TestCase):
             t=self.task()
             if t['stage']=='volume_plan':break
             self.assertEqual(t['stage'],'volume_review');respond(self.db,self.path,t)
-        self.assertEqual(json.loads(rpath(t, 'input_path').read_text())['payload']['design_scope'],'v2')
+        self.assertEqual(json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']['design_scope'],'v2')
         v=copy.deepcopy(EXAMPLE['volume_plan']);v['volume']='v2';v['dependencies']=[1];self.submit(t,v)
         self.assertEqual(self.task()['stage'],'plan')
         self.assertIn('1',design.current(self.db,'main','v2')['sources'])
@@ -123,13 +123,13 @@ class DesignTests(unittest.TestCase):
             if stage=='await_author':engine.approve(self.db);continue
             if stage=='world_plan':self.submit(task,EXAMPLE['world_plan'])
             elif stage=='volume_plan':
-                data=copy.deepcopy(EXAMPLE['volume_plan']);data['volume']=json.loads(rpath(task, 'input_path').read_text())['payload']['design_scope']
+                data=copy.deepcopy(EXAMPLE['volume_plan']);data['volume']=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']['design_scope']
                 self.submit(task,data)
             elif stage=='plan':
                 n=task['chapter'];p=self.plan(n,'v'+str(n),True);p['book_end']=n==2
                 self.submit(task,{'chapters':[p]})
             elif stage=='facts':
-                w=json.loads(rpath(task, 'input_path').read_text());text=w['payload']['prose']
+                w=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'));text=w['payload']['prose']
                 data=review(w['payload']['checks'],text,task['chapter']);data.update(events=[],summary='有代价的证据交付。');self.submit(task,data)
             else:respond(self.db,self.path,task)
         self.assertEqual(task['status'],'completed');self.assertEqual(stages.count('world_plan'),1);self.assertEqual(stages.count('volume_plan'),2)

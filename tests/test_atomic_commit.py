@@ -15,15 +15,15 @@ class AtomicCommitTests(unittest.TestCase):
                 for _ in range(3):respond(db,project,engine.next_task(db,project))
                 task=engine.next_task(db,project)
                 self.assertEqual(task['stage'],'reader')
-                taskfile=project/'pending-task.json';taskfile.write_text(json.dumps(task))
+                taskfile=project/'pending-task.json';taskfile.write_text(json.dumps(task), encoding='utf-8')
                 code='''import os,sys,json
 sys.path.insert(0,sys.argv[1])
 from support import *
-project=Path(sys.argv[2]);db=connect(project);task=json.loads(Path(sys.argv[3]).read_text())
+project=Path(sys.argv[2]);db=connect(project);task=json.loads(Path(sys.argv[3]).read_text(encoding='utf-8'))
 engine.append_events=lambda *args,**kwargs: os._exit(17)
 respond(db,project,task)
 '''
-                proc=subprocess.run([sys.executable,'-c',code,str(Path(__file__).resolve().parent),str(project),str(taskfile)],capture_output=True,text=True)
+                proc=subprocess.run([sys.executable,'-c',code,str(Path(__file__).resolve().parent),str(project),str(taskfile)],capture_output=True,text=True,encoding='utf-8')
                 self.assertEqual(proc.returncode,17,proc.stderr)
                 self.assertEqual(engine.head(db,'main'),0)
                 self.assertEqual(engine.next_task(db,project)['task_id'],task['task_id'])

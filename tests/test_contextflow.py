@@ -64,15 +64,15 @@ class ContextFlowTests(unittest.TestCase):
             self.db.execute('INSERT INTO plans VALUES (?,?,?)',('main',1,dump(plan(1))))
             self.db.execute('INSERT INTO plans VALUES (?,?,?)',('main',2,dump(plan(2))))
             append_events(self.db,'main',1,text,events,state)
-            profiles=json.loads((Path(__file__).resolve().parents[1]/'assets/characters.example.json').read_text())
+            profiles=json.loads((Path(__file__).resolve().parents[1]/'assets/characters.example.json').read_text(encoding='utf-8'))
             characters.save(self.db,'main',2,profiles,['hero','ally'],'fixture')
         return digest(replay(self.db,'main'))
 
     def ready(self,verbose=False):
         seen=[]
         for _ in range(200):
-            task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text())
-            self.assertLessEqual(len(rpath(task, 'input_path').read_text()),contextflow.limits(self.db)['input'])
+            task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+            self.assertLessEqual(len(rpath(task, 'input_path').read_text(encoding='utf-8')),contextflow.limits(self.db)['input'])
             if task['stage'] not in ('context_scan','context_reduce'):return task,work,seen
             seen.append(task['stage']);self.submit(task,preparation(task,work,verbose))
         self.fail('Preparation did not converge')
@@ -93,7 +93,7 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(task['stage'],'draft')
 
     def test_restart_duplicate_and_bad_coverage_are_atomic(self):
-        before=self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text())
+        before=self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
         data=preparation(task,work);bad=copy.deepcopy(data);bad['coverage']['end']-=1
         with self.assertRaises(Error):self.submit(task,bad)
         self.db.close();self.db=connect(self.path)
@@ -103,7 +103,7 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(digest(replay(self.db,'main')),before)
 
     def test_forged_note_evidence_is_rejected(self):
-        self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text())
+        self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
         data=preparation(task,work);data['notes']=[{'text':'假的来源','evidence':[{'document':work['payload']['document'],'start':0,'quote':'不存在的内容'}]}]
         with self.assertRaises(Error):self.submit(task,data)
         self.assertEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
@@ -127,7 +127,7 @@ class ContextFlowTests(unittest.TestCase):
 
     def test_retrieval_is_bounded_and_cumulative(self):
         task=engine.next_task(self.db,self.path)
-        package=len(rpath(task, 'input_path').read_text())
+        package=len(rpath(task, 'input_path').read_text(encoding='utf-8'))
         with transaction(self.db):
             one=contextflow.bounded_read(self.db,{'state':'很长的内容'*6000},task['task_id'])
         self.assertLessEqual(len(contextflow.wire(one)),contextflow.limits(self.db)['retrieval'])
@@ -162,7 +162,7 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT COUNT(*) FROM tasks').fetchone()[0],0)
 
     def test_actual_input_bytes_match_character_meter(self):
-        task=engine.next_task(self.db,self.path);raw=rpath(task, 'input_path').read_text();work=json.loads(raw)
+        task=engine.next_task(self.db,self.path);raw=rpath(task, 'input_path').read_text(encoding='utf-8');work=json.loads(raw)
         self.assertEqual(len(raw),work['chars']);self.assertEqual(raw,contextflow.wire(work))
         self.assertLessEqual(len(raw),work['context_capacity']['package_chars'])
         self.assertEqual(work['context_capacity']['capacity_chars'],48000)
@@ -170,7 +170,7 @@ class ContextFlowTests(unittest.TestCase):
 
     def test_receipt_is_one_unit_that_fits_the_declared_window(self):
         task=engine.next_task(self.db,self.path)
-        window=48000-len(rpath(task, 'input_path').read_text())-contextflow.limits(self.db)['overhead']
+        window=48000-len(rpath(task, 'input_path').read_text(encoding='utf-8'))-contextflow.limits(self.db)['overhead']
         with self.assertRaises(Error) as exc:self.submit(task,{'huge':'字'*window})
         self.assertEqual(exc.exception.code,'context_output')
         self.assertEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
@@ -200,7 +200,7 @@ class ContextFlowTests(unittest.TestCase):
         put(self.db,'session_mode','serial');task=engine.next_task(self.db,self.path)
         used=get(self.db,'context_session_used')
         cli=Path(__file__).resolve().parents[1]/'scripts/novel.py'
-        call=subprocess.run([sys.executable,str(cli),'recall','--project',str(self.path),'--state'],capture_output=True,text=True)
+        call=subprocess.run([sys.executable,str(cli),'recall','--project',str(self.path),'--state'],capture_output=True,text=True,encoding='utf-8')
         self.assertEqual(call.returncode,0,call.stderr)
         self.assertEqual(get(self.db,'context_reads:'+task['task_id']),len(call.stdout))
         self.assertEqual(get(self.db,'context_session_used'),used+len(call.stdout))
@@ -213,7 +213,7 @@ class ContextFlowTests(unittest.TestCase):
     def test_reducer_cannot_claim_kept_without_retaining_source(self):
         before=self.grow(1500)
         for _ in range(100):
-            task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text())
+            task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
             if task['stage']=='context_reduce':break
             self.submit(task,preparation(task,work,verbose=True))
         self.assertEqual(task['stage'],'context_reduce')
@@ -251,7 +251,7 @@ class ContextFlowTests(unittest.TestCase):
         put(self.db,'session_mode','serial')
         task=engine.next_task(self.db,self.path);before=get(self.db,'context_session_used')
         driver=self.path/'bad_driver.py'
-        driver.write_text('import os\nfrom pathlib import Path\nPath(os.environ["NOVEL_RESULT_FILE"]).write_text("malformed JSON")\n')
+        driver.write_text('import os\nfrom pathlib import Path\nPath(os.environ["NOVEL_RESULT_FILE"]).write_text("malformed JSON")\n', encoding='utf-8')
         outcome=run(self.db,self.path,{'argv':[sys.executable,str(driver)],'session_mode':'serial','max_retries':5,'timeout':5},max_tasks=1)
         self.assertEqual(outcome.get('stage'),'await_session')
         self.assertGreaterEqual(get(self.db,'context_session_used'),before+contextflow.limits(self.db)['output'])

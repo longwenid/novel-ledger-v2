@@ -20,7 +20,7 @@ class DisciplineTests(unittest.TestCase):
 
     def test_pack_carries_discipline(self):
         t=self.task()
-        work=json.loads(rpath(t, 'input_path').read_text())
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         d=work['discipline']
         self.assertIn('pass/fix',d['review'])
         self.assertIn('links ID',d['events'])

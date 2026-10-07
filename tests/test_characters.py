@@ -10,8 +10,8 @@ from novel_core.store import Error,digest,head
 from novel_core.memory import pack
 
 ROOT=Path(__file__).resolve().parents[1]
-PROFILES=json.loads((ROOT/'assets/characters.example.json').read_text())
-PLAN=json.loads((ROOT/'assets/design.example.json').read_text())['chapter_plan']
+PROFILES=json.loads((ROOT/'assets/characters.example.json').read_text(encoding='utf-8'))
+PLAN=json.loads((ROOT/'assets/design.example.json').read_text(encoding='utf-8'))['chapter_plan']
 
 
 class CharacterTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class CharacterTests(unittest.TestCase):
         self.submit(t,PROFILES)
     def write(self,prose='周行问：“最后一个签收的人是谁？”宋禾把表格推过去：“先写清你要拿什么。”',events=None):
         t=self.task();self.assertEqual(t['stage'],'draft');self.submit(t,{'prose':prose})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text());data=review(w['payload']['checks'],prose,t['chapter'])
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['checks'],prose,t['chapter'])
         data.update(events=events or [],summary='核对交接，双方承担不同风险。');self.submit(t,data)
         t=self.task();respond(self.db,self.path,t)
     def test_profile_task_idempotent_and_not_canon(self):
@@ -49,16 +49,16 @@ class CharacterTests(unittest.TestCase):
         with self.assertRaises(Error):self.submit(t,bad)
         self.submit(t,PROFILES)
     def test_writer_packet_is_relevant_budgeted_and_reader_first_read_is_clean(self):
-        self.prepare();t=self.task();w=json.loads(rpath(t, 'input_path').read_text())
+        self.prepare();t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(set(w['character_context']['profiles']),{'hero','ally'})
-        self.assertIn('人物小传',rpath(t, 'brief_path').read_text());self.assertIn('本场景',rpath(t, 'brief_path').read_text())
+        self.assertIn('人物小传',rpath(t, 'brief_path').read_text(encoding='utf-8'));self.assertIn('本场景',rpath(t, 'brief_path').read_text(encoding='utf-8'))
         put(self.db,'context_chars',len(dump(w))-100)
         with self.assertRaises(Error):pack(self.db,'main',1,'draft',{})
         put(self.db,'context_chars',48000)
         self.submit(t,{'prose':'周行问：“最后谁签收？”宋禾说：“把范围写清楚。”'})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text());self.assertIn('character_consistency',w['payload']['checks'])
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['checks'])
         data=review(w['payload']['checks'],w['payload']['prose']);data.update(events=[],summary='核对责任');self.submit(t,data)
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text())
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertIn('dialogue_identity',w['payload']['checks'])
         for k in ('character_context','writer_brief','state','design_context'):self.assertNotIn(k,w)
     def test_speaker_intentions_must_be_separate(self):
@@ -78,7 +78,7 @@ class CharacterTests(unittest.TestCase):
         event={'op':'character_development','entity':'hero','before':None,'change':'开始允许同伴自行承担风险','cause':'宋禾提出愿意签字','evidence':ev(text),'cause_evidence':ev(text)}
         self.write(text,[event]);engine.approve(self.db)
         self.submit(self.task(),{'chapters':[self.plan(2)]});t=self.task()
-        self.assertEqual(t['stage'],'character_plan');w=json.loads(rpath(t, 'input_path').read_text());self.assertEqual(w['payload']['entities'],['hero'])
+        self.assertEqual(t['stage'],'character_plan');w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertEqual(w['payload']['entities'],['hero'])
         revised=copy.deepcopy(PROFILES['profiles'][0]);revised['change_reason']='同伴争取到了决定自己风险的权利'
         revised['biography']['experiences']=[{'text':'让宋禾自行决定签字','status':'established','evidence':ev(text)}]
         wrong=copy.deepcopy(revised);wrong['biography']['experiences'][0]['evidence']['quote']='历史中不存在的话'
@@ -90,7 +90,7 @@ class CharacterTests(unittest.TestCase):
     def test_dialogue_quality_can_trigger_repair(self):
         self.prepare();t=self.task();text='周行说：“此事必有蹊跷。”宋禾说：“此事必有蹊跷。”';self.submit(t,{'prose':text})
         t=self.task();respond(self.db,self.path,t)
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text());data=review(w['payload']['checks'],text)
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['checks'],text)
         data['checks'][-1]['result']='fix';data['verdict']='fix'
         data['findings']=[{'severity':'quality','impact':'两人对白可互换，责任立场在正文中消失','goal':'让宋禾提出交接条件，周行核对经过','evidence':ev(text)}]
         data['first_read']={'desire':'查证','obstacle':'不信','change':'无','read_on_reason':'人物难区分'}
@@ -116,7 +116,7 @@ class CharacterTests(unittest.TestCase):
         for _ in range(20):
             t=self.task()
             if t.get('status')=='completed':break
-            work=json.loads(rpath(t, 'input_path').read_text());checks.append(work['payload']['checks'])
+            work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));checks.append(work['payload']['checks'])
             respond(self.db,self.path,t)
         self.assertEqual(t['status'],'completed')
         self.assertTrue(checks and all('voice_evolution' in c for c in checks))
@@ -138,7 +138,7 @@ class CharacterTests(unittest.TestCase):
         self.assertFalse(replay(self.db,revision['branch']).get('character_developments'))
         self.assertEqual(head(self.db,'main'),1)
         task=self.task();self.assertEqual(task['stage'],'character_plan')
-        self.assertEqual(json.loads(rpath(task, 'input_path').read_text())['payload']['entities'],['hero'])
+        self.assertEqual(json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']['entities'],['hero'])
 
 
 class ProfileErrorDirectionTests(unittest.TestCase):

@@ -69,8 +69,8 @@ class IndependentRegressions(unittest.TestCase):
                         time.sleep(0.01)
                     if sys.argv[1] == 'fail':
                         raise SystemExit(1)
-                    task = json.loads(Path(os.environ['NOVEL_TASK_FILE']).read_text())
-                    data = json.loads(Path('plan.json').read_text())
+                    task = json.loads(Path(os.environ['NOVEL_TASK_FILE']).read_text(encoding='utf-8'))
+                    data = json.loads(Path('plan.json').read_text(encoding='utf-8'))
                     Path(os.environ['NOVEL_RESULT_FILE']).write_text(json.dumps({
                         'schema': 'novel-ledger-v2.result/1',
                         'task_id': task['task_id'],
@@ -91,13 +91,13 @@ class IndependentRegressions(unittest.TestCase):
                     completed = subprocess.run([
                         sys.executable, str(cli), 'run', '--project', str(project),
                         '--driver', str(config), '--max-tasks', '1',
-                    ], capture_output=True, text=True, timeout=30)
+                    ], capture_output=True, text=True, timeout=30, encoding='utf-8')
                     self.assertEqual(completed.returncode, 0, completed.stderr)
                     outcome = json.loads(completed.stdout)
                     markers = list(project.glob('child-*.json'))
                     self.assertEqual(len(markers), 2 if mode == 'fail' else 1)
                     for marker in markers:
-                        pid = json.loads(marker.read_text())['pid']
+                        pid = json.loads(marker.read_text(encoding='utf-8'))['pid']
                         # Observe independently of the runner's own liveness helper.
                         observed = subprocess.run(
                             ['ps', '-p', str(pid), '-o', 'stat='],
@@ -115,7 +115,7 @@ class IndependentRegressions(unittest.TestCase):
                 finally:
                     # Also clean up when running this test against the broken version.
                     for marker in project.glob('child-*.json'):
-                        group = json.loads(marker.read_text())['pgid']
+                        group = json.loads(marker.read_text(encoding='utf-8'))['pgid']
                         try:
                             os.killpg(group, signal.SIGKILL)
                         except ProcessLookupError:
@@ -129,7 +129,7 @@ class IndependentRegressions(unittest.TestCase):
         respond(db, project, engine.next_task(db, project),
                 prose='周行划去那笔一文的收入，将原有银钱全部交出。')
         task = engine.next_task(db, project)
-        prose = json.loads(rpath(task, 'input_path').read_text())['payload']['prose']
+        prose = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']['prose']
         data = review(engine.FACT_CHECKS, prose)
         data.update(summary='周行交出原有银钱。', events=[{
             'op': 'resource', 'asset': 'cash', 'unit': '文',
@@ -197,7 +197,7 @@ class IndependentRegressions(unittest.TestCase):
             if (stage == 'batch_review' and task['chapter'] not in requested
                     and task['branch'] == get(db, 'active_branch')):
                 requested.add(task['chapter'])
-                payload = json.loads(rpath(task, 'input_path').read_text())['payload']
+                payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
                 first = payload['first']
                 prose = db.execute(
                     'SELECT prose FROM chapters WHERE branch=? AND number=?',

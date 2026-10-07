@@ -21,8 +21,8 @@ from novel_core.memory import pack, recall
 from novel_core.runner import run
 from novel_core.budget import han_count
 
-DESIGN = json.loads((ROOT/'assets/design.example.json').read_text())
-PROFILES = json.loads((ROOT/'assets/characters.example.json').read_text())
+DESIGN = json.loads((ROOT/'assets/design.example.json').read_text(encoding='utf-8'))
+PROFILES = json.loads((ROOT/'assets/characters.example.json').read_text(encoding='utf-8'))
 POINTS = (1,10,100,150,200,300,500,1000)
 
 
