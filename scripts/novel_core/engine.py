@@ -43,9 +43,6 @@ def status(db):
             'reason':get(db,'pause_reason'),
             'context_chars':get(db,'context_chars'),
             'skill_version':VERSION, 'db_version':get(db,'version'),
-            'context_usage':{'tasks':get(db,'usage_tasks',0),
-                             'input_chars':get(db,'usage_input_chars',0),'result_chars':get(db,'usage_result_chars',0),
-                             'read_chars':get(db,'usage_read_chars',0)},
             'volume_budget':overview(db,work)}
 
 
@@ -256,9 +253,7 @@ def next_task(db,project):
                 pending=None
         if pending:
             task = dict(pending)
-            from .contextflow import charge_input
             work=json.loads(task['input'])
-            charge_input(db,task['id'],work)
         else:
             stage,n,payload = choose(db)
             if stage=='await_author':
@@ -277,9 +272,6 @@ def next_task(db,project):
             fingerprint = digest(work)
             task = {'id':tid,'branch':branch,'stage':stage,'chapter':n,'input_hash':fingerprint,'input':dump(work)}
             db.execute('INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES (?,?,?,?,?,?,?)',(tid,branch,stage,n,fingerprint,dump(work),'pending'))
-            from .contextflow import charge_input
-            charge_input(db,tid,work)
-            put(db,'usage_tasks',get(db,'usage_tasks',0)+1)
             created=True
             log(db,'dispatch',{'task':tid,'stage':stage,'chapter':n,'branch':branch})
     if created:

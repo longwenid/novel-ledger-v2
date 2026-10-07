@@ -203,17 +203,10 @@ def accept(db,work,data,task_id):
     log(db,'context_prepare',{'bundle':ident,'stage':work['stage'],'task':task_id})
 
 
-def charge_input(db,task_id,work,repeat=False):
-    if not enabled(db):
-        return
-    put(db,'usage_input_chars',get(db,'usage_input_chars',0)+len(wire(work)))
-
-
 def charge_result(db,task,work,result):
     # Called outside the creative transaction: rejected output still consumes context.
     if not enabled(db):return
     size=len(wire(result))
-    put(db,'usage_result_chars',get(db,'usage_result_chars',0)+size)
     anchors=limits(db)
     # One receipt is one creative unit: beside its own input it must fit the declared capacity.
     require(size+len(wire(work))+anchors['overhead']<=anchors['capacity'],'context_output',
@@ -264,7 +257,6 @@ def bounded_read(db,value,task_id=None,start=0):
             count//=2
         require(count>0,'context_retrieval','无法在剩余补读空间中返回材料')
     if task_id:put(db,'context_reads:'+task_id,get(db,'context_reads:'+task_id,0)+len(wire(out)))
-    if task_id:put(db,'usage_read_chars',get(db,'usage_read_chars',0)+len(wire(out)))
     return out
 
 

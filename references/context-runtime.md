@@ -26,7 +26,7 @@ v1.5 默认 `context_mode=bounded`。上下文不因历史增长而爆炸，靠�
 
 `context_chars` 是宿主声明的容量锚点（保守默认 48000 个 Unicode 字符），由宿主按模型真实 token 窗口、系统提示、推理与输出需求校准；skill 不把它当作固定预算保证。页尺寸与预留从声明容量派生：工作包约容量一半、读页约 1/6、回执参考约 1/4、其余为宿主指令与工具预留；可用 `context_output_chars/context_retrieval_chars/context_overhead_chars` 单独校准，均至少 256 字符，`context_chars` 至少 4096。锚点只决定分页尺寸，不构成四份硬配额。
 
-`input.json` 使用紧凑 JSON，`chars` 等于实际文件字符数（含末尾换行）；输入、回执、补读分别计量，用于分页与诚实报告。结果按同一种紧凑协议计量；宿主额外包装和工具输出计入预留。`doctor` 返回实际配置及 `context_window_verified:false`，并附 `usage`（tasks、input/result/read 字符累计）与降耗提示：工作包按需选择材料（历史有界、提炼记忆至多 2 条），遗漏都记账并可用 recall 定向补读，不为省 token 截断必要约束。不要以字符数精确推算 token 或费用。修改容量先完成或取消当前任务，已有材料快照不改写。
+`input.json` 使用紧凑 JSON，`chars` 等于实际文件字符数（含末尾换行），仅用于工作包容量锚点与分页尺寸，不做全局用量统计，也不以字符数推算 token 或费用。补读按本工作包配额分页，超配额按 context_more 转准备流程。`doctor` 返回实际配置与 `context_window_verified:false`：工作包按需选择材料（历史有界、提炼记忆至多 2 条），遗漏都记账并可用 recall 定向补读，不为省 token 截断必要约束。修改容量先完成或取消当前任务，已有材料快照不改写。
 
 - **主控也要交接**：主控只接收任务状态、路径和短错误，不读所有 worker 正文。长时间运行主控仍须依宿主实际窗口换会话，不能因为 worker 有界就声称主控永久有界。
 

@@ -22,7 +22,7 @@ class SpineTests(unittest.TestCase):
         self.submit(self.task(),EXAMPLE['world_plan']);self.submit(self.task(),EXAMPLE['volume_plan'])
     def plan(self,n=1,major=False,refs=None):
         p=copy.deepcopy(EXAMPLE['chapter_plan']);p.update(number=n)
-        shapes=('钩子','悬念','闭环','交接','爆发','静收','反转','余波')
+        shapes=('悬念','闭环','交接','爆发','静收','反转','余波')
         p['ending_shape']=shapes[n%len(shapes)]+f':测试收束{n}'
         p['sequence_refs']=[min(n,len(EXAMPLE['volume_plan']['sequence']))]
         if major:

@@ -32,10 +32,10 @@ def recall(db, branch, query='', entity=None, topic=None, start=1, end=None, off
 DISCIPLINE = {
     'review': 'checks 结果只能 pass/fix;每项证据 {chapter,start,quote} 以任务 branch 字段所指分支的库存正文为坐标系实测且唯一命中(分段视图中的【第N章】章头只是分隔,不属于正文,quote 不要包含它;export/html 默认输出 active 分支,与工作分支可能不同,须显式 --branch),不适用须 not_applicable+具体理由',
     'events': 'before 照抄账本当前值(首次登记为 null);move 必须引用 continuity 中已登记的 links ID,不确定先 recall;resource 只登记已入账资产,from_before/to_before 照账本,未登记道具不补流水',
-    'hooks': '延期上限 2 次且每次须 reason;closed 不可重开;due 为最迟章号,到期章必须兑现/关闭/再延',
+    'hooks': '钩子只为正文已写明的重大承诺登记(约定定调或读者可指认的明确伏笔),不为章末效果硬造,无钩可留就不留;延期上限 2 次且每次须 reason;closed 不可重开;due 为最迟章号,到期章必须兑现/关闭/再延',
     'clock': '证据须引用含时间词(日/夜/晨/时…)的正文语句;计划 scenes 的 D+N 是日程锚',
     'patches': 'start 为完整基稿的字符位置,old 必须与该处原文精确一致',
-    'plan': '分层计划:每章需 ending_shape(收束形态"类别:说明",类别: 钩子/悬念/闭环/交接/爆发/静收/反转/余波)且类别不与近三章重复;卷纲有 sequence 时 sequence_refs 为 1 起的节拍序号数组,声明本章推进哪些节拍',
+    'plan': '分层计划:每章需 ending_shape(收束形态"类别:说明",类别: 悬念/闭环/交接/爆发/静收/反转/余波)且类别不与近三章重复;卷纲有 sequence 时 sequence_refs 为 1 起的节拍序号数组,声明本章推进哪些节拍',
 }
 
 

@@ -116,13 +116,6 @@ class TokenBoundingTests(unittest.TestCase):
         t=self.task();work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(len([s for s in work['selected'] if s['kind']=='memory']),2)
 
-    def test_usage_counters_surface_in_status_and_doctor(self):
-        self._commit_chapter(1)
-        engine.next_task(self.db,self.path)
-        usage=engine.status(self.db)['context_usage']
-        self.assertEqual(usage['tasks'],1)
-        self.assertGreater(usage['input_chars'],0)
-
     def test_config_style_anchor_sets_and_validates(self):
         import novel
         args=novel.parser().parse_args(['config','--project',str(self.path),'--key','style_anchor',

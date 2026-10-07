@@ -131,9 +131,6 @@ def dispatch_raw(args):
             return {'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
                     'context_mode':get(db,'context_mode','bounded'),'declared_capacity_chars':get(db,'context_chars'),'sizing_anchors':limits(db),
                     'explosion_control':'structural rules: single-task visibility, scoped pagination, prepare-then-enter, load-once, one unit per receipt, growth-triggered handoff',
-                    'usage':{'tasks':get(db,'usage_tasks',0),'input_chars':get(db,'usage_input_chars',0),
-                             'result_chars':get(db,'usage_result_chars',0),'read_chars':get(db,'usage_read_chars',0)},
-                    'token_note':'降低消耗：宿主真实窗口大于声明容量时调高 context_chars 可减少交接与重复加载；工作包按需选择材料，历史有界纳入，遗漏按 recall 定向补读',
                     'context_window_verified':False,'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'per-task isolated workers with pack material isolation'}
         if cmd=='map':
             from novel_core.ledger import replay
