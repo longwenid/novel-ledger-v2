@@ -40,10 +40,10 @@ def status(db):
     return {'schema':'novel-ledger-v2.status/1', 'status':get(db,'status'), 'active_branch':active,
             'work_branch':work,'committed':head(db,active), 'work_committed':head(db,work),
             'pilot_approved':get(db,'pilot_approved'), 'task':dict(task) if task else None,
-            'session_mode':get(db,'session_mode'), 'reason':get(db,'pause_reason'),
-            'runner':get(db,'runner'), 'context_chars':get(db,'context_chars'),
+            'reason':get(db,'pause_reason'),
+            'context_chars':get(db,'context_chars'),
             'skill_version':VERSION, 'db_version':get(db,'version'),
-            'context_usage':{'tasks':get(db,'usage_tasks',0),'session_handoffs':get(db,'usage_handoffs',0),
+            'context_usage':{'tasks':get(db,'usage_tasks',0),
                              'input_chars':get(db,'usage_input_chars',0),'result_chars':get(db,'usage_result_chars',0),
                              'read_chars':get(db,'usage_read_chars',0)},
             'volume_budget':overview(db,work)}
@@ -256,10 +256,8 @@ def next_task(db,project):
                 pending=None
         if pending:
             task = dict(pending)
-            from .contextflow import session_checkpoint,charge_input
+            from .contextflow import charge_input
             work=json.loads(task['input'])
-            checkpoint=session_checkpoint(db,work,task['id'])
-            if checkpoint:return checkpoint
             charge_input(db,task['id'],work)
         else:
             stage,n,payload = choose(db)
@@ -274,9 +272,6 @@ def next_task(db,project):
             from .patches import prepare
             payload=prepare(db,stage,payload)
             work = pack(db,branch,n,stage,payload)
-            from .contextflow import session_checkpoint
-            checkpoint=session_checkpoint(db,work)
-            if checkpoint:return checkpoint
             stage=work['stage']
             tid = uuid.uuid4().hex
             fingerprint = digest(work)
@@ -517,13 +512,6 @@ def submit(db, result):
         require(task['input_hash']==result.get('input_hash'),'input_version','输入版本不匹配')
         if task['lease_owner']:
             require(result.get('lease_owner')==task['lease_owner'] and task['lease_until']>time.time(),'lease','任务租约失效')
-        from .contextflow import enabled as bounded_context
-        if get(db,'session_mode')=='fresh' and not bounded_context(db):
-            session=result.get('session',{})
-            require(session.get('origin')=='empty' and session.get('id'),'session','fresh 模式需要宿主提供独立会话回执')
-            prior=db.execute('SELECT task FROM sessions WHERE id=?',(session['id'],)).fetchone()
-            require(not prior,'session_reused','会话已用于其他任务')
-            db.execute('INSERT INTO sessions VALUES (?,?)',(session['id'],task['id']))
         data=result.get('data')
         require(isinstance(data,dict),'result','data 必须为对象')
         branch,n,stage=task['branch'],task['chapter'],task['stage']
@@ -832,12 +820,8 @@ def pause(db,reason,cancel=False):
 def resume(db):
     with transaction(db):
         require(get(db,'status')!='completed','completed','已完本；如需修订请使用 revise')
-        from .runner import process_alive, worker_alive
-        runner=get(db,'runner')
-        require(not runner or (not process_alive(runner.get('pid')) and not worker_alive(runner.get('worker_pid'))),'runner_busy','恢复前须确认旧控制器和模型进程均已退出')
         audit(db,get(db,'work_branch'),strict=True)
         db.execute("UPDATE tasks SET lease_owner=NULL,lease_until=NULL WHERE state='pending'")
-        put(db,'runner',None)
         put(db,'status','ready')
         put(db,'pause_reason',None)
         log(db,'resume',{})

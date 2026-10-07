@@ -31,12 +31,6 @@ class BookTests(unittest.TestCase):
     def test_no_premature_complete(self):
         with self.assertRaises(Error):
             with transaction(self.db):engine.complete_inner(self.db)
-    def test_fresh_session_reuse(self):
-        with transaction(self.db):put(self.db,'session_mode','fresh')
-        t=self.task();engine.submit(self.db,result(t,{'chapters':[plan(1)]},session={'id':'same','origin':'empty'}))
-        t=self.task()
-        with self.assertRaises(Error):engine.submit(self.db,result(t,{'prose':'周行交出收据。'},session={'id':'same','origin':'empty'}))
-        self.assertEqual(self.task()['task_id'],t['task_id'])
     def test_quality_failure_repair_and_no_canon_pollution(self):
         t=self.task();respond(self.db,self.path,t)
         t=self.task();respond(self.db,self.path,t)

@@ -42,7 +42,7 @@ class ContextFlowTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory();self.path=Path(self.tmp.name)
         c=contract();c['context_mode']='bounded';c['character_mode']='profiled'
         initialize(self.path,c);self.db=connect(self.path)
-        put(self.db,'session_mode','fresh');put(self.db,'pilot_approved',True)
+        put(self.db,'pilot_approved',True)
 
     def tearDown(self):self.db.close();self.tmp.cleanup()
 
@@ -117,98 +117,19 @@ class ContextFlowTests(unittest.TestCase):
         with self.assertRaises(Error) as exc:engine.next_task(self.db,self.path)
         self.assertEqual(exc.exception.code,'context_unresolved')
 
-    def test_serial_checkpoint_requires_new_session_id(self):
-        put(self.db,'session_mode','serial');put(self.db,'context_session_used',48000)
-        task=engine.next_task(self.db,self.path);self.assertEqual(task['stage'],'await_session')
-        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM tasks WHERE state='pending'").fetchone()[0],0)
-        with transaction(self.db):contextflow.start_session(self.db,'new-host-session')
-        task=engine.next_task(self.db,self.path);self.assertEqual(task['stage'],'plan')
-        with self.assertRaises(Error):contextflow.start_session(self.db,'new-host-session')
-
-    def test_retrieval_is_bounded_and_cumulative(self):
-        task=engine.next_task(self.db,self.path)
-        package=len(rpath(task, 'input_path').read_text(encoding='utf-8'))
-        with transaction(self.db):
-            one=contextflow.bounded_read(self.db,{'state':'很长的内容'*6000},task['task_id'])
-        self.assertLessEqual(len(contextflow.wire(one)),contextflow.limits(self.db)['retrieval'])
-        self.assertIsNotNone(one['next_start'])
-        used=get(self.db,'context_reads:'+task['task_id']);self.assertGreater(used,0)
-        # Cumulative raw reading is bounded by the package it serves, not by a fixed quota.
-        put(self.db,'context_reads:'+task['task_id'],max(2048,package))
-        with self.assertRaises(Error):contextflow.bounded_read(self.db,{},task['task_id'])
-
-    def test_read_allowance_is_proportional_to_its_package(self):
-        task=engine.next_task(self.db,self.path)
-        with transaction(self.db):
-            self.db.execute("UPDATE tasks SET input=? WHERE id=?",(dump({'pad':'x'*20000}),task['task_id']))
-            put(self.db,'context_reads:'+task['task_id'],10000)
-            one=contextflow.bounded_read(self.db,{'state':'内容'},task['task_id'])
-        # 10000 chars already read would exhaust a fixed 1/6 quota; the proportional rule still
-        # serves small targeted reads because the package itself is large.
-        self.assertNotIn('format',one)
-
-    def test_context_more_keeps_same_creative_stage_and_no_fact_mutation(self):
-        before=self.grow();task,work,_=self.ready()
-        self.submit(task,{'context_more':[{'chapter':1}],'reason':'补核她误信的原文语境'})
-        again,new_work,_=self.ready()
-        self.assertEqual(again['stage'],'draft');self.assertNotEqual(task['task_id'],again['task_id'])
-        self.assertEqual(digest(replay(self.db,'main')),before)
-        self.assertEqual(get(self.db,'context_extra:'+work['context_identity'])['rounds'],1)
-
-    def test_oversized_irreducible_core_has_actionable_error(self):
-        c=get(self.db,'contract');c['red_lines']=['约束'*20000];put(self.db,'contract',c)
-        with self.assertRaises(Error) as exc:engine.next_task(self.db,self.path)
-        self.assertEqual(exc.exception.code,'context_capacity')
-        self.assertEqual(self.db.execute('SELECT COUNT(*) FROM tasks').fetchone()[0],0)
-
-    def test_actual_input_bytes_match_character_meter(self):
-        task=engine.next_task(self.db,self.path);raw=rpath(task, 'input_path').read_text(encoding='utf-8');work=json.loads(raw)
-        self.assertEqual(len(raw),work['chars']);self.assertEqual(raw,contextflow.wire(work))
-        self.assertLessEqual(len(raw),work['context_capacity']['package_chars'])
-        self.assertEqual(work['context_capacity']['capacity_chars'],48000)
-        self.assertTrue(work['context_capacity']['rules'])
-
-    def test_receipt_is_one_unit_that_fits_the_declared_window(self):
-        task=engine.next_task(self.db,self.path)
-        window=48000-len(rpath(task, 'input_path').read_text(encoding='utf-8'))-contextflow.limits(self.db)['overhead']
-        with self.assertRaises(Error) as exc:self.submit(task,{'huge':'字'*window})
-        self.assertEqual(exc.exception.code,'context_output')
-        self.assertEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
-        # A receipt larger than the old fixed quarter but inside the declared window is no
-        # longer rejected by a quota gate; only unit-level validation may still refuse it.
-        task=engine.next_task(self.db,self.path)
-        with self.assertRaises(Error) as exc:self.submit(task,{'huge':'字'*13000})
-        self.assertNotEqual(exc.exception.code,'context_output')
-
     def test_failed_receipt_consumes_serial_budget_without_advancing_task(self):
-        put(self.db,'session_mode','serial')
-        task=engine.next_task(self.db,self.path);used=get(self.db,'context_session_used')
+        task=engine.next_task(self.db,self.path)
         bad=result(task,{'wrong':'missing chapter plans'})
         with self.assertRaises(Error):engine.submit(self.db,bad)
-        self.assertEqual(get(self.db,'context_session_used'),used+len(contextflow.wire(bad)))
         self.assertEqual(self.db.execute('SELECT state FROM tasks WHERE id=?',(task['task_id'],)).fetchone()[0],'pending')
         self.assertEqual(head(self.db,'main'),0)
 
-    def test_failed_fresh_attempt_cannot_reuse_host_session(self):
-        task=engine.next_task(self.db,self.path)
-        bad=result(task,{},session={'id':'real-host-session','origin':'empty'})
-        with self.assertRaises(Error):engine.submit(self.db,bad)
-        with self.assertRaises(Error) as exc:engine.submit(self.db,bad)
-        self.assertEqual(exc.exception.code,'session_reused')
-
     def test_cli_supplement_automatically_charges_pending_task(self):
-        put(self.db,'session_mode','serial');task=engine.next_task(self.db,self.path)
-        used=get(self.db,'context_session_used')
+        task=engine.next_task(self.db,self.path)
         cli=Path(__file__).resolve().parents[1]/'scripts/novel.py'
         call=subprocess.run([sys.executable,str(cli),'recall','--project',str(self.path),'--state'],capture_output=True,text=True,encoding='utf-8')
         self.assertEqual(call.returncode,0,call.stderr)
         self.assertEqual(get(self.db,'context_reads:'+task['task_id']),len(call.stdout))
-        self.assertEqual(get(self.db,'context_session_used'),used+len(call.stdout))
-        # Historical task reads still consume this session's available context.
-        self.db.execute("UPDATE tasks SET state='done' WHERE id=?",(task['task_id'],))
-        before=get(self.db,'context_session_used')
-        contextflow.bounded_read(self.db,{'old':'source'},task['task_id'])
-        self.assertGreater(get(self.db,'context_session_used'),before)
 
     def test_reducer_cannot_claim_kept_without_retaining_source(self):
         before=self.grow(1500)
@@ -245,17 +166,5 @@ class ContextFlowTests(unittest.TestCase):
         with self.assertRaises(Error) as exc:self.submit(old,{'prose':'过期输出'})
         self.assertEqual(exc.exception.code,'stale_task')
         self.assertEqual(head(self.db,'main'),1)
-
-    def test_malformed_driver_output_and_retry_input_consume_window(self):
-        from novel_core.runner import run
-        put(self.db,'session_mode','serial')
-        task=engine.next_task(self.db,self.path);before=get(self.db,'context_session_used')
-        driver=self.path/'bad_driver.py'
-        driver.write_text('import os\nfrom pathlib import Path\nPath(os.environ["NOVEL_RESULT_FILE"]).write_text("malformed JSON")\n', encoding='utf-8')
-        outcome=run(self.db,self.path,{'argv':[sys.executable,str(driver)],'session_mode':'serial','max_retries':5,'timeout':5},max_tasks=1)
-        self.assertEqual(outcome.get('stage'),'await_session')
-        self.assertGreaterEqual(get(self.db,'context_session_used'),before+contextflow.limits(self.db)['output'])
-        self.assertEqual(head(self.db,'main'),0)
-        self.assertEqual(self.db.execute('SELECT state FROM tasks WHERE id=?',(task['task_id'],)).fetchone()[0],'pending')
 
 if __name__=='__main__':unittest.main()

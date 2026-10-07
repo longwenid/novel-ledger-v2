@@ -8,7 +8,6 @@ from pathlib import Path
 from novel_core import engine
 from novel_core.store import Error, VERSION, connect, initialize, get, put, transaction, chapters, write_json, log, require
 from novel_core.memory import recall
-from novel_core.runner import run, validate_config
 
 
 def read(path):
@@ -19,13 +18,12 @@ def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','submit','approve','recall','audit','revise','run','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','session-start','tidy','html'):
+    for name in ('init','status','next','submit','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','tidy','html'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
             s.add_argument('--page-start',type=int,default=0)
             if name not in ('candidate','material'):s.add_argument('--task')
-        if name=='session-start':s.add_argument('--id',required=True)
         if name=='material':
             s.add_argument('--task',required=True);s.add_argument('--bundle',required=True);s.add_argument('--document',required=True);s.add_argument('--start',type=int,default=0)
         if name=='init': s.add_argument('--contract',required=True)
@@ -38,15 +36,13 @@ def parser():
             s.add_argument('--place',required=True);s.add_argument('--through',type=int);s.add_argument('--branch');s.add_argument('--depth',type=int,default=2);s.add_argument('--format',choices=['json','mermaid'],default='json')
         if name=='revise':
             s.add_argument('--from-chapter',type=int);s.add_argument('--reason',default='');s.add_argument('--discard',action='store_true')
-        if name=='run':
-            s.add_argument('--driver',required=True);s.add_argument('--max-tasks',type=int,default=0);s.add_argument('--check-only',action='store_true')
         if name=='pause':
             s.add_argument('--reason',required=True);s.add_argument('--cancel-task',action='store_true')
         if name=='export': s.add_argument('--out',required=True)
         if name=='html':
             s.add_argument('--out');s.add_argument('--branch')
         if name=='config':
-            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','session_mode','published_through','style_anchor','review_chunk']);s.add_argument('--value')
+            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','published_through','style_anchor','review_chunk']);s.add_argument('--value')
         if name=='candidate':
             s.add_argument('--task',required=True);s.add_argument('--start',type=int,default=0);s.add_argument('--end',type=int)
         if name=='character':
@@ -82,14 +78,8 @@ def dispatch(args):
 def dispatch_raw(args):
     cmd=args.command
     if cmd=='init': return initialize(args.project,read(args.contract))
-    if cmd=='run' and args.check_only: return {'valid':True,'config':validate_config(read(args.driver))}
     db=connect(args.project)
     try:
-        if cmd=='session-start':
-            from novel_core.contextflow import start_session
-            with transaction(db):
-                require(not get(db,'runner'),'runner_busy','会话交接前先结束旧运行器')
-                return start_session(db,args.id)
         if cmd=='material':
             from novel_core.contextflow import material
             return material(db,args.task,args.bundle,args.document,args.start)
@@ -133,26 +123,18 @@ def dispatch_raw(args):
         if cmd=='audit': return engine.audit(db)
         if cmd=='pause': return engine.pause(db,args.reason,args.cancel_task)
         if cmd=='resume': return engine.resume(db)
-        if cmd=='run': return run(db,args.project,read(args.driver),args.max_tasks)
         if cmd=='complete':
             with transaction(db): return engine.complete_inner(db)
         if cmd=='doctor':
             from novel_core.contextflow import limits,enabled
             import platform, shutil
-            anchors=limits(db);session_used=get(db,'context_session_used',0)
-            headroom=max(0,anchors['capacity']-session_used)
-            metered=enabled(db) and get(db,'session_mode')=='serial'
-            next_cost=anchors['output']+anchors['retrieval']+anchors['input']+anchors['overhead']
             return {'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
                     'context_mode':get(db,'context_mode','bounded'),'declared_capacity_chars':get(db,'context_chars'),'sizing_anchors':limits(db),
-                    'session_capacity':{'metered':metered,'used_chars':session_used if metered else None,'headroom_chars':headroom if metered else None,
-                        'pressure':('handoff_imminent' if headroom<next_cost else 'ok') if metered else 'not_metered',
-                        'note':'bounded serial：headroom 低于下一任务成本时将转为 await_session 交接；宿主无法提供真实新会话时改用 serial 模式或重新校准声明容量'},
                     'explosion_control':'structural rules: single-task visibility, scoped pagination, prepare-then-enter, load-once, one unit per receipt, growth-triggered handoff',
-                    'usage':{'tasks':get(db,'usage_tasks',0),'session_handoffs':get(db,'usage_handoffs',0),'input_chars':get(db,'usage_input_chars',0),
+                    'usage':{'tasks':get(db,'usage_tasks',0),'input_chars':get(db,'usage_input_chars',0),
                              'result_chars':get(db,'usage_result_chars',0),'read_chars':get(db,'usage_read_chars',0)},
                     'token_note':'降低消耗：宿主真实窗口大于声明容量时调高 context_chars 可减少交接与重复加载；工作包按需选择材料，历史有界纳入，遗漏按 recall 定向补读',
-                    'context_window_verified':False,'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'session_mode':get(db,'session_mode'),'file_roundtrip':'database opened','automatic_after_chat_close':'requires externally configured driver','independent_review':get(db,'session_mode')=='fresh'}
+                    'context_window_verified':False,'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'per-task isolated workers with pack material isolation'}
         if cmd=='map':
             from novel_core.ledger import replay
             from novel_core.spatial import resolve_place,spatial_view,mermaid
@@ -192,7 +174,7 @@ def dispatch_raw(args):
                     return engine.status(db)
                 return engine.begin_revision(db,args.from_chapter,args.reason)
         if cmd=='config':
-            if not args.key: return {k:get(db,k) for k in ('context_chars','context_mode','session_mode','published_through','style_anchor')}
+            if not args.key: return {k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')}
             if args.value is None: return {args.key:get(db,args.key)}
             if args.key=='style_anchor':
                 try:
@@ -201,12 +183,11 @@ def dispatch_raw(args):
                 except ValueError:
                     require(False,'config','style_anchor 需为合法 JSON 对象 {"traits":[...],"sample":"..."}')
             else:
-                value=args.value if args.key in ('session_mode','context_mode') else int(args.value)
+                value=args.value if args.key=='context_mode' else int(args.value)
             if args.key in ('context_output_chars','context_retrieval_chars','context_overhead_chars'):require(value>=256,'context_config','读页/回执/预留锚点至少 256 字符；锚点只校准尺寸，不构成配额')
             if args.key=='review_chunk':require(1<=value<=5,'config','review_chunk 为 1~5 章的分段审稿粒度;覆盖范围不变,只调成本')
             if args.key=='context_mode': require(value in ('bounded','legacy'),'config','context_mode 为 bounded/legacy；legacy 仅用于复现旧协议')
             if args.key=='context_chars': require(value>=4096,'config','声明容量至少 4096 字符；由宿主按真实 token 窗口校准')
-            if args.key=='session_mode': require(value in ('serial','fresh'),'config','模式只能 serial/fresh')
             if args.key=='published_through': require(get(db,'published_through',0)<=value<=engine.head(db,get(db,'active_branch')),'config','发布边界只能前进至已验收章号')
             with transaction(db):
                 require(not db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone(),'pending','修改配置前先完成或取消当前任务')

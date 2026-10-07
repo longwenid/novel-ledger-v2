@@ -3,13 +3,8 @@
 Run directly: python3 tests/test_independent_regressions.py
 """
 import json
-import os
 from pathlib import Path
-import signal
-import subprocess
-import sys
 import tempfile
-import textwrap
 import unittest
 
 from support import (
@@ -35,91 +30,6 @@ class IndependentRegressions(unittest.TestCase):
         db = connect(project)
         self.addCleanup(db.close)
         return project, db
-
-    @unittest.skipUnless(os.name == 'posix', 'Process-group regression is POSIX-specific')
-    def test_exited_driver_does_not_leave_workers_on_retry_or_success(self):
-        cli = Path(__file__).resolve().parents[1] / 'scripts' / 'novel.py'
-        for mode in ('fail', 'pass'):
-            with self.subTest(mode=mode):
-                project, db = self.book()
-                child = project / 'child.py'
-                child.write_text(textwrap.dedent('''\
-                    import json
-                    import os
-                    from pathlib import Path
-                    import time
-                    Path('child-' + str(os.getpid()) + '.json').write_text(
-                        json.dumps({'pid': os.getpid(), 'pgid': os.getpgrp()}))
-                    time.sleep(60)
-                '''), encoding='utf-8')
-                driver = project / 'driver.py'
-                driver.write_text(textwrap.dedent('''\
-                    import json
-                    import os
-                    from pathlib import Path
-                    import subprocess
-                    import sys
-                    import time
-                    child = subprocess.Popen([sys.executable, 'child.py'])
-                    marker = Path('child-' + str(child.pid) + '.json')
-                    deadline = time.monotonic() + 5
-                    while not marker.exists():
-                        if time.monotonic() > deadline:
-                            raise SystemExit(3)
-                        time.sleep(0.01)
-                    if sys.argv[1] == 'fail':
-                        raise SystemExit(1)
-                    task = json.loads(Path(os.environ['NOVEL_TASK_FILE']).read_text(encoding='utf-8'))
-                    data = json.loads(Path('plan.json').read_text(encoding='utf-8'))
-                    Path(os.environ['NOVEL_RESULT_FILE']).write_text(json.dumps({
-                        'schema': 'novel-ledger-v2.result/1',
-                        'task_id': task['task_id'],
-                        'input_hash': task['input_hash'],
-                        'lease_owner': task['lease_owner'],
-                        'data': data,
-                    }))
-                '''), encoding='utf-8')
-                (project / 'plan.json').write_text(
-                    json.dumps({'chapters': [plan(1)]}), encoding='utf-8')
-                config = project / 'driver.json'
-                config.write_text(json.dumps({
-                    'argv': [sys.executable, str(driver), mode],
-                    'timeout': 10,
-                    'max_retries': 1,
-                }), encoding='utf-8')
-                try:
-                    completed = subprocess.run([
-                        sys.executable, str(cli), 'run', '--project', str(project),
-                        '--driver', str(config), '--max-tasks', '1',
-                    ], capture_output=True, text=True, timeout=30, encoding='utf-8')
-                    self.assertEqual(completed.returncode, 0, completed.stderr)
-                    outcome = json.loads(completed.stdout)
-                    markers = list(project.glob('child-*.json'))
-                    self.assertEqual(len(markers), 2 if mode == 'fail' else 1)
-                    for marker in markers:
-                        pid = json.loads(marker.read_text(encoding='utf-8'))['pid']
-                        # Observe independently of the runner's own liveness helper.
-                        observed = subprocess.run(
-                            ['ps', '-p', str(pid), '-o', 'stat='],
-                            capture_output=True, text=True, check=False,
-                        ).stdout.strip()
-                        self.assertTrue(not observed or observed.startswith('Z'),
-                                        f'Driver descendant {pid} still running: {observed}')
-                    self.assertIsNone(get(db, 'runner'))
-                    if mode == 'fail':
-                        self.assertEqual(outcome['status'], 'paused')
-                        self.assertEqual(outcome['reason']['code'], 'driver_exhausted')
-                    else:
-                        self.assertEqual(outcome['tasks_completed'], 1)
-                        self.assertEqual(engine.next_task(db, project)['stage'], 'draft')
-                finally:
-                    # Also clean up when running this test against the broken version.
-                    for marker in project.glob('child-*.json'):
-                        group = json.loads(marker.read_text(encoding='utf-8'))['pgid']
-                        try:
-                            os.killpg(group, signal.SIGKILL)
-                        except ProcessLookupError:
-                            pass
 
     def test_unrepresentable_resource_result_rolls_back_and_task_can_recover(self):
         config = contract()

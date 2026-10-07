@@ -17,11 +17,11 @@
 }
 ```
 
-外部 driver 必须另回传任务信封中的 `lease_owner`。fresh 模式还需要 `session: {"id": "宿主真实会话ID", "origin": "empty"}`。不能随机生成 ID 来假装独立会话。重复提交同一完整结果是幂等操作；同任务不同内容会被拒绝。
+重复提交同一完整结果是幂等操作；同任务不同内容会被拒绝。
 
 `submit` 端做**结构归一**：worker 把阶段字段直接写在顶层（缺 `schema/task_id/input_hash/data` 嵌套）时，只要当前恰有一个 pending 任务（或裸回执重试最近任务），会自动补齐信封并记录 `receipt_normalized` 日志；内容本身从不改写，`input_version` 与重放哈希护栏照常生效。显式但错误的 task_id 且无 pending 任务时仍按 `task` 报错。因此 worker 端不需要外部 normalize 脚本。
 
-`work/<task_id>/` 保存任务文件。runner 的每次尝试另用 `attempt-<token>/`，只使用环境变量所指的输入输出，不能猜测旧 result.json 路径。
+`work/<task_id>/` 保存任务文件；只使用本任务指定的输入输出路径，不猜测旧 result.json 路径。
 
 ## 各阶段 data
 
@@ -119,13 +119,13 @@ v1.10 时间治理中间层：卷纲/脊柱管顺序与因果，本版补上日�
 
 v1.11 纪律随包下发与自助报错：每个工作包内置 `discipline` 块（review 取值白名单、账本前值照抄、move 引用已登记 links、resource 只记已入账资产、hooks 延期上限、clock 证据时间词、patches 锚定），worker/subagent 先读它，不靠报错学规则。错误信息可自助：resource 期初不符会报出当前库存，未入账资产的**非零**流水会被点名（`to_before:'0'` 的初次收款仍合法）；move 的 route_unknown 列出该段已登记连接 ID；hook_extension 报出已延期次数与出路。`status` 返回 `skill_version/db_version`，`doctor` 返回 `skill_root`；派发约定 `NOVEL_LEDGER_SKILL_ROOT` 固定安装路径。
 
-v1.12 依赖章按环节注入：`dependencies` 的历史章全文只注入 draft/repair/redesign（执笔需要原文）；facts/character_plan 等审稿与档案环节改为 `dependent_chapter`（章摘要 + 版本哈希 + 定向 recall 指引），前情状态由 `state` 承担、疑点按 recall 分页补读——同一章流水线不再重复装载同一批全文，serial 交接频率显著下降。reader 的 `discipline` 只保留 review 行（盲读不关心执笔与账本规则）。覆盖核验不变：facts 的 `coverage` 仍以账本与 `recall` 为准，未选入不表示不存在。
+v1.12 依赖章按环节注入：`dependencies` 的历史章全文只注入 draft/repair/redesign（执笔需要原文）；facts/character_plan 等审稿与档案环节改为 `dependent_chapter`（章摘要 + 版本哈希 + 定向 recall 指引），前情状态由 `state` 承担、疑点按 recall 分页补读——同一章流水线不再重复装载同一批全文，worker 各自只装载本环节材料。reader 的 `discipline` 只保留 review 行（盲读不关心执笔与账本规则）。覆盖核验不变：facts 的 `coverage` 仍以账本与 `recall` 为准，未选入不表示不存在。
 
 v1.13 修订传播定界：**未改章免复验**。修订分支内提交 `reuse_original` 且正文与原章逐字相同、原事件在新上游状态下全部可复算（前值校验通过）时，引擎直接提交该章（`fast_committed`），不再派发 facts/reader——逐字相同的事件与已过审的原章可证等价；上游变化破坏前置条件时自动回退为正常 facts 审稿。配套指引：合成复核的发现应标 `repair_route`——表达类（重复/收束/节奏/声线）标 `"patch"` 并指向可定位单章证据，修订时只定点改被点名章、其余章原文复用；事实/因果/认知/时间类标 `"revise"`，从最早受影响章修订。此前"最早证据章"一刀切开分支导致表达类发现也级联全后缀重验（如收束同质化令 6-10 章全部重审），现在级联成本只剩真正改动的章。
 
 ## 错误与修正
 
-非零退出码返回 `{ok:false,code,message,details}`。格式、引用或前态错误：读实际错误和原文后修正候选结果，原任务保持 pending。阅读缺陷：按 repair/redesign 任务修正文，不能只改审稿结论。v1.5 的 context_scan/context_reduce、context_more 回执、容量计量与 await_session 交接详见 [上下文协议](context-runtime.md)，信封版本仍为 /1。context_capacity 表示不可拆分核心过大，context_unresolved 表示无法安全提炼；不能直接原样重试。context_overflow 仅保留在显式 legacy 模式。
+非零退出码返回 `{ok:false,code,message,details}`。格式、引用或前态错误：读实际错误和原文后修正候选结果，原任务保持 pending。阅读缺陷：按 repair/redesign 任务修正文，不能只改审稿结论。v1.5 的 context_scan/context_reduce 与 context_more 回执、容量计量详见 [上下文协议](context-runtime.md)，信封版本仍为 /1。context_capacity 表示不可拆分核心过大，context_unresolved 表示无法安全提炼；不能直接原样重试。context_overflow 仅保留在显式 legacy 模式。
 
 `stale_task/input_version/lease` 表示结果不再属于有效任务，不能把旧结果的 ID/哈希改成新任务后重交；重新读任务和材料。无权限改约、核心设定无法调和、修订次数耗尽时，报告具体阻碍与可选处理。
 

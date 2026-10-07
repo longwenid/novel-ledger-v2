@@ -122,12 +122,8 @@ class TokenBoundingTests(unittest.TestCase):
         usage=engine.status(self.db)['context_usage']
         self.assertEqual(usage['tasks'],1)
         self.assertGreater(usage['input_chars'],0)
-        from novel_core import contextflow
-        with transaction(self.db):contextflow.start_session(self.db,'s-token-1')
-        self.assertEqual(engine.status(self.db)['context_usage']['session_handoffs'],1)
 
     def test_config_style_anchor_sets_and_validates(self):
-        from novel_core.runner import run  # noqa: F401  (import surface check only)
         import novel
         args=novel.parser().parse_args(['config','--project',str(self.path),'--key','style_anchor',
                                         '--value',json.dumps({'traits':['短句'],'sample':'雨停了。'},ensure_ascii=False)])

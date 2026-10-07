@@ -133,7 +133,7 @@ def initialize(project, contract):
         CREATE TABLE logs(id INTEGER PRIMARY KEY, created REAL, action TEXT, data TEXT);
         ''')
         with transaction(db):
-            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), 'session_mode': 'serial', 'seq': 0}.items():
+            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), 'seq': 0}.items():
                 put(db, k, v)
             if style_anchor is not None:
                 put(db, 'style_anchor', style_anchor)

@@ -39,7 +39,7 @@ def stamp(db,work):
     anchors=limits(db)
     work['context_capacity']={'unit':anchors['unit'],'capacity_chars':anchors['capacity'],
             'package_chars':anchors['input'],'read_page_chars':anchors['retrieval'],
-            'rules':'单任务可见：只加载本任务绑定材料，其余定向分页检索；大历史先冻结经 scan/reduce 提炼；同一输入只加载一次；回执一次一个创作单元，装不下先拆分不截断；原文补读累计不超过本工作包体量；serial 会话累计接近容量即交接。宿主按真实 token 窗口校准容量。'}
+            'rules':'单任务可见：只加载本任务绑定材料，其余定向分页检索；大历史先冻结经 scan/reduce 提炼；同一输入只加载一次；回执一次一个创作单元，装不下先拆分不截断；原文补读累计不超过本工作包体量；主控窗口由宿主自行管理。宿主按真实 token 窗口校准容量。'}
     work['chars']=0
     for _ in range(4):
         work['chars']=len(wire(work))
@@ -203,57 +203,10 @@ def accept(db,work,data,task_id):
     log(db,'context_prepare',{'bundle':ident,'stage':work['stage'],'task':task_id})
 
 
-def input_key(db,task_id):
-    return 'context_input:'+get(db,'context_session_id','initial')+':'+task_id
-
-
-def session_checkpoint(db,work,task_id=None,replay_input=False):
-    if not enabled(db) or get(db,'session_mode')=='fresh':return None
-    used=get(db,'context_session_used',0)
-    already=not replay_input and task_id and get(db,input_key(db,task_id),False)
-    cost=limits(db)['output']+max(0,limits(db)['retrieval']-get(db,'context_reads:'+str(task_id),0))
-    if not already:cost+=len(wire(work))+limits(db)['overhead']
-    if used+cost<=limits(db)['capacity']:return None
-    pending=db.execute("SELECT id FROM tasks WHERE state='pending'").fetchone()
-    return {'stage':'await_session','reason':'当前 serial 会话累计已接近声明容量；在新的真实宿主会话中执行 session-start 后续跑，不能在原会话自动清零。',
-            'used_chars':used,'next_reserved_chars':cost,'limit_chars':limits(db)['capacity'],
-            'session_id':get(db,'context_session_id','initial'),
-            'pending_task':pending['id'] if pending else None,
-            'resume':{'steps':['结束当前运行器（若 runner 存在，先退出）',
-                               'session-start --project <PROJECT> --id <新宿主会话ID>',
-                               'next --project <PROJECT>（同一任务会从数据库重建输入文件）'],
-                      'grounding':'新会话不需要旧聊天记录：工作包、任务、账本全部由数据库重建；正确性不依赖会话记忆。',
-                      'boundary':'仅校验宿主声明与 ID 不复用，不证明真实模型窗口已清空'},
-            'checkpoint':{'branch':get(db,'work_branch'),'committed':head(db,get(db,'work_branch'))}}
-
-
 def charge_input(db,task_id,work,repeat=False):
     if not enabled(db):
         return
     put(db,'usage_input_chars',get(db,'usage_input_chars',0)+len(wire(work)))
-    if get(db,'session_mode')!='fresh' and (repeat or not get(db,input_key(db,task_id),False)):
-        put(db,'context_session_used',get(db,'context_session_used',0)+len(wire(work))+limits(db)['overhead'])
-        put(db,input_key(db,task_id),True)
-
-
-def charge_failed_attempt(db,observed_chars=0):
-    # Missing/malformed outputs cannot refund a model turn. Reserve the full
-    # output allowance when its actual consumption is unknown.
-    if enabled(db) and get(db,'session_mode')!='fresh':
-        put(db,'context_session_used',get(db,'context_session_used',0)+max(limits(db)['output'],observed_chars))
-
-
-def start_session(db,session_id):
-    require(isinstance(session_id,str) and session_id.strip(),'session','需要真实新宿主会话 ID')
-    require(not get(db,'context_session_seen:'+session_id),'session_reused','会话已经使用，不能在原会话反复清零')
-    prior=get(db,'context_session_id','initial')
-    used=get(db,'context_session_used',0)
-    put(db,'context_session_seen:'+session_id,True);put(db,'context_session_id',session_id)
-    put(db,'context_session_used',0)
-    put(db,'usage_handoffs',get(db,'usage_handoffs',0)+1)
-    log(db,'session_start',{'id':session_id,'prior_session':prior,'reset_from_chars':used,'assertion':'host_attested_empty_context'})
-    return {'session_id':session_id,'prior_session':prior,'reset_from_chars':used,'used_chars':0,
-            'boundary':'仅校验宿主声明与 ID 不复用，不证明真实模型窗口已清空；正确性以数据库为准，续跑由 next 重建工作包，不依赖旧会话记忆'}
 
 
 def charge_result(db,task,work,result):
@@ -262,18 +215,9 @@ def charge_result(db,task,work,result):
     size=len(wire(result))
     put(db,'usage_result_chars',get(db,'usage_result_chars',0)+size)
     anchors=limits(db)
-    if get(db,'session_mode')=='fresh':
-        session=result.get('session',{})
-        require(session.get('origin')=='empty' and isinstance(session.get('id'),str) and session['id'].strip(),'session','fresh 需要真实独立会话回执')
-        require(not db.execute('SELECT task FROM sessions WHERE id=?',(session['id'],)).fetchone(),'session_reused','会话已用于一次尝试，包括失败尝试；重试须使用真实新会话')
-        db.execute('INSERT INTO sessions VALUES (?,?)',(session['id'],task['id']))
-    if get(db,'session_mode')!='fresh':
-        put(db,'context_session_used',get(db,'context_session_used',0)+size)
     # One receipt is one creative unit: beside its own input it must fit the declared capacity.
     require(size+len(wire(work))+anchors['overhead']<=anchors['capacity'],'context_output',
             '单次回执连同其输入超出声明容量；局部修订用 patches、整卷审稿按 chunk 分段、过大单元先拆分，不静默截断；宿主窗口确实更大时先校准 context_chars')
-    if get(db,'session_mode')!='fresh':
-        require(get(db,'context_session_used',0)<=anchors['capacity'],'context_session','会话累计已接近声明容量；候选回执保留在文件，请从真实新会话续接')
 
 
 def material(db,task_id,bundle_id,document,start=0):
@@ -302,8 +246,6 @@ def bounded_read(db,value,task_id=None,start=0):
         declared=work.get('retrieval_allowance') or len(row[0])
         # Supplements belong to preparation once they rival the package they supplement.
         allowance=max(2048,declared)-get(db,'context_reads:'+task_id,0)
-    if get(db,'session_mode')!='fresh':
-        allowance=min(allowance,max(0,anchors['capacity']-get(db,'context_session_used',0)-anchors['output']))
     require(allowance>=512,'context_retrieval','本任务原文补读累计已超过其工作包体量；更多材料按 context_more 转准备流程，不向同一任务继续倾倒原文')
     require(type(start) is int and start>=0,'pagination','page-start 必须是非负字符位置')
     page=min(anchors['retrieval'],allowance)
@@ -323,7 +265,6 @@ def bounded_read(db,value,task_id=None,start=0):
         require(count>0,'context_retrieval','无法在剩余补读空间中返回材料')
     if task_id:put(db,'context_reads:'+task_id,get(db,'context_reads:'+task_id,0)+len(wire(out)))
     if task_id:put(db,'usage_read_chars',get(db,'usage_read_chars',0)+len(wire(out)))
-    if get(db,'session_mode')!='fresh':put(db,'context_session_used',get(db,'context_session_used',0)+len(wire(out)))
     return out
 
 
