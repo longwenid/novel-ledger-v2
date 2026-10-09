@@ -157,7 +157,8 @@ def dispatch_raw(args):
             with transaction(db):
                 removed=engine.prune_work(db,args.project,keep=0)
                 log(db,'work_tidy',{'removed':removed,'mode':'manual'})
-            return {'removed':len(removed),'directories':removed}
+            swept=engine.sweep_legacy(args.project)
+            return {'removed':len(removed),'directories':removed,'legacy_removed':swept['removed'],'legacy_kept':swept['kept']}
         if cmd=='submit':
             given=Path(args.result)
             res = engine.submit(db,read(given if given.is_absolute() else Path(args.project).resolve()/given))
@@ -208,10 +209,13 @@ def dispatch_raw(args):
         if cmd=='doctor':
             from novel_core.contextflow import limits,usage
             import platform, shutil
-            return {'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
+            report={'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
                     'context_mode':get(db,'context_mode','bounded'),'character_limits_enforced':False,'material_structure':limits(db),
                     'explosion_control':'task isolation, topic selection, complete semantic-unit pages, source-bound preparation, load-once, actual host handoff',
                     'context_window_verified':False,'usage':usage(db),'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'host_must_verify_fresh_review_workers','independent_review_verified':False}
+            litter=engine.sweep_legacy(args.project,apply=False)['removed']
+            if litter: report['legacy_litter']=litter
+            return report
         if cmd=='map':
             from novel_core.ledger import replay
             from novel_core.spatial import resolve_place,spatial_view,mermaid

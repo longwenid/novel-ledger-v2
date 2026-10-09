@@ -6,6 +6,8 @@ next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input
 
 任务文件在 `work/ch<四位章号>/<阶段>-<ID前8位>/`。派新任务时已完成目录只留最近 3 个，tidy 可清空；真源仍为 SQLite。
 
+项目根目录只应出现引擎产物：`contract.json`、`novel.sqlite3`（及其 -wal/-shm）、`book.html` 与 `work/`；`export/`、`evaluation/` 按需生成，作者自建目录（如旧稿归档）互不干扰。旧版驱动或引擎遗留的散落文件（`novel.db`、`st*.err`、`tmp_context_*.json`、`workch*.json`、`work/next_task.json`、`work/plans_data.json`、`work/vol_data.json`、`work/_tmp_*`、`_review_tmp/`）由 `tidy` 一并清扫：只按精确名单与模式匹配，绝不触碰上述引擎与作者文件；`novel.db` 非空时保留并在返回的 `legacy_kept` 中上报。`doctor` 以 `legacy_litter` 字段报告未清理的遗留物。
+
 结果写入 output_path，提交示例：
 
 ```json

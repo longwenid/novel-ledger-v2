@@ -410,6 +410,54 @@ def prune_work(db, project, keep=3):
     return removed
 
 
+LEGACY_ROOT_FILES = ('novel.db',)
+LEGACY_ROOT_GLOBS = ('st[0-9]*.tmp.json', 'st[0-9]*.err', 'tmp_context_*.json', 'workch*.json')
+LEGACY_WORK_FILES = ('next_task.json', 'plans_data.json', 'vol_data.json')
+LEGACY_WORK_GLOBS = ('_tmp_*',)
+LEGACY_DIRS = ('_review_tmp',)
+
+
+def sweep_legacy(project, apply=True):
+    """Sweep artifacts left by retired drivers and older engine versions.
+
+    Matches only exact generated names and tight patterns at the project root
+    and the top of work/ — never contract.json, novel.sqlite3*, book.html,
+    export/, evaluation/ or author folders. novel.db is removed only when
+    empty; a non-empty legacy database is kept and reported. With apply=False
+    the same list is returned without deleting anything (doctor uses this)."""
+    import shutil
+    base = Path(project).resolve()
+    removed, kept = [], []
+    def sweep_dir(directory, files, globs, prefix):
+        if not directory.is_dir():
+            return
+        for name in files:
+            path = directory/name
+            if not path.is_file():
+                continue
+            if name == 'novel.db' and path.stat().st_size:
+                kept.append({'path': prefix+name, 'reason': '非空旧库,请人工确认后再处理'})
+                continue
+            if apply:
+                path.unlink()
+            removed.append(prefix+name)
+        for pattern in globs:
+            for path in sorted(directory.glob(pattern)):
+                if path.is_file():
+                    if apply:
+                        path.unlink()
+                    removed.append(prefix+path.name)
+        for name in LEGACY_DIRS:
+            path = directory/name
+            if path.is_dir():
+                if apply:
+                    shutil.rmtree(path, ignore_errors=True)
+                removed.append(prefix+name+'/')
+    sweep_dir(base, LEGACY_ROOT_FILES, LEGACY_ROOT_GLOBS, '')
+    sweep_dir(base/'work', LEGACY_WORK_FILES, LEGACY_WORK_GLOBS, 'work/')
+    return {'removed': removed, 'kept': kept}
+
+
 def task_files(project, task):
     root = Path(project).resolve()/work_rel(task)
     root.mkdir(parents=True,exist_ok=True)
