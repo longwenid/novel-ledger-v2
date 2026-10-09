@@ -109,3 +109,10 @@ def test_pilot_reset_rewrites_in_place(tmp_path):
 
 def test_discipline_carries_clock_hint():
     assert 'clock.before' in DISCIPLINE['events'] and 'null' in DISCIPLINE['events']
+
+
+def test_writer_brief_discourages_default_hooks():
+    brief = design.writer_brief({'number': 1, 'goal': 'g', 'conflict': 'c', 'change': 'x',
+                                 'ending_shape': '静收:余波落在决定上'})
+    assert '非必要不添加' in brief['instruction']
+    assert brief['dramatic_task']['ending_shape'] == '静收:余波落在决定上'
