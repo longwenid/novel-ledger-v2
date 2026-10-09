@@ -1,4 +1,6 @@
 """Style-only revision and pilot-reset channels; design errors self-answer."""
+import json
+
 import pytest
 
 from tests.support import contract, ev
@@ -116,3 +118,23 @@ def test_writer_brief_discourages_default_hooks():
                                  'ending_shape': '静收:余波落在决定上'})
     assert '非必要不添加' in brief['instruction']
     assert brief['dramatic_task']['ending_shape'] == '静收:余波落在决定上'
+
+
+def test_style_only_pack_slims_design_context(tmp_path):
+    from novel_core.memory import pack
+    project, db = setup_project(tmp_path, {'planning_mode': 'layered'})
+    commit_events(db, 1, PILOT_PROSE, pilot_events())
+    add_pilot_plan(db)
+    seed_designs(db)
+    result = engine.begin_revision(db, 1, '文风太碎', style_only=True)
+    assert get(db, 'style_only_branch') == result['branch']
+
+    work = pack(db, result['branch'], 1, 'draft', {})
+    slim = work['design_context']
+    assert slim['status'] == 'style_revision'
+    assert slim['world_overview'] == 'x'
+    assert len(json.dumps(slim, ensure_ascii=False)) < 500
+
+    normal = pack(db, 'main', 1, 'draft', {})
+    assert normal['design_context']['world']['data']['overview'] == 'x'
+    assert 'choice_log' not in json.dumps(normal['design_context'])

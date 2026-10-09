@@ -158,16 +158,24 @@ def pack(db, branch, chapter, stage, payload):
     if stage in ('world_plan','volume_plan','plan','draft','repair','redesign') and design.enabled(db) and not (stage=='repair' and payload.get('repair_scope')=='local'):
         volume=payload.get('design_scope') if stage=='volume_plan' else plan.get('volume')
         if stage=='plan':volume=design.volume_for(db,branch,chapter)
-        base['design_context']=design.context(db,branch,volume)
-        required_sources=set()
-        for record in base['design_context'].values():
-            if isinstance(record,dict):required_sources.update(int(n) for n in record.get('sources',{}))
-        present={v['chapter'] for v in base['selected'] if v['kind']=='required_chapter'}
-        for n in sorted(required_sources-present):
-            row=db.execute('SELECT prose,hash FROM chapters WHERE branch=? AND number=?',(branch,n)).fetchone()
-            # Invalidated designs can cite chapters removed by a candidate revision.
-            if row:base['selected'].append({'kind':'required_chapter','chapter':n,'hash':row['hash'],'text':row['prose']})
-            else:base['omitted'].append({'kind':'invalidated_design_source','chapter':n,'reason':'not present in current branch; re-evaluate proposal'})
+        if get(db,'style_only_branch')==branch and stage in ('draft','repair','redesign'):
+            # Style-only rewrites keep the original prose as their content baseline;
+            # the full world/volume designs are dead weight in every pack.
+            world=design.current(db,branch,'world')
+            base['design_context']={'status':'style_revision',
+                'world_overview':(world or {}).get('data',{}).get('overview',''),
+                'note':'文风修订：内容以 original_prose 为准，不得改变事实、事件与因果'}
+        else:
+            base['design_context']=design.context(db,branch,volume)
+            required_sources=set()
+            for record in base['design_context'].values():
+                if isinstance(record,dict):required_sources.update(int(n) for n in record.get('sources',{}))
+            present={v['chapter'] for v in base['selected'] if v['kind']=='required_chapter'}
+            for n in sorted(required_sources-present):
+                row=db.execute('SELECT prose,hash FROM chapters WHERE branch=? AND number=?',(branch,n)).fetchone()
+                # Invalidated designs can cite chapters removed by a candidate revision.
+                if row:base['selected'].append({'kind':'required_chapter','chapter':n,'hash':row['hash'],'text':row['prose']})
+                else:base['omitted'].append({'kind':'invalidated_design_source','chapter':n,'reason':'not present in current branch; re-evaluate proposal'})
     if stage=='volume_plan' and design.enabled(db):
         # 开新卷时把前卷设计的交接面交给设计者;并明示设计是意图,carries_in
         # 要按账本里实际写成的前卷对齐,不能照抄原计划。

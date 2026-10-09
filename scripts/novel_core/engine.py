@@ -1044,6 +1044,7 @@ def begin_revision(db,start,reason,internal=False,style_only=False):
     for table,cols in (('reviews','scope,through,input_hash,data'),('memories','scope,through,data')):
         db.execute(f'INSERT INTO {table} SELECT ?,{cols} FROM {table} WHERE branch=? AND through<?',(branch,parent,start))
     put(db,'work_branch',branch)
+    if style_only:put(db,'style_only_branch',branch)
     put(db,'status','ready')
     put(db,'pause_reason',None)
     log(db,'revision_begin',{'branch':branch,'parent':parent,'start':start,'through':through,'reason':reason,'style_only':style_only})
@@ -1087,6 +1088,7 @@ def promote(db):
     db.execute("UPDATE branches SET status='archived' WHERE id=?",(old,))
     db.execute("UPDATE branches SET status='active' WHERE id=?",(branch,))
     put(db,'active_branch',branch)
+    if get(db,'style_only_branch')==branch:put(db,'style_only_branch',None)
     put(db,'status','ready')
     put(db,'revision_failures',0)
     log(db,'revision_promote',{'from':old,'to':branch})

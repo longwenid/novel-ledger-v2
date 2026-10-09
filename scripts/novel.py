@@ -277,6 +277,7 @@ def dispatch_raw(args):
                     db.execute("UPDATE tasks SET state='cancelled' WHERE state='pending'")
                     db.execute("UPDATE branches SET status='discarded' WHERE id=?",(work,))
                     put(db,'work_branch',get(db,'active_branch'));put(db,'status','ready')
+                    if get(db,'style_only_branch')==work:put(db,'style_only_branch',None)
                     log(db,'revision_discard',{'branch':work})
                     return engine.status(db)
                 return engine.begin_revision(db,args.from_chapter,args.reason,style_only=args.style_only)
