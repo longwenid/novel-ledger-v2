@@ -122,6 +122,8 @@ def pack(db, branch, chapter, stage, payload):
         for scene in plan.get('scenes', []):
             for intent in scene.get('dialogue_intents', []):
                 topics.update(intent.get('knowledge_topics', []))
+        relation_view = {k:v for k,v in state.get('relations',{}).items()
+                         if k.split('>',1)[0] in refs or k.split('>',1)[1].rsplit(':',1)[0] in refs} if state.get('relations') else {}
         base['state'] = {
             'clock': state['clock'],
             **({'clock_threads': state['clock_threads']} if state.get('clock_threads') else {}),
@@ -129,7 +131,8 @@ def pack(db, branch, chapter, stage, payload):
             'facts': {k:v for k,v in state['facts'].items() if k.split(':')[0] in refs},
             'knowledge': {k:v for k,v in state['knowledge'].items() if k.split(':')[0] in refs and (not topics or k.split(':',1)[1] in topics)},
             'resources': {k:v for k,v in state['resources'].items() if json.loads(k)[0] in refs},
-            'hooks': {k:v for k,v in state['hooks'].items() if k in plan.get('hooks', []) or (v['status']=='open' and v['due'] <= chapter+5)}}
+            'hooks': {k:v for k,v in state['hooks'].items() if k in plan.get('hooks', []) or (v['status']=='open' and v['due'] <= chapter+5)},
+            **({'relations': relation_view} if relation_view else {})}
         if topics:
             omitted=sum(k.split(':',1)[0] in refs and k.split(':',1)[1] not in topics for k in state['knowledge'])
             if omitted:

@@ -18,10 +18,10 @@ def setup_project(tmp_path, extra=None):
     return project, connect(project)
 
 
-def commit_events(db, chapter, prose, events):
+def commit_events(db, chapter, prose, events, summary='概要。'):
     state = ledger.replay(db, 'main')
     ledger.append_events(db, 'main', chapter, prose, events, state)
-    stored = {'events': events, 'prose_hash': digest(prose)}
+    stored = {'events': events, 'prose_hash': digest(prose), 'summary': summary}
     db.execute('INSERT OR REPLACE INTO chapters VALUES (?,?,?,?,?)',
                ('main', chapter, prose, dump(stored), digest(prose)))
 
@@ -104,3 +104,14 @@ def test_impact_on_clean_branch_is_empty(tmp_path):
     report = engine.fact_impact(db, 'main', 'hero:trust')
     assert report == {'schema': 'novel-ledger-v2.impact/1', 'branch': 'main', 'fact': 'hero:trust',
                       'chapters': [], 'events': [], 'plans_ahead': [], 'absence_is_not_proof': True}
+
+
+def test_work_pack_state_includes_relations_for_referenced_entities(tmp_path):
+    from novel_core.memory import pack
+    _, db = setup_project(tmp_path)
+    prose = '周行把后背交给了宋禾。'
+    commit_events(db, 2, prose, [relation(2, prose, after='托付后背')])
+    work = pack(db, 'main', 3, 'facts', {'prose': '周行与宋禾继续同行。', 'summary': '两人继续同行。'})
+    assert work['state']['relations'] == {'hero>ally:trust': '托付后背'}
+    empty = pack(db, 'main', 4, 'facts', {'prose': '与两人无关的一段路程。', 'summary': '赶路。'})
+    assert 'relations' not in empty['state']
