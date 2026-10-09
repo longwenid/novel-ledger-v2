@@ -31,7 +31,7 @@ description: >-
 ## 任务执行流水线（Worker / 单任务）
 
 1. 主控 `next --project "$PROJECT"` 取信封并调用宿主委派工具；`next` 本身不启动 agent。已有 pending 就恢复同一任务。
-2. Worker 读取 `input_path` 一次，按阶段查必要指南和协议字段；brief 为替代视图，不重复读取。
+2. Worker 读取 `input_path` 一次；包内 `stage_primer` 即本阶段提交契约,自包含,免读参考文档,仅在报错或确有疑问时查对应指南；brief 为替代视图，不重复读取。
 3. 规划说明篇幅承载和压力变化；执笔按 `writer_brief` 写入 `output_path`，先 `measure --project "$PROJECT" --result <output_path>` 自查，不足时补实选择与后果。审稿保留必要语境与因果，pass 的 `findings=[]`。
 4. Worker `submit --project "$PROJECT" --result <output_path>`；按真实报错修正，成功后只返回任务 ID、状态和必要短错误，退出，不取下一任务。
 5. 主控等待完成、核对真实提交后再 `next`，到目标后汇报进度与全书视图。确无空历史委派能力时按 runtime 降级，并标明“同会话审稿”。

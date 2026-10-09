@@ -151,3 +151,15 @@ def test_review_context_hash_is_version_stable(tmp_path):
     finally:
         store.VERSION = saved
     assert first == again
+
+
+def test_pack_carries_stage_primer(tmp_path):
+    from novel_core.memory import pack
+    _, db = setup_project(tmp_path)
+    for stage, fragment in (('draft', 'prose'), ('facts', 'verdict'), ('reader', 'first_read'),
+                            ('plan', 'ending_shape'), ('volume_plan', 'choice_log'),
+                            ('batch_review', 'findings')):
+        work = pack(db, 'main', 1, stage, {'prose': 'x', 'summary': 's', 'entities': ['hero']} if stage.startswith('character') else {'prose': 'x', 'summary': 's'})
+        primer = work.get('stage_primer') or ''
+        assert fragment in primer, stage
+        assert 'stage_primer' in work['self_contained']
