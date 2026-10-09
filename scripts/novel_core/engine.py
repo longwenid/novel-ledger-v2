@@ -252,8 +252,10 @@ def review_context_hash(db,branch,first,through,canonical_through=None):
     Current profile/design versions are conservatively bound because metadata
     does not provide a complete historical read-set. Only range plans and the
     relevant canonical prefix are bound, never unwritten future plans/events.
+    The engine version is deliberately excluded: check_definitions carries the
+    review semantics, so skill upgrades must not cancel in-flight reviews or
+    void stored receipts.
     """
-    from .store import VERSION
     canonical_through=through if canonical_through is None else canonical_through
     plans=[(row['number'],json.loads(row['data'])) for row in db.execute('SELECT number,data FROM plans WHERE branch=? AND number BETWEEN ? AND ? ORDER BY number',(branch,first,through))]
     volumes={plan.get('volume') for _,plan in plans}
@@ -282,7 +284,7 @@ def review_context_hash(db,branch,first,through,canonical_through=None):
                 versions[kind+':'+ident]=digest(json.loads(row['value']))
     last=db.execute('SELECT hash FROM events WHERE branch=? AND chapter<=? ORDER BY chapter DESC,idx DESC LIMIT 1',
                     (branch,canonical_through)).fetchone()
-    return digest({'schema':'novel-ledger-v2.review-context/1','engine_version':VERSION,
+    return digest({'schema':'novel-ledger-v2.review-context/1',
                    'check_definitions':[FACT_CHECKS,READER_CHECKS,LONG_CHECKS],
                    'contract':get(db,'contract'),'style_anchor':get(db,'style_anchor'),
                    'plans':plans,

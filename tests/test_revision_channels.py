@@ -138,3 +138,16 @@ def test_style_only_pack_slims_design_context(tmp_path):
     normal = pack(db, 'main', 1, 'draft', {})
     assert normal['design_context']['world']['data']['overview'] == 'x'
     assert 'choice_log' not in json.dumps(normal['design_context'])
+
+
+def test_review_context_hash_is_version_stable(tmp_path):
+    from novel_core import store
+    _, db = setup_project(tmp_path)
+    first = engine.chapter_review_context_hash(db, 'main', 1)
+    saved = store.VERSION
+    store.VERSION = saved + '-upgraded'
+    try:
+        again = engine.chapter_review_context_hash(db, 'main', 1)
+    finally:
+        store.VERSION = saved
+    assert first == again
