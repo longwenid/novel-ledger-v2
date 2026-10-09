@@ -8,7 +8,7 @@ next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input
 
 项目根目录只应出现引擎产物：`contract.json`、`novel.sqlite3`（及其 -wal/-shm）、`book.html` 与 `work/`；`export/`、`evaluation/` 按需生成，作者自建目录（如旧稿归档）互不干扰。旧版驱动或引擎遗留的散落文件（`novel.db`、`st*.err`、`tmp_context_*.json`、`workch*.json`、`work/next_task.json`、`work/plans_data.json`、`work/vol_data.json`、`work/_tmp_*`、`_review_tmp/`）由 `tidy` 一并清扫：只按精确名单与模式匹配，绝不触碰上述引擎与作者文件；`novel.db` 非空时保留并在返回的 `legacy_kept` 中上报。`doctor` 以 `legacy_litter` 字段报告未清理的遗留物。
 
-结果写入 output_path，提交示例：
+结果写入 output_path（建议多行缩进书写，便于主控与作者复查；submit 只程序化解析，格式不影响提交）：
 
 ```json
 {
@@ -133,7 +133,7 @@ status/doctor.usage 返回 task_input_chars、accepted_receipt_chars、attempted
 
 ## 错误与修正
 
-非零退出码返回 {ok:false,code,message,details}。格式、引用或前态错误按原文修正结果，任务保持 pending；阅读缺陷走 repair/redesign，不只改判词。context_scan/context_reduce/context_more 见 [上下文协议](context-runtime.md)，信封仍为 /1。
+CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧凑格式最省 token；嵌入字符串（如 recall 的正文）pretty 化也不会换行，长文本阅读一律走文件通道（prose/prose_path 文件、material 页文件）加分页游标，不靠加宽 stdout。非零退出码返回 {ok:false,code,message,details}。格式、引用或前态错误按原文修正结果，任务保持 pending；阅读缺陷走 repair/redesign，不只改判词。context_scan/context_reduce/context_more 见 [上下文协议](context-runtime.md)，信封仍为 /1。
 
 `stale_task/input_version/lease` 表示结果不再属于有效任务，不能把旧结果的 ID/哈希改成新任务后重交；重新读任务和材料。无权限改约、核心设定无法调和、修订次数耗尽时，报告具体阻碍与可选处理。
 
