@@ -34,7 +34,7 @@ python3 "$ROOT/scripts/novel.py" measure --project "$PROJECT" --result <output_p
 ## 收束形态与文风治理
 
 - **章末收束**：按章计划中的 `ending_shape` 收束；悬念钩子非必要不添加，章末优先落在动作、决定或后果上；禁止生硬切断，账本钩子只为已确立的真实承诺登记。
-- **文风锚点**：按 style_anchor.traits 的语调、节奏和词域写作，language 核验表达，voice_match 核验声线连续性。
+- **文风锚点**：按 style_anchor.traits 的语调、节奏、句式和词域写作，language 核验表达，voice_match 核验声线连续性。
 - **局部修改原则**：返修优先按 [局部修订](repairs.md) 提交段落补丁，保持未改部分原文原样，避免整章反复重刷。
 
 ## 题材硬约束

@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.23.2'
+VERSION = '1.23.3'
 SCHEMA = 'novel-ledger-v2/1'
 
 
