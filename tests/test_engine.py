@@ -78,11 +78,30 @@ class BookTests(unittest.TestCase):
         with transaction(self.db):put(self.db,'published_through',1)
         with self.assertRaises(Error):
             with transaction(self.db):engine.begin_revision(self.db,1,'不能改已发布稿')
-    def test_context_capacity_and_absence_semantics(self):
+    def test_full_current_prose_is_not_limited_by_old_capacity_setting(self):
+        prose='开篇的选择。'+('必须完整保留的当前正文。'*6000)+'章末的后果。'
         with transaction(self.db):put(self.db,'context_chars',4096)
-        p=pack(self.db,'main',1,'draft',{})
-        self.assertLessEqual(len(dump(p)),4096);self.assertTrue(p['retrieval']['absence_is_not_proof'])
-        with self.assertRaises(Error):pack(self.db,'main',1,'draft',{'prose':'字'*5000})
+        for mode in ('legacy','bounded'):
+            with self.subTest(mode=mode):
+                put(self.db,'context_mode',mode)
+                work=pack(self.db,'main',1,'draft',{'prose':prose})
+                self.assertEqual(work['payload']['prose'],prose)
+                self.assertEqual(work['contract'],get(self.db,'contract'))
+                self.assertTrue(work['retrieval']['absence_is_not_proof'])
+    def test_long_draft_and_fact_summary_are_preserved_for_reader(self):
+        respond(self.db,self.path,self.task())
+        text='周行选择让宋禾决定是否签字。\n'+('核对档案的过程必须完整保留。'*5000)+'\n她最终承担了作证的风险。'
+        draft=self.task();engine.submit(self.db,result(draft,{'prose':text}))
+        facts=self.task();work=json.loads(rpath(facts,'input_path').read_text(encoding='utf-8'))
+        self.assertEqual(work['payload']['prose'],text)
+        summary='周行的选择使宋禾有权决定是否作证，双方仍须承担后果。'*200
+        checks=[{'id':check,'result':'pass','reason':'合成工程样本验证完整正文与摘要的传递，不评价文学质量。',
+                 'evidence':[ev(text,quote='她最终承担了作证的风险。')]} for check in work['payload']['checks']]
+        engine.submit(self.db,result(facts,{'verdict':'pass','checks':checks,'findings':[],'events':[],'summary':summary}))
+        self.assertEqual(engine.load_draft(self.db,'main',1)['summary'],summary)
+        reader=self.task();work=json.loads(rpath(reader,'input_path').read_text(encoding='utf-8'))
+        self.assertEqual(work['payload']['prose'],text)
+        for field in ('facts_review','writer_brief','plan','contract','state'):self.assertNotIn(field,work)
     def test_file_tampering_does_not_change_database(self):
         t=self.task();rpath(t, 'input_path').write_text('{}', encoding='utf-8')
         t=self.task();self.assertIn('contract',json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))

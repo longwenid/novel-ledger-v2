@@ -410,10 +410,11 @@ def render(db, branch):
         for k, v in sorted(open_hooks.items(), key=lambda kv: kv[1].get('due', 0)):
             due = v.get('due', 0)
             cls = 'bad' if due <= head_n else 'warn'
-            left = f'逾期 {head_n - due} 章' if due <= head_n else f'还剩 {due - head_n} 章'
+            imp_tag = '<span class="pill">重要</span>' if v.get('important', True) else ''
+            seed_ch = _esc((v.get('seed') or {}).get('chapter', '?'))
             page.append(f'<div class="evt"><div class="head"><b>{_esc(k)}</b><span class="pill {cls}">最迟第{due}章 · {left}</span>'
-                        f'{"<span class=\"pill\">重要</span>" if v.get("important", True) else ""}</div>{_esc(v.get("text", ""))}'
-                        f'<br><span class="note">埋设于第{_esc((v.get("seed") or {}).get("chapter","?"))}章 · 延期 {v.get("extensions",0)}/2</span></div>')
+                        f'{imp_tag}</div>{_esc(v.get("text", ""))}'
+                        f'<br><span class="note">埋设于第{seed_ch}章 · 延期 {v.get("extensions",0)}/2</span></div>')
         page.append('</details>')
     if state['resources']:
         page.append('<details open><summary>资源账</summary><table class="t"><tr><th>持有者</th><th>资产</th><th>数量</th></tr>' +

@@ -1,0 +1,835 @@
+{
+  "policy": "quality_first_no_character_limit",
+  "pass": true,
+  "blocking_findings": [],
+  "tested_source_sha256": {
+    "scripts/novel.py": "929c17039d285f00b00c9c72cbfa8e487eaa6b680e91954fd1db67772cd08a26",
+    "scripts/novel_core/contextflow.py": "fa728889c0465690e249f66ce3be9f48af6d7c7f2cfb722bf8361a8988371bcb",
+    "scripts/novel_core/memory.py": "8b134aad031839fd2cadf39f0569f645027ad894016c36edda9a546c9bf2db4e",
+    "scripts/novel_core/engine.py": "a7be5ac2615eafc45bf22f022b4080e64343ca14eb096ae785b67c0f0a8c589d",
+    "scripts/novel_core/patches.py": "83339895182fa2009772e91a125f255b797fa8e8c49488b4a4e8436e8cbe662d",
+    "scripts/novel_core/store.py": "7c4c0668d8e302b0dd6cc104f95395c1f7c817d5f7ebea2182dd758ae6930f60"
+  },
+  "observations": {
+    "character_limit_enforced": false,
+    "all_deprecated_context_values": 1,
+    "long_prose_chars": [
+      54017,
+      54021
+    ],
+    "reason_chars": 42000,
+    "summary_chars": 5200,
+    "candidate_full_paragraph_and_explicit_range_retained": true,
+    "expired_hook_rejection_atomic": true,
+    "changed_upstream_reuse_next_stage": "facts",
+    "real_v1_17_pending_identity_input_hash_retained": true,
+    "unsigned_legacy_facts_and_reader_revalidated_before_canonical_commit": true,
+    "complex_fact_and_event_kept_atomic": true,
+    "missing_or_scattered_source_reduction_rejected": true,
+    "cannot_compact_keeps_original_nodes_and_sources": true
+  },
+  "evidence_paths": {
+    "quality_cli": "/tmp/novel-quality-cli-p1xasqc2/result.json",
+    "old_pending": "/tmp/novel-old-pending-btpwjs78/result.json",
+    "old_review_pending": "/tmp/novel-old-review-independent-ktibfudp/result.json",
+    "semantic_preservation": "/tmp/novel-semantic-independent-mjg_zonh/result.json"
+  },
+  "details": {
+    "quality_cli": {
+      "project": "/tmp/novel-quality-cli-p1xasqc2/project",
+      "checks": "质量优先跨进程CLI：四个旧context_*为1、完整长正文/理由/摘要/声线/约定、候选整段与显式全范围、到期hook原子失败、上游reuse必须复审、usage与audit",
+      "prose_chars": [
+        54017,
+        54021
+      ],
+      "stages_after_reuse": "facts",
+      "deprecated_limits": {
+        "unit": "unicode_characters_not_tokens",
+        "capacity": null,
+        "input": null,
+        "output": null,
+        "retrieval": null,
+        "overhead": null,
+        "limits_enforced": false,
+        "obsolete_fields": {
+          "context_chars": 1,
+          "context_output_chars": 1,
+          "context_retrieval_chars": 1,
+          "context_overhead_chars": 1
+        },
+        "scan_units_per_page": 16,
+        "direct_material_units": 48,
+        "reduction_inputs_per_group": 3,
+        "boundary": "旧字符配置只作兼容记录，不限制质量、输入、回执或补读；语义分页不证明 token 硬上界。"
+      },
+      "long_reason_chars": 42000,
+      "long_summary_chars": 5200,
+      "usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 13,
+        "task_input_chars": 1260862,
+        "accepted_receipt_chars": 1823079,
+        "attempted_receipt_chars": 2081151,
+        "preparation_input_chars": 0,
+        "supplemental_read_chars": 108526,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "log": [
+        {
+          "cmd": "init",
+          "args": [
+            "--contract",
+            "/tmp/novel-quality-cli-p1xasqc2/project/contract.json"
+          ],
+          "exit": 0,
+          "bytes": 108,
+          "code": null
+        },
+        {
+          "cmd": "doctor",
+          "args": [],
+          "exit": 0,
+          "bytes": 1317,
+          "code": null
+        },
+        {
+          "cmd": "config",
+          "args": [
+            "--key",
+            "context_chars",
+            "--value",
+            "1"
+          ],
+          "exit": 0,
+          "bytes": 68,
+          "code": null
+        },
+        {
+          "cmd": "config",
+          "args": [
+            "--key",
+            "context_output_chars",
+            "--value",
+            "1"
+          ],
+          "exit": 0,
+          "bytes": 75,
+          "code": null
+        },
+        {
+          "cmd": "config",
+          "args": [
+            "--key",
+            "context_retrieval_chars",
+            "--value",
+            "1"
+          ],
+          "exit": 0,
+          "bytes": 78,
+          "code": null
+        },
+        {
+          "cmd": "config",
+          "args": [
+            "--key",
+            "context_overhead_chars",
+            "--value",
+            "1"
+          ],
+          "exit": 0,
+          "bytes": 77,
+          "code": null
+        },
+        {
+          "cmd": "doctor",
+          "args": [],
+          "exit": 0,
+          "bytes": 1393,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 475,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0001/plan-743ee304/result.json"
+          ],
+          "exit": 0,
+          "bytes": 677,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 529,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0001/draft-50d2fabe/result.json"
+          ],
+          "exit": 0,
+          "bytes": 682,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 478,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0001/facts-deb5efb6/result.json"
+          ],
+          "exit": 0,
+          "bytes": 684,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 481,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0001/reader-5c5c2914/result.json"
+          ],
+          "exit": 0,
+          "bytes": 684,
+          "code": null
+        },
+        {
+          "cmd": "status",
+          "args": [],
+          "exit": 0,
+          "bytes": 623,
+          "code": null
+        },
+        {
+          "cmd": "approve",
+          "args": [],
+          "exit": 0,
+          "bytes": 622,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 475,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0002/plan-6019d4ad/result.json"
+          ],
+          "exit": 0,
+          "bytes": 683,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 529,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0002/draft-daa63a8c/result.json"
+          ],
+          "exit": 0,
+          "bytes": 683,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 478,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0002/facts-9d9c66b8/result.json"
+          ],
+          "exit": 2,
+          "bytes": 0,
+          "code": "overdue_hook"
+        },
+        {
+          "cmd": "status",
+          "args": [],
+          "exit": 0,
+          "bytes": 722,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 478,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 478,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0002/facts-9d9c66b8/result.json"
+          ],
+          "exit": 0,
+          "bytes": 684,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 481,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0002/reader-4c54af99/result.json"
+          ],
+          "exit": 0,
+          "bytes": 685,
+          "code": null
+        },
+        {
+          "cmd": "status",
+          "args": [],
+          "exit": 0,
+          "bytes": 624,
+          "code": null
+        },
+        {
+          "cmd": "audit",
+          "args": [],
+          "exit": 0,
+          "bytes": 185,
+          "code": null
+        },
+        {
+          "cmd": "recall",
+          "args": [],
+          "exit": 2,
+          "bytes": 0,
+          "code": "retrieval_scope"
+        },
+        {
+          "cmd": "recall",
+          "args": [
+            "--state"
+          ],
+          "exit": 2,
+          "bytes": 0,
+          "code": "retrieval_scope"
+        },
+        {
+          "cmd": "recall",
+          "args": [
+            "--state",
+            "--entity",
+            "hero"
+          ],
+          "exit": 0,
+          "bytes": 543,
+          "code": null
+        },
+        {
+          "cmd": "revise",
+          "args": [
+            "--from-chapter",
+            "1",
+            "--reason",
+            "验证上游文字变化必须传播审稿"
+          ],
+          "exit": 0,
+          "bytes": 52,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 541,
+          "code": null
+        },
+        {
+          "cmd": "candidate",
+          "args": [
+            "--task",
+            "ec3dbed60ee84e8eb664443747a593b3",
+            "--start",
+            "0"
+          ],
+          "exit": 0,
+          "bytes": 54263,
+          "code": null
+        },
+        {
+          "cmd": "candidate",
+          "args": [
+            "--task",
+            "ec3dbed60ee84e8eb664443747a593b3",
+            "--start",
+            "0",
+            "--end",
+            "54017"
+          ],
+          "exit": 0,
+          "bytes": 54263,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0001/draft-ec3dbed6/result.json"
+          ],
+          "exit": 0,
+          "bytes": 714,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 490,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0001/facts-547faa91/result.json"
+          ],
+          "exit": 0,
+          "bytes": 715,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 493,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0001/reader-34971502/result.json"
+          ],
+          "exit": 0,
+          "bytes": 715,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 541,
+          "code": null
+        },
+        {
+          "cmd": "submit",
+          "args": [
+            "--result",
+            "/tmp/novel-quality-cli-p1xasqc2/project/work/ch0002/draft-c97ec871/result.json"
+          ],
+          "exit": 0,
+          "bytes": 716,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 490,
+          "code": null
+        },
+        {
+          "cmd": "status",
+          "args": [],
+          "exit": 0,
+          "bytes": 767,
+          "code": null
+        },
+        {
+          "cmd": "next",
+          "args": [],
+          "exit": 0,
+          "bytes": 490,
+          "code": null
+        },
+        {
+          "cmd": "status",
+          "args": [],
+          "exit": 0,
+          "bytes": 767,
+          "code": null
+        }
+      ]
+    },
+    "old_pending": {
+      "base": "/tmp/novel-old-pending-btpwjs78",
+      "old_version": "1.17.0",
+      "new_version": "1.18.0",
+      "old_pending_input_chars": 34737,
+      "pending_id_unchanged": true,
+      "input_hash_unchanged": true,
+      "physical_input_unchanged": true,
+      "old_pending_submit_accepted": true,
+      "next_stage": "draft",
+      "author_contract_retained": true,
+      "log": [
+        {
+          "version": "old",
+          "command": "init",
+          "code": null,
+          "exit": 0
+        },
+        {
+          "version": "old",
+          "command": "next",
+          "code": null,
+          "exit": 0
+        },
+        {
+          "version": "new",
+          "command": "next",
+          "code": null,
+          "exit": 0
+        },
+        {
+          "version": "new",
+          "command": "submit",
+          "code": null,
+          "exit": 0
+        },
+        {
+          "version": "new",
+          "command": "next",
+          "code": null,
+          "exit": 0
+        },
+        {
+          "version": "old",
+          "command": "doctor",
+          "code": null,
+          "exit": 0
+        },
+        {
+          "version": "new",
+          "command": "doctor",
+          "code": null,
+          "exit": 0
+        }
+      ]
+    },
+    "old_review_pending": {
+      "base": "/tmp/novel-old-review-independent-ktibfudp",
+      "cases": [
+        {
+          "old_stage": "facts",
+          "pending_id_hash_and_physical_input_preserved": true,
+          "old_receipt_accepted_without_canonical_commit": true,
+          "revalidation_facts_dispatched": true,
+          "unsigned_event_not_auto_carried": true,
+          "fresh_facts_and_reader_commit": true,
+          "canonical_fact_preserved": true,
+          "log": [
+            {
+              "version": "old",
+              "command": "init",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "status",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "status",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "recall",
+              "exit": 0,
+              "code": null
+            }
+          ]
+        },
+        {
+          "old_stage": "reader",
+          "pending_id_hash_and_physical_input_preserved": true,
+          "old_receipt_accepted_without_canonical_commit": true,
+          "revalidation_facts_dispatched": true,
+          "unsigned_event_not_auto_carried": true,
+          "fresh_facts_and_reader_commit": true,
+          "canonical_fact_preserved": true,
+          "log": [
+            {
+              "version": "old",
+              "command": "init",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "old",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "status",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "next",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "submit",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "status",
+              "exit": 0,
+              "code": null
+            },
+            {
+              "version": "new",
+              "command": "recall",
+              "exit": 0,
+              "code": null
+            }
+          ]
+        }
+      ]
+    },
+    "semantic_preservation": {
+      "project": "/tmp/novel-semantic-independent-mjg_zonh/project",
+      "rich_event_units": 1,
+      "rich_fact_units": 1,
+      "counts": {
+        "context_scan": 12,
+        "context_reduce": 4
+      },
+      "rejected_missing_evidence": true,
+      "rejected_scattered_causality": true,
+      "source_reads": [
+        {
+          "field": "contract",
+          "chars": 45272,
+          "source_hash": "d31e9383b5ad12c1fecdfc25ef6fc873a1fe9ac83b68dd59580f37e851449dd0",
+          "read_complete": true
+        },
+        {
+          "field": "payload",
+          "chars": 65047,
+          "source_hash": "d31e9383b5ad12c1fecdfc25ef6fc873a1fe9ac83b68dd59580f37e851449dd0",
+          "read_complete": true
+        }
+      ],
+      "final_core_contract_preserved": true,
+      "final_core_prose_preserved": true,
+      "final_notes_chars": 17104,
+      "retained_node_refs": 12,
+      "node_archive_count": 16,
+      "all_original_documents_retained": true,
+      "usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 16,
+        "task_input_chars": 76757,
+        "accepted_receipt_chars": 19385,
+        "attempted_receipt_chars": 52259,
+        "preparation_input_chars": 76757,
+        "supplemental_read_chars": 112303,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      }
+    }
+  },
+  "scope": "外部临时工程与合成材料；每次命令均为独立Python进程，未修改仓库源码或presentation.html。",
+  "limitations": [
+    "实际token/费用、宿主窗口与真实长篇文学质量未验证。",
+    "语义分页和来源守护不能证明模型不会把关键含义误判为irrelevant；完整原文、节点与取舍记录可追溯。",
+    "不以旧工作包字符上限作为新版验收标准。"
+  ]
+}

@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.17.0'
+VERSION = '1.20.0'
 SCHEMA = 'novel-ledger-v2/1'
 
 
@@ -16,13 +16,13 @@ def validate_style(style):
     """Author-declared voice anchor: named voice plus traits and prose samples."""
     require(isinstance(style, dict), 'style', 'style 为 {"voice":"...","traits":[...],"sample":"..."} 对象')
     voice = style.get('voice', '')
-    require(isinstance(voice, str) and len(voice) <= 60, 'style', 'voice 为不超过 60 字符的声线名')
+    require(isinstance(voice, str), 'style', 'voice 为声线名字符串')
     traits = style.get('traits', [])
     require(isinstance(traits, list) and all(isinstance(t, str) and t.strip() for t in traits), 'style', 'traits 为非空字符串数组')
     sample = style.get('sample', '')
     close = style.get('sample_close', '')
-    require(isinstance(sample, str) and isinstance(close, str) and len(sample) <= 2400 and len(close) <= 1200,
-            'style', 'sample/sample_close 为字符串，分别不超过 2400/1200 字符')
+    require(isinstance(sample, str) and isinstance(close, str),
+            'style', 'sample/sample_close 为完整文风样本字符串')
     require(sample.strip() or traits, 'style', '需要 sample 或 traits 至少其一')
     return {'voice': voice, 'traits': traits, 'sample': sample, 'sample_close': close}
 
@@ -65,7 +65,15 @@ def connect(project):
     db.execute('PRAGMA journal_mode=WAL')
     db.execute('PRAGMA synchronous=FULL')
     require(get(db, 'schema') == SCHEMA, 'schema', '不支持此数据库版本')
+    ensure_derived_schema(db)
     return db
+
+
+def ensure_derived_schema(db):
+    from . import dependencies, projections, sources
+    projections.ensure_schema(db)
+    dependencies.ensure_schema(db)
+    sources.ensure_schema(db)
 
 
 @contextlib.contextmanager
@@ -103,6 +111,7 @@ def initialize(project, contract):
     if contract.get('planning_mode')=='layered':
         require(all(isinstance(v['id'],str) and v['id']!='world' for v in contract['volumes']),'contract','分层模式卷 ID 必须为字符串，world 保留给全书设计')
     require(contract.get('character_mode','legacy') in ('legacy','profiled'),'contract','character_mode 为 profiled 或 legacy')
+    require(contract.get('character_views','full') in ('full','scoped'),'contract','character_views 为 full/scoped')
     require(contract.get('context_mode','bounded') in ('bounded','legacy'),'contract','context_mode 为 bounded/legacy')
     style_anchor = validate_style(contract['style']) | {'source': 'author'} if isinstance(contract.get('style'), dict) else None
     seed(contract)
@@ -115,6 +124,7 @@ def initialize(project, contract):
     except FileExistsError:
         raise Error('exists', '项目数据库已存在，不覆盖')
     db = sqlite3.connect(path, isolation_level=None)
+    db.row_factory = sqlite3.Row
     try:
         db.executescript('''
         PRAGMA journal_mode=WAL;
@@ -138,6 +148,7 @@ def initialize(project, contract):
             if style_anchor is not None:
                 put(db, 'style_anchor', style_anchor)
             db.execute('INSERT INTO branches VALUES (?,?,?,?,?,?,?)', ('main', None, 1, None, None, 'initial', 'active'))
+            ensure_derived_schema(db)
         return {'project': str(project), 'schema': SCHEMA, 'status': 'ready'}
     except BaseException:
         db.close()

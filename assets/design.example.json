@@ -81,16 +81,28 @@
     "volume": "v1",
     "purpose": "从记录差异进入有代价的合作",
     "choice_log": [
-        {
-            "kind": "direction",
-            "mode": "interactive",
-            "candidates": [
-                {"direction": "公开对质，逼出文件出处", "payoff": "立场对立快速立起，追读钩子硬", "cost": "主角的调查能力过早暴露", "risk": "后续冲突升级过快", "wild": false},
-                {"direction": "假意合作，各留一手交换假证据", "payoff": "双方博弈贯穿整卷，可反复回收", "cost": "主角须承受「同谋」的账面代价", "risk": "读者对伪装的耐心有限", "wild": true}
-            ],
-            "chosen": "假意合作，各留一手交换假证据",
-            "reason": "作者裁决：博弈过程能持续供给卷纲节拍，且代价真实"
-        }
+      {
+        "kind": "direction",
+        "mode": "interactive",
+        "candidates": [
+          {
+            "direction": "公开对质，逼出文件出处",
+            "payoff": "立场对立快速立起，追读钩子硬",
+            "cost": "主角的调查能力过早暴露",
+            "risk": "后续冲突升级过快",
+            "wild": false
+          },
+          {
+            "direction": "假意合作，各留一手交换假证据",
+            "payoff": "双方博弈贯穿整卷，可反复回收",
+            "cost": "主角须承受「同谋」的账面代价",
+            "risk": "读者对伪装的耐心有限",
+            "wild": true
+          }
+        ],
+        "chosen": "假意合作，各留一手交换假证据",
+        "reason": "作者裁决：博弈过程能持续供给卷纲节拍，且代价真实"
+      }
     ],
     "location_ids": [
       "design:office"
@@ -180,6 +192,53 @@
     "expression_space": [
       "可调整场景顺序、对话和小动作",
       "通过递交与迟疑表现戒备，避免旁白替人物解释"
-    ]
+    ],
+    "execution": {
+      "expansion_units": [
+        {
+          "id": "u:exchange",
+          "scene": 1,
+          "focus": "对等交换的试探与条件变化",
+          "development": "围绕同一次交接写出请求、拒绝、凭证查验和条件调整；每次回应改变下一步可选行动。",
+          "expected_change": "双方从空口要求走向能核实、能追责的承诺",
+          "weight": 3
+        },
+        {
+          "id": "u:aftermath",
+          "scene": 1,
+          "focus": "交出收据后的迟疑与责任落实",
+          "development": "让双方处理凭证、签字和离开前的停顿；以具体处置显出刚刚选择的代价。",
+          "expected_change": "合作虽成立，戒备与退路仍存在，下一次见证已有真实凭据",
+          "weight": 2
+        }
+      ],
+      "spare_options": [
+        "如正文尚未充分承载选择代价，展开查验失败时改变措辞或交换条件的应对，不添加新的档案或无关突发事件。"
+      ]
+    },
+    "rhythm": {
+      "chapter_role": "完成第一次有代价的合作，同时保留互相试探的关系张力",
+      "pressure_curve": [
+        {
+          "scene": 1,
+          "movement": "请求被拒后逐步收紧",
+          "cause": "双方都不愿先承担交出原件或证据的责任"
+        },
+        {
+          "scene": 1,
+          "movement": "查验凭证后短暂松开，再落在签字责任上",
+          "cause": "核实解决了眼前疑虑，却把后续可追责的代价留给人物"
+        }
+      ],
+      "breathing_points": [
+        {
+          "scene": 1,
+          "placement": "凭证查验完成、决定签字之前的停顿",
+          "function": "让两人消化交换的代价，以处理文件和互看反应呈现仍未消失的戒备"
+        }
+      ],
+      "carries_in": "承接调阅请求受阻的后果，而非重新解释疑点来历",
+      "handoff": "下一章从已留下的交接记录及其责任推进，不用新突发事件重启冲突"
+    }
   }
 }

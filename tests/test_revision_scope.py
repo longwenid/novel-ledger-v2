@@ -12,7 +12,8 @@ from novel_core.store import Error, dump, digest, head, put, transaction
 class FastCommitTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.path=Path(self.temp.name)
-        initialize(self.path,contract());self.db=connect(self.path)
+        c=contract();c['style']={'traits':['动作呈现选择'],'sample':'周行核对每一项证据。'}
+        initialize(self.path,c);self.db=connect(self.path)
     def tearDown(self): self.db.close();self.temp.cleanup()
     def task(self): return engine.next_task(self.db,self.path)
 
@@ -124,6 +125,67 @@ class FastCommitTests(unittest.TestCase):
         outcome=engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
         self.assertNotIn('fast_committed',outcome)
         t=self.task();self.assertEqual(t['stage'],'facts')          # fell back to a real facts pass
+
+    def _historical_read_without_write(self, dependency=False, token_fact=False):
+        """The second chapter reads history but writes no ledger events."""
+        respond(self.db,self.path,self.task())
+        first='周行得到玉佩，亲手挂在腰间。' if token_fact else '周行决定明日开庭，宋禾答应到场。'
+        respond(self.db,self.path,self.task(),prose=first)
+        events=[{'op':'state','entity':'hero','key':'has_token','before':None,'after':True,
+                 'evidence':ev(first,1,'得到玉佩')}] if token_fact else []
+        respond(self.db,self.path,self.task(),events=events)
+        respond(self.db,self.path,self.task());engine.approve(self.db)
+        t=self.task();p=plan(2)
+        if dependency:p['dependencies']=[1]
+        engine.submit(self.db,result(t,{'chapters':[p]}))
+        second='周行按住腰间的玉佩，松了一口气。' if token_fact else '宋禾按照昨日约定赴庭，等待周行。'
+        respond(self.db,self.path,self.task(),prose=second)
+        respond(self.db,self.path,self.task(),events=[])
+        respond(self.db,self.path,self.task())
+
+    def _change_first_then_reuse_second(self, prose, events=None, dispositions=None):
+        engine.begin_revision(self.db,1,'修正第一章历史内容')
+        respond(self.db,self.path,self.task(),prose=prose)
+        t=self.task();work=json.loads(rpath(t).read_text(encoding='utf-8'))
+        data=review(work['payload']['checks'],prose,1)
+        data.update(events=events or [],summary='第一章历史内容已修正。')
+        if dispositions is not None:data['prior_dispositions']=dispositions
+        engine.submit(self.db,result(t,data));respond(self.db,self.path,self.task())
+        t=self.task();payload=json.loads(rpath(t).read_text(encoding='utf-8'))['payload']
+        return engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
+
+    def test_upstream_fact_change_rechecks_chapter_with_no_write_events(self):
+        self._historical_read_without_write(token_fact=True)
+        prose='周行没有取得玉佩，腰间空空如也。'
+        outcome=self._change_first_then_reuse_second(prose,
+            [{'op':'state','entity':'hero','key':'has_token','before':None,'after':False,
+              'evidence':ev(prose,1,'没有取得玉佩')}],
+            [{'index':0,'disposition':'replaced','reason':'原文取得玉佩错误，改为未取得。'}])
+        self.assertNotIn('fast_committed',outcome)
+        self.assertEqual(self.task()['stage'],'facts')
+
+    def test_unregistered_historical_change_rechecks_implicit_read(self):
+        self._historical_read_without_write()
+        outcome=self._change_first_then_reuse_second('周行决定取消明日开庭，宋禾答应不再到场。')
+        self.assertNotIn('fast_committed',outcome)
+        self.assertEqual(self.task()['stage'],'facts')
+
+    def test_changed_explicit_dependency_rechecks_even_with_equal_state(self):
+        self._historical_read_without_write(dependency=True)
+        outcome=self._change_first_then_reuse_second('周行决定取消明日开庭，宋禾答应不再到场。')
+        self.assertNotIn('fast_committed',outcome)
+        self.assertEqual(self.task()['stage'],'facts')
+
+    def test_parent_reviews_must_actually_have_passed(self):
+        self._two_chapters()
+        row=self.db.execute("SELECT data FROM chapters WHERE branch='main' AND number=1").fetchone()
+        data=json.loads(row[0]);data['reader_review']['verdict']='fix'
+        self.db.execute("UPDATE chapters SET data=? WHERE branch='main' AND number=1",(dump(data),))
+        engine.begin_revision(self.db,1,'核验不可信的旧审稿记录')
+        t=self.task();payload=json.loads(rpath(t).read_text(encoding='utf-8'))['payload']
+        outcome=engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
+        self.assertNotIn('fast_committed',outcome)
+        self.assertEqual(self.task()['stage'],'facts')
 
 
 if __name__=='__main__':unittest.main()

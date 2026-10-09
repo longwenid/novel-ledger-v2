@@ -18,7 +18,7 @@ def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','submit','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','tidy','html'):
+    for name in ('init','status','next','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
@@ -27,7 +27,7 @@ def parser():
         if name=='material':
             s.add_argument('--task',required=True);s.add_argument('--bundle',required=True);s.add_argument('--document',required=True);s.add_argument('--start',type=int,default=0)
         if name=='init': s.add_argument('--contract',required=True)
-        if name=='submit': s.add_argument('--result',required=True)
+        if name in ('submit','measure'): s.add_argument('--result',required=True)
         if name=='recall':
             s.add_argument('--query',default='');s.add_argument('--entity');s.add_argument('--topic');s.add_argument('--branch')
             s.add_argument('--start',type=int,default=1);s.add_argument('--end',type=int);s.add_argument('--offset',type=int,default=0);s.add_argument('--limit',type=int,default=20)
@@ -42,11 +42,14 @@ def parser():
         if name=='html':
             s.add_argument('--out');s.add_argument('--branch')
         if name=='config':
-            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','published_through','style_anchor','review_chunk']);s.add_argument('--value')
+            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','published_through','style_anchor','review_chunk','chapter_target_han','character_views']);s.add_argument('--value')
         if name=='candidate':
             s.add_argument('--task',required=True);s.add_argument('--start',type=int,default=0);s.add_argument('--end',type=int)
         if name=='character':
             s.add_argument('--entity',required=True);s.add_argument('--branch');s.add_argument('--history',action='store_true');s.add_argument('--refresh',action='store_true');s.add_argument('--reason')
+            s.add_argument('--index',action='store_true');s.add_argument('--section',choices=['profile','core','biography.experiences','voice.relationship_modes','examples']);s.add_argument('--item',type=int);s.add_argument('--revision')
+            s.add_argument('--topic',action='append');s.add_argument('--related-entity',action='append');s.add_argument('--place',action='append')
+        if name=='dependencies':s.add_argument('--task',required=True)
         if name=='design':
             s.add_argument('--scope',default='world');s.add_argument('--branch');s.add_argument('--history',action='store_true')
         if name=='replan':
@@ -60,7 +63,6 @@ def dispatch(args):
     db=connect(args.project)
     try:
         from novel_core.contextflow import enabled,bounded_read
-        if not enabled(db):return value
         import os
         task_id=getattr(args,'task',None)
         pending=db.execute("SELECT id FROM tasks WHERE state='pending'").fetchone()
@@ -71,19 +73,50 @@ def dispatch(args):
             active=read(envelope)['task_id']
             require(not pending or pending['id']==active,'task','驱动任务不是当前待处理任务')
             payer=active
-        with transaction(db):return bounded_read(db,value,payer,getattr(args,'page_start',0))
+        with transaction(db):
+            delivered=bounded_read(db,value,payer,getattr(args,'page_start',0)) if enabled(db) else value
+            from novel_core.dependencies import record_read
+            query={key:val for key,val in vars(args).items() if key not in ('project','task') and val is not None}
+            query.setdefault('branch',get(db,'work_branch'))
+            record_read(db,payer,query,delivered,task_id or payer)
+            return delivered
     finally:db.close()
+
+
+def _auto_render_html(project, db=None):
+    try:
+        from novel_core.bookpage import render, save
+        closed_db = False
+        if db is None:
+            db = connect(project)
+            closed_db = True
+        try:
+            target = Path(project).resolve() / 'book.html'
+            branch = get(db, 'active_branch') or get(db, 'work_branch') or 'main'
+            page = render(db, branch)
+            save(target, page)
+        finally:
+            if closed_db:
+                db.close()
+    except Exception:
+        pass
 
 
 def dispatch_raw(args):
     cmd=args.command
-    if cmd=='init': return initialize(args.project,read(args.contract))
+    if cmd=='init':
+        res = initialize(args.project,read(args.contract))
+        _auto_render_html(args.project)
+        return res
     db=connect(args.project)
     try:
         if cmd=='material':
             from novel_core.contextflow import material
             return material(db,args.task,args.bundle,args.document,args.start)
         if cmd=='status': return engine.status(db)
+        if cmd=='dependencies':
+            from novel_core.dependencies import inspect
+            return inspect(db,args.task)
         if cmd=='candidate':
             from novel_core.patches import read_slice
             task=db.execute('SELECT * FROM tasks WHERE id=?',(args.task,)).fetchone()
@@ -94,6 +127,15 @@ def dispatch_raw(args):
             from novel_core.ledger import replay
             branch=args.branch or get(db,'work_branch');state=replay(db,branch)
             eid=characters.resolve(state,args.entity)
+            query={key:val for key,val in {'topics':args.topic,'entities':args.related_entity,'places':args.place}.items() if val}
+            view=args.section or args.item is not None or args.revision is not None or query
+            require(not (args.refresh and (args.index or view)),'character','重新准备档案不能同时指定分层读取')
+            require(not (args.history and (args.index or view)),'character','历史列表与定向读取请分别调用')
+            require(not (args.index and view),'character','索引与具体材料请分别读取')
+            if args.index:return characters.index_read(db,branch,eid)
+            if view:
+                revision=int(args.revision) if args.revision and args.revision.isdigit() else args.revision
+                return characters.profile_read(db,branch,eid,args.section,args.item,revision,query=query or None)
             if args.refresh:
                 with transaction(db):
                     require(branch==get(db,'work_branch') and get(db,'status')=='ready','character','只能重审当前可运行分支的人物；完本后修改请用 revise')
@@ -118,20 +160,58 @@ def dispatch_raw(args):
             return {'removed':len(removed),'directories':removed}
         if cmd=='submit':
             given=Path(args.result)
-            return engine.submit(db,read(given if given.is_absolute() else Path(args.project).resolve()/given))
-        if cmd=='approve': return engine.approve(db)
+            res = engine.submit(db,read(given if given.is_absolute() else Path(args.project).resolve()/given))
+            _auto_render_html(args.project, db)
+            return res
+        if cmd=='measure':
+            from novel_core.budget import han_count
+            from novel_core.patches import compose
+            pending=db.execute("SELECT * FROM tasks WHERE state='pending'").fetchone()
+            require(pending and pending['stage'] in ('draft','repair','redesign'),'measure','篇幅预检只用于当前待处理的执笔或返修任务')
+            given=Path(args.result)
+            receipt=read(given if given.is_absolute() else Path(args.project).resolve()/given)
+            require(isinstance(receipt,dict),'measure','预检结果需为 JSON 对象')
+            for key in ('task_id','input_hash'):
+                expected=pending['id'] if key=='task_id' else pending['input_hash']
+                require(key not in receipt or receipt[key]==expected,'stale_task','预检结果不属于当前任务；不能改旧信封继续使用')
+            data=receipt.get('data',receipt)
+            require(isinstance(data,dict),'measure','预检 data 需为对象')
+            work=json.loads(pending['input'])
+            draft=engine.load_draft(db,pending['branch'],pending['chapter'])
+            prose=engine.parse_prose({'prose':compose(db,pending['stage'],work,data,draft)})
+            observation=engine.chapter_length(db,pending['branch'],pending['chapter'],prose)
+            require('plan_update' not in data or pending['stage']=='redesign','plan_update','plan_update 仅用于 redesign')
+            if data.get('plan_update'):
+                from novel_core.budget import chapter_length
+                from novel_core.design import validate_chapter_execution
+                update=data['plan_update']
+                require(isinstance(update,dict),'plan_update','plan_update 需为对象')
+                row=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(pending['branch'],pending['chapter'])).fetchone()
+                plan=json.loads(row['data'])
+                proposed={**plan,**update}
+                validate_chapter_execution(proposed)
+                changed=chapter_length(get(db,'contract'),proposed,prose)
+                require(not observation or (changed and changed['target_han']==observation['target_han']),
+                        'chapter_target','返修不能擅改已定篇幅目标；预检不会更改当前章计划')
+                observation=changed
+            return {'task_id':pending['id'],'chapter':pending['chapter'],'submitted':False,
+                    'chapter_length':observation or {'unit':'han_characters','actual_han':han_count(prose),'target_han':None,'status':'no_target_configured'}}
+        if cmd=='approve':
+            res = engine.approve(db)
+            _auto_render_html(args.project, db)
+            return res
         if cmd=='audit': return engine.audit(db)
         if cmd=='pause': return engine.pause(db,args.reason,args.cancel_task)
         if cmd=='resume': return engine.resume(db)
         if cmd=='complete':
             with transaction(db): return engine.complete_inner(db)
         if cmd=='doctor':
-            from novel_core.contextflow import limits,enabled
+            from novel_core.contextflow import limits,usage
             import platform, shutil
             return {'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
-                    'context_mode':get(db,'context_mode','bounded'),'declared_capacity_chars':get(db,'context_chars'),'sizing_anchors':limits(db),
-                    'explosion_control':'structural rules: single-task visibility, scoped pagination, prepare-then-enter, load-once, one unit per receipt, growth-triggered handoff',
-                    'context_window_verified':False,'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'per-task isolated workers with pack material isolation'}
+                    'context_mode':get(db,'context_mode','bounded'),'character_limits_enforced':False,'material_structure':limits(db),
+                    'explosion_control':'task isolation, topic selection, complete semantic-unit pages, source-bound preparation, load-once, actual host handoff',
+                    'context_window_verified':False,'usage':usage(db),'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'host_must_verify_fresh_review_workers','independent_review_verified':False}
         if cmd=='map':
             from novel_core.ledger import replay
             from novel_core.spatial import resolve_place,spatial_view,mermaid
@@ -150,7 +230,19 @@ def dispatch_raw(args):
             if args.contract: return get(db,'contract')
             if args.state:
                 from novel_core.ledger import replay
-                return replay(db,branch)
+                from novel_core.characters import resolve
+                require(args.entity or get(db,'context_mode','bounded')=='legacy','retrieval_scope','bounded 状态补读须带 --entity；用 --topic 进一步限定认知，不能整包倾倒全书状态')
+                state=replay(db,branch)
+                if not args.entity:return state
+                eid=resolve(state,args.entity)
+                view={'branch':branch,'entity':eid,'clock':state['clock'],'entities':{eid:state['entities'][eid]},
+                      'facts':{k:v for k,v in state['facts'].items() if k.split(':',1)[0]==eid and (not args.topic or k.split(':',1)[1]==args.topic)},
+                      'knowledge':{k:v for k,v in state['knowledge'].items() if k.split(':',1)[0]==eid and (not args.topic or k.split(':',1)[1]==args.topic)},
+                      'resources':{k:v for k,v in state['resources'].items() if json.loads(k)[0]==eid and (not args.topic or json.loads(k)[1]==args.topic)},
+                      'absence_is_not_proof':True}
+                from novel_core.spatial import spatial_view
+                view['continuity']=spatial_view(state,[],[eid])
+                return view
             if args.chapter is not None:
                 row=db.execute('SELECT number,hash,prose,data FROM chapters WHERE branch=? AND number=?',(branch,args.chapter)).fetchone()
                 require(row,'chapter','章节不存在')
@@ -158,6 +250,8 @@ def dispatch_raw(args):
                 # `data` is several times the prose and stays reachable via recall.
                 return {'branch':branch,'number':row['number'],'hash':row['hash'],'prose':row['prose'],
                         'summary':json.loads(row['data']).get('summary','')}
+            require(get(db,'context_mode','bounded')=='legacy' or args.query or args.entity or args.topic or args.start!=1 or args.end is not None,
+                    'retrieval_scope','bounded recall 须带 entity/topic/query/章范围，不能无目标读取全历史')
             return recall(db,branch,args.query,args.entity,args.topic,args.start,args.end,args.offset,args.limit)
         if cmd=='revise':
             with transaction(db):
@@ -171,8 +265,8 @@ def dispatch_raw(args):
                     return engine.status(db)
                 return engine.begin_revision(db,args.from_chapter,args.reason)
         if cmd=='config':
-            if not args.key: return {k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')}
-            if args.value is None: return {args.key:get(db,args.key)}
+            if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full')}
+            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key)}
             if args.key=='style_anchor':
                 try:
                     from novel_core.store import validate_style
@@ -180,20 +274,26 @@ def dispatch_raw(args):
                 except ValueError:
                     require(False,'config','style_anchor 需为合法 JSON 对象 {"traits":[...],"sample":"..."}')
             else:
-                value=args.value if args.key=='context_mode' else int(args.value)
-            if args.key in ('context_output_chars','context_retrieval_chars','context_overhead_chars'):require(value>=256,'context_config','读页/回执/预留锚点至少 256 字符；锚点只校准尺寸，不构成配额')
+                value=args.value if args.key in ('context_mode','character_views') else int(args.value)
             if args.key=='review_chunk':require(1<=value<=5,'config','review_chunk 为 1~5 章的分段审稿粒度;覆盖范围不变,只调成本')
+            if args.key=='chapter_target_han':
+                from novel_core.budget import validate_chapter_target
+                validate_chapter_target(value)
             if args.key=='context_mode': require(value in ('bounded','legacy'),'config','context_mode 为 bounded/legacy；legacy 仅用于复现旧协议')
-            if args.key=='context_chars': require(value>=4096,'config','声明容量至少 4096 字符；由宿主按真实 token 窗口校准')
+            if args.key=='character_views':require(value in ('full','scoped'),'config','character_views 为 full/scoped')
             if args.key=='published_through': require(get(db,'published_through',0)<=value<=engine.head(db,get(db,'active_branch')),'config','发布边界只能前进至已验收章号')
             with transaction(db):
                 require(not db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone(),'pending','修改配置前先完成或取消当前任务')
-                put(db,args.key,value)
+                if args.key in ('chapter_target_han','character_views'):
+                    contract=get(db,'contract');contract[args.key]=value;put(db,'contract',contract)
+                else:put(db,args.key,value)
                 if args.key.startswith('context_') and args.key!='context_mode':
                     from novel_core.contextflow import limits
                     limits(db)
                 log(db,'config',{'key':args.key,'value':value})
-            return {args.key:value}
+            result={args.key:value}
+            if args.key.startswith('context_') and args.key!='context_mode':result['deprecated']='字符配置仅兼容旧项目，不形成内容或读取限制；分页按完整语义单元。'
+            return result
         if cmd=='replan':
             with transaction(db):
                 require(not db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone(),'pending','先完成或取消当前任务')

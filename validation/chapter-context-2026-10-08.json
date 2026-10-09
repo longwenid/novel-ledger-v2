@@ -1,0 +1,111 @@
+{
+  "version": "1.19.0",
+  "date": "2026-10-08",
+  "scope": "Synthetic historical corpus followed by actual next/submit preparation, draft, facts, reader and commit. Reports cumulative protocol characters, without external models, billed tokens or literary quality claims.",
+  "cases": [
+    {
+      "case": "baseline",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "character_limits_enforced": false,
+      "knowledge_records": 0,
+      "continued_prose_characters": 3000,
+      "open_hooks": 0,
+      "overdue_open_hooks": 0,
+      "knowledge_topic_scope": "explicit",
+      "tasks": 3,
+      "max_input_chars": 13177,
+      "total_input_chars": 28383,
+      "total_output_chars": 6140,
+      "preparation_input_chars": 0,
+      "preparation_source_fragment_chars": 0,
+      "protocol_usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 3,
+        "task_input_chars": 28383,
+        "accepted_receipt_chars": 6140,
+        "attempted_receipt_chars": 6140,
+        "preparation_input_chars": 0,
+        "supplemental_read_chars": 0,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "trace": [
+        {
+          "task_id": "42f7382826224b1c88dfafcbbfdd8d2e",
+          "stage": "draft",
+          "input_chars": 13177,
+          "output_chars": 3359
+        },
+        {
+          "task_id": "a10ef06f895e4767a5113f261b618e0b",
+          "stage": "facts",
+          "input_chars": 10485,
+          "output_chars": 1363
+        },
+        {
+          "task_id": "0a76ca99779548f98736da605cae482f",
+          "stage": "reader",
+          "input_chars": 4721,
+          "output_chars": 1418
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains future long-term promises approaching a common deadline, not overdue debt or a completed novel."
+    },
+    {
+      "case": "knowledge",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "character_limits_enforced": false,
+      "knowledge_records": 1000,
+      "continued_prose_characters": 3000,
+      "open_hooks": 0,
+      "overdue_open_hooks": 0,
+      "knowledge_topic_scope": "explicit",
+      "tasks": 3,
+      "max_input_chars": 20652,
+      "total_input_chars": 43333,
+      "total_output_chars": 6140,
+      "preparation_input_chars": 0,
+      "preparation_source_fragment_chars": 0,
+      "protocol_usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 3,
+        "task_input_chars": 43333,
+        "accepted_receipt_chars": 6140,
+        "attempted_receipt_chars": 6140,
+        "preparation_input_chars": 0,
+        "supplemental_read_chars": 0,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "trace": [
+        {
+          "task_id": "c5937e369a4e45279a484d5dbe4d496d",
+          "stage": "draft",
+          "input_chars": 20652,
+          "output_chars": 3359
+        },
+        {
+          "task_id": "72d305fe7e4848aab574a9a910033979",
+          "stage": "facts",
+          "input_chars": 17960,
+          "output_chars": 1363
+        },
+        {
+          "task_id": "c48c6f0e4dce488ca5baf80ee0b24edf",
+          "stage": "reader",
+          "input_chars": 4721,
+          "output_chars": 1418
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains future long-term promises approaching a common deadline, not overdue debt or a completed novel."
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+{
+  "version": "1.20.0",
+  "date": "2026-10-09",
+  "kind": "real_prose_blind_review_and_independent_repair",
+  "source_chapters": 12,
+  "source_characters": 5870,
+  "source_hashes": {
+    "1": "0be5317ce38f5b5a866cb457a077a07cc825e2a1c9bb6f444c94ea0ea75573dd",
+    "2": "ca0a2a82fbfcffb4ccb542a1e44285a9a199040af39fc8fa5046f35aa5f6c166",
+    "3": "db1dee503cc82b8dee603b4a2d6770a547435b528a175a18fbecb0869d85f467",
+    "4": "02b88f26dc607fd1803cfe23ba17e9c7305cc2cd757540cd33b3e9f7d938b307",
+    "5": "1e0ea3594834f05e89f1411a9454c8740a164632eb97586eb3bc55c36c727dc2",
+    "6": "1b2adb3d4047bc7023ef557947b09f0666f5b6957610018be68781bf366342d3",
+    "7": "cb867d04eeea684919401ba6311d3b51144afef84c2e0bde88faf2d977e00d73",
+    "8": "62c8010b47b635090eb9f5691790ac4074b573adc5b07f5971971908035ec05f",
+    "9": "0a262656259e694572a7a700a2b6638f46bfc700d5a85c4993e12f3932e5d053",
+    "10": "d5b6c32f49e174943e8d004e57e117c9b1b3dd011f4bbe0060d4ac22c4557cc3",
+    "11": "1ce50bcc947572f6fa91abdc6dc5d9a22f0f637d534d89a47ebb0f1f1819f9e2",
+    "12": "520055c45e15fec135fef431e8d3741f1dd0bf50e38d5c0c8c66d49353ff5113"
+  },
+  "scope": "compact complete pilot, not a multi-million-character novel or a verified cross-volume corpus",
+  "sample_controls": [
+    "quiet_closure",
+    "climax"
+  ],
+  "seeded_categories": [
+    "knowledge",
+    "motivation",
+    "cost",
+    "causality",
+    "payoff",
+    "language"
+  ],
+  "blind_workers": 8,
+  "history_fork": "none",
+  "independent_of_writer": true,
+  "benchmark": {
+    "schema": "novel-ledger-v2.literary-score/1",
+    "cases": [
+      {
+        "case_id": "52cbc9cc8aa7492a91937e709b51ac84",
+        "label": "original_quiet",
+        "input_hash": "832ed7c75fc53d87546945274b0924e9823689d97ab60594dfe60c1c7d417a32",
+        "review_hash": "d3ea9129761d72c2d01a817039c6b978bd811714fc7881647f819e2ec62a86f4",
+        "input_chars": 7919,
+        "review_chars": 3356,
+        "targets": [
+          12
+        ],
+        "seeded_detections": [],
+        "findings": 0
+      },
+      {
+        "case_id": "d154b337424e4402a6e664a8ae5db906",
+        "label": "original_climax",
+        "input_hash": "25538536956360391b2bc5f790f023d1e48ccb4e4815332b9d95c4cac6de2c81",
+        "review_hash": "98f31d5da4575c1459b6a1ee392f9af3699adbf37ca389129e7e8037b7af79e0",
+        "input_chars": 7922,
+        "review_chars": 5888,
+        "targets": [
+          10,
+          11
+        ],
+        "seeded_detections": [],
+        "findings": 0
+      },
+      {
+        "case_id": "a553260a5810489a841b490771271062",
+        "label": "seed_knowledge",
+        "input_hash": "7f653645624c116eba0632dff7a01b74542b7c3ed3df13d91af4d87694a6f28c",
+        "review_hash": "f371288c055eb97f78fc97a7af3e7a097e91e7b32c742e7cf151549db890ff72",
+        "input_chars": 7929,
+        "review_chars": 4775,
+        "targets": [
+          3
+        ],
+        "seeded_detections": [
+          {
+            "chapter": 3,
+            "start": 432,
+            "end": 478,
+            "criterion": "knowledge",
+            "detected": true
+          }
+        ],
+        "findings": 1
+      },
+      {
+        "case_id": "21f8ac89ec9847769add834bdd47d48b",
+        "label": "seed_motivation",
+        "input_hash": "0329614cdc28ffd237b1218f3c28bd2b1e8534ac4d4c7b1ffd6558778df4de01",
+        "review_hash": "599a871f3fd7c7ec28826363729d045c80757f6d08d206bb5807477f74a65f0f",
+        "input_chars": 7952,
+        "review_chars": 6057,
+        "targets": [
+          9
+        ],
+        "seeded_detections": [
+          {
+            "chapter": 9,
+            "start": 241,
+            "end": 300,
+            "criterion": "motivation",
+            "detected": true
+          }
+        ],
+        "findings": 1
+      },
+      {
+        "case_id": "96a7338627a0494ea7f3a080ee5c727b",
+        "label": "seed_cost",
+        "input_hash": "b478601ba8b16d4347492f6713575976e49a742fc6696ba7fbb7d5ffcec6e23a",
+        "review_hash": "644892358fa5326817e90b636f0672dc3619d20738c4ede8584970671682a9ef",
+        "input_chars": 7929,
+        "review_chars": 6491,
+        "targets": [
+          11,
+          12
+        ],
+        "seeded_detections": [
+          {
+            "chapter": 11,
+            "start": 252,
+            "end": 287,
+            "criterion": "cost",
+            "detected": true
+          }
+        ],
+        "findings": 2
+      },
+      {
+        "case_id": "d22409079b3c4a52a9f0255ece9f1129",
+        "label": "seed_physics",
+        "input_hash": "03fe9e2ef233a05a2058fe3ed61bcd2863099330dd32340321d4a8c4d2508448",
+        "review_hash": "f8a1d12f3af73548e0995c5ea89421f57e1ce7e84ca79de912c5e07d5dff8d25",
+        "input_chars": 7932,
+        "review_chars": 4056,
+        "targets": [
+          4,
+          5
+        ],
+        "seeded_detections": [
+          {
+            "chapter": 4,
+            "start": 322,
+            "end": 382,
+            "criterion": "causality",
+            "detected": true
+          }
+        ],
+        "findings": 1
+      },
+      {
+        "case_id": "29f2be2d923c404bb656520a8ef6818d",
+        "label": "seed_payoff",
+        "input_hash": "7608afa6613ad70219d67c586b1224250724f40e9692249735b58b5f8be42b55",
+        "review_hash": "8ba61238ab7fc6a944c07504a12bc0623be82ad315867750365a9ed2c4d0137e",
+        "input_chars": 7823,
+        "review_chars": 6196,
+        "targets": [
+          6,
+          12
+        ],
+        "seeded_detections": [
+          {
+            "chapter": 6,
+            "start": 64,
+            "end": 116,
+            "criterion": "payoff",
+            "detected": true
+          }
+        ],
+        "findings": 1
+      },
+      {
+        "case_id": "76f6f22b97c343e287cb3fdf8c5e1b26",
+        "label": "seed_language",
+        "input_hash": "0c476d06713e83df49767a1e63ab752c2bfdfa22ec2958d2f7aa2aa67634a266",
+        "review_hash": "821a4eae033ee82a71381976575082f55d68d12a56274194e385151eac8fe59c",
+        "input_chars": 8041,
+        "review_chars": 4731,
+        "targets": [
+          8
+        ],
+        "seeded_detections": [
+          {
+            "chapter": 8,
+            "start": 44,
+            "end": 186,
+            "criterion": "language",
+            "detected": true
+          }
+        ],
+        "findings": 2
+      }
+    ],
+    "seeded": {
+      "true_positive": 6,
+      "false_negative": 0,
+      "recall": 1.0
+    },
+    "controls": {
+      "alerts_pending_adjudication": 0
+    },
+    "adjudicated": {
+      "expectations_evaluated": 0,
+      "true_positive": null,
+      "false_positive": null,
+      "false_negative": null,
+      "pending_expectations": 0,
+      "precision": null
+    },
+    "billed_tokens": null,
+    "boundary": "精确引文与覆盖只证格式；植入缺陷命中是定位指标，不单独证明推理正确。原稿和模型评价不是专家金标准，跨卷结论须有真实卷界与覆盖。"
+  },
+  "repair": {
+    "patch_hash": "f804a0f07b7efca21791a99a44c7fea39c713a8e9558fe7aa1b6f259ce71ec3a",
+    "patches": 1,
+    "changed_chapters": [
+      6
+    ],
+    "facts_and_reader": {
+      "schema": "novel-ledger-v2.literary-score/1",
+      "cases": [
+        {
+          "case_id": "1f6da3c367b9415ab63d5dfb8a445e62",
+          "label": "repaired_facts",
+          "input_hash": "90125086cc397209cc23b1ad57f26258b5246bc366296a0a23fd36e81b6b181d",
+          "review_hash": "6bc55b330d2935452c7915be455bca258ac255eace17736a02b79fe9c0e8869d",
+          "input_chars": 7907,
+          "review_chars": 5399,
+          "targets": [
+            6,
+            12
+          ],
+          "seeded_detections": [],
+          "findings": 0
+        },
+        {
+          "case_id": "921c7b7c3d90438597ed9aaad88edfd9",
+          "label": "repaired_reader",
+          "input_hash": "36a39013f7a977b3154f1e1d51a12737560ead0df6c9118a319eb7191c78ab17",
+          "review_hash": "aa92c622e2e1e3bcee238d9a99e23460731ec40a6fd346e446d814576b4f6816",
+          "input_chars": 7907,
+          "review_chars": 5591,
+          "targets": [
+            6,
+            12
+          ],
+          "seeded_detections": [],
+          "findings": 0
+        }
+      ],
+      "seeded": {
+        "true_positive": 0,
+        "false_negative": 0,
+        "recall": null
+      },
+      "controls": {
+        "alerts_pending_adjudication": 0
+      },
+      "adjudicated": {
+        "expectations_evaluated": 0,
+        "true_positive": null,
+        "false_positive": null,
+        "false_negative": null,
+        "pending_expectations": 0,
+        "precision": null
+      },
+      "billed_tokens": null,
+      "boundary": "精确引文与覆盖只证格式；植入缺陷命中是定位指标，不单独证明推理正确。原稿和模型评价不是专家金标准，跨卷结论须有真实卷界与覆盖。"
+    },
+    "new_workers": 2,
+    "writer_independent_of_reviewers": true
+  },
+  "external_evidence_directory": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-literary-eval-z7ok1vbt",
+  "host_model": null,
+  "billed_tokens": null,
+  "human_adjudication": null,
+  "real_cross_volume_verification": false,
+  "semantic_confirmation": "Root inspected finding reasons; all six detections matched their intended semantic defect, not merely overlapping quotes. This is one blinded cohort with obvious seeded defects, not expert gold or a production-quality guarantee.",
+  "grader_sha256": "544c62fd53fa8b9d9180a5400efdc049bb8f1e689047d7ffda4689eb755892a3"
+}

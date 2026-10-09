@@ -4,11 +4,27 @@ import tempfile
 import unittest
 from pathlib import Path
 from support import *
-from novel_core.patches import apply_patch,read_slice
+from novel_core.patches import apply_patch,read_slice,save_source
 from novel_core.store import Error,digest,head
 
 
 class PatchUnitTests(unittest.TestCase):
+    def test_candidate_reads_keep_long_paragraph_and_explicit_range(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp);initialize(path,contract());db=connect(path)
+            try:
+                paragraph='前提不能丢失。'+('有完整因果的长段。'*7000)+'结尾的决定。\n'
+                prose=paragraph+'第二段的后果。'
+                hashed=save_source(db,prose)
+                task={'id':'candidate-test','input':dump({'stage':'repair','payload':{'base_hash':hashed}})}
+                page=read_slice(db,task)
+                self.assertEqual(page['text'],paragraph)
+                self.assertEqual(page['end'],len(paragraph))
+                whole=read_slice(db,task,0,len(prose))
+                self.assertEqual(whole['text'],prose)
+                self.assertEqual(whole['base_hash'],hashed)
+            finally:db.close()
+
     def test_unicode_multiple_patches_share_original_offsets(self):
         text='第一段🙂。\n第二段。\n第三段。'
         data={'base_hash':digest(text),'patches':[{'start':text.index('第三'),'old':'第三','new':'末尾'},{'start':0,'old':'第一','new':'开头增添几字'}]}
@@ -88,13 +104,15 @@ class PatchPipelineTests(unittest.TestCase):
         respond(self.db,self.path,self.task());t=self.task()
         with self.assertRaises(Error):engine.submit(self.db,self.patch(t))
     def test_revision_can_reuse_original_without_echoing_it(self):
+        # The author's voice is already part of both original review inputs.
+        put(self.db,'style_anchor',{'source':'author','traits':['克制'],'sample':'先核凭证再开口。'})
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task(),prose=self.text)
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());engine.approve(self.db)
         with transaction(self.db):revision=engine.begin_revision(self.db,1,'复核后续连续性')
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(t['stage'],'draft');self.assertEqual(w['payload']['base_hash'],digest(self.text))
         outcome=engine.submit(self.db,result(t,{'base_hash':digest(self.text),'reuse_original':True}))
-        # v1.13: identical prose commits without re-verification; the receipt never echoes the text
+        # Reuse requires unchanged upstream prose and valid parent reviews.
         self.assertTrue(outcome['fast_committed'])
         self.assertNotIn(self.text,(outcome.get('receipt') or ''))
         self.assertEqual(head(self.db,'main'),1)

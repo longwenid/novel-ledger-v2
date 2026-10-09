@@ -1,0 +1,1795 @@
+{
+  "version": "1.18.0",
+  "date": "2026-10-08",
+  "scope": "Synthetic historical corpus followed by actual next/submit preparation, draft, facts, reader and commit. Reports cumulative protocol characters, without external models, billed tokens or literary quality claims.",
+  "cases": [
+    {
+      "case": "baseline",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "character_limits_enforced": false,
+      "knowledge_records": 0,
+      "continued_prose_characters": 3000,
+      "open_hooks": 0,
+      "overdue_open_hooks": 0,
+      "knowledge_topic_scope": "explicit",
+      "tasks": 3,
+      "max_input_chars": 9760,
+      "total_input_chars": 24020,
+      "total_output_chars": 6013,
+      "preparation_input_chars": 0,
+      "preparation_source_fragment_chars": 0,
+      "protocol_usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 3,
+        "task_input_chars": 24020,
+        "accepted_receipt_chars": 6013,
+        "attempted_receipt_chars": 6013,
+        "preparation_input_chars": 0,
+        "supplemental_read_chars": 0,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "trace": [
+        {
+          "task_id": "0aab7e35453544f783c387012018789d",
+          "stage": "draft",
+          "input_chars": 9760,
+          "output_chars": 3359
+        },
+        {
+          "task_id": "b3538473c1194a8c9b7bd12b730e1881",
+          "stage": "facts",
+          "input_chars": 9548,
+          "output_chars": 1363
+        },
+        {
+          "task_id": "d09b44a387604ef7960d48cc096a355b",
+          "stage": "reader",
+          "input_chars": 4712,
+          "output_chars": 1291
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains future long-term promises approaching a common deadline, not overdue debt or a completed novel."
+    },
+    {
+      "case": "knowledge",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "character_limits_enforced": false,
+      "knowledge_records": 1000,
+      "continued_prose_characters": 3000,
+      "open_hooks": 0,
+      "overdue_open_hooks": 0,
+      "knowledge_topic_scope": "explicit",
+      "tasks": 3,
+      "max_input_chars": 17236,
+      "total_input_chars": 38972,
+      "total_output_chars": 6013,
+      "preparation_input_chars": 0,
+      "preparation_source_fragment_chars": 0,
+      "protocol_usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 3,
+        "task_input_chars": 38972,
+        "accepted_receipt_chars": 6013,
+        "attempted_receipt_chars": 6013,
+        "preparation_input_chars": 0,
+        "supplemental_read_chars": 0,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "trace": [
+        {
+          "task_id": "19202a93b00a4d849cc10ca12b7bebf0",
+          "stage": "draft",
+          "input_chars": 17236,
+          "output_chars": 3359
+        },
+        {
+          "task_id": "4afc6c2aaafe4c85977062d5e1d1de9c",
+          "stage": "facts",
+          "input_chars": 17024,
+          "output_chars": 1363
+        },
+        {
+          "task_id": "e26a8aa8169b4997a292c236543426f6",
+          "stage": "reader",
+          "input_chars": 4712,
+          "output_chars": 1291
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains future long-term promises approaching a common deadline, not overdue debt or a completed novel."
+    },
+    {
+      "case": "hooks",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "character_limits_enforced": false,
+      "knowledge_records": 0,
+      "continued_prose_characters": 3000,
+      "open_hooks": 1000,
+      "overdue_open_hooks": 0,
+      "knowledge_topic_scope": "explicit",
+      "tasks": 194,
+      "max_input_chars": 31474,
+      "total_input_chars": 1618599,
+      "total_output_chars": 469316,
+      "preparation_input_chars": 1552760,
+      "preparation_source_fragment_chars": 544004,
+      "protocol_usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 194,
+        "task_input_chars": 1618599,
+        "accepted_receipt_chars": 469316,
+        "attempted_receipt_chars": 469316,
+        "preparation_input_chars": 1552760,
+        "supplemental_read_chars": 0,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "trace": [
+        {
+          "task_id": "e2ef6e60e0794dc8a9fc8ad7f7e84977",
+          "stage": "context_scan",
+          "input_chars": 7083,
+          "field": "state",
+          "source_fragment_chars": 3360,
+          "output_chars": 2272
+        },
+        {
+          "task_id": "617abc7a6eb146d3940c9d4ea6e6daf0",
+          "stage": "context_scan",
+          "input_chars": 8204,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2278
+        },
+        {
+          "task_id": "d38ee44fbd85418d8fe0ade5401897ba",
+          "stage": "context_scan",
+          "input_chars": 8242,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2279
+        },
+        {
+          "task_id": "c4532d1f7a394baaa6dd7071fe6a5d53",
+          "stage": "context_scan",
+          "input_chars": 8270,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "d11adc1efdee4aa08fc75c56ac9167a0",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "3d4bf383e3c04bb3afe502831c8834db",
+          "stage": "context_scan",
+          "input_chars": 8270,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "df1b06d0187640db8466cae3ae7f4f70",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "705efb1d58bc4236b16a5b0802caa0c7",
+          "stage": "context_scan",
+          "input_chars": 8263,
+          "field": "state",
+          "source_fragment_chars": 4286,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "ba559c8d1bd74223b494d7e0ed3df521",
+          "stage": "context_scan",
+          "input_chars": 8270,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2282
+        },
+        {
+          "task_id": "69596a4e35cf453e9418a23c7817f3b8",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "1de799cc5cbc489eb3895cf590c969b6",
+          "stage": "context_scan",
+          "input_chars": 8270,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "7734e50f07494ce9b17f3fbdc7e8ece0",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "30acf01aca0a48929f7ec7dd3b2479d6",
+          "stage": "context_scan",
+          "input_chars": 8270,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "0492d855e3ed4c26b547aa6588ccda7a",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "4b3ffe09ce4a4e6ca5a0f8bf169835fa",
+          "stage": "context_scan",
+          "input_chars": 8256,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "01af7debdda54726a89ef44a9d3ccfc4",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "61349374f1bf43108b21318a60709e73",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "8bed42cd544d4dc68b1589b6fb395ef2",
+          "stage": "context_scan",
+          "input_chars": 8270,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2282
+        },
+        {
+          "task_id": "4f6f7d1aa4ab4e6cbaeea51eaeaf4ce9",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "6b151653b1844fd681952e7dce7bfb99",
+          "stage": "context_scan",
+          "input_chars": 8270,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "5cdd7055ec5744c4ae0552ecb5765987",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "cd36714e623b4274bb8f0bb84c17f990",
+          "stage": "context_scan",
+          "input_chars": 8256,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "668950ee2a4a46c79e1c59b7c5ca91c8",
+          "stage": "context_scan",
+          "input_chars": 8277,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "d1d3dc2bb6d8419e98c9449e06f60829",
+          "stage": "context_scan",
+          "input_chars": 8301,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2282
+        },
+        {
+          "task_id": "1a0f8201d46442d5bf0bd3aa0ddb7188",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "e91e743e196946a582a83959061ed7df",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "5c3e630233ac42239da5dd3074315fac",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "90e4a679c4064fe7a6e62bd21d5e6fe2",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "12641c14ccd446309d4760dfed1b5d1a",
+          "stage": "context_scan",
+          "input_chars": 8322,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "182a1e79203f4ed6900fd46a746801af",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "987b6efd58944636b6aec135bc68d38b",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "5bd32adb80604ac6a9a49d358d911e0b",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "f1598e077f27461090db8108c4854655",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "68959a1358444937a997653cce9c8f03",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "5234d7e1d9c147c28c65dbb7f889c13c",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "9d7ba0a49a4547359feffe1fc59397c3",
+          "stage": "context_scan",
+          "input_chars": 8322,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "7bc990cdf98f4c32a000bffa883fae87",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "3d718a760d754b03a1fe13205fedf371",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "00e12b4454984d8aaad050e15e799b19",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "db66ae4f1071417ca0bb9dc5afdb4f0e",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "6f2eaf1582de47a1b6fdb8eb613238ee",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "ae19c22c3b8844afbe25f30c299f0175",
+          "stage": "context_scan",
+          "input_chars": 8329,
+          "field": "state",
+          "source_fragment_chars": 4286,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "c748eca1c795429fbb56a048bb44208a",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "c09b6c011f394b569e02dd9f55c805d8",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "03ff3c3e9e5f4d29aa51c014881156a0",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "ab84b1db94124d3687dbf23136574177",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "b06e05d08bea426992bd55d1b8ce5e00",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "d88e6f9c819543f087663fb638459598",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "e5068ae25cf843e482fec63665c93755",
+          "stage": "context_scan",
+          "input_chars": 8322,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "a188f4b5e59f485387295820c9ec55d1",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "697201a06f1e4abd82ecf2e018e8b3a5",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "5c64d54c62d24a60b3dad8d8a2cdc560",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "f776acce0f8449e984158d104c5803f0",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "0537b06d384c48a7b1802fd05d5e91ca",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "c7232b28d67e49c9a15b81cc9d33bf98",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "40fbb3946f804ba5b0919e42a537b824",
+          "stage": "context_scan",
+          "input_chars": 8322,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "885cf10d3a2a4b6ca57ccb281e2e93bb",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "17ecf27a85a5416ea34654aa9e182f79",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "e1699d7567f84e6d8df13008e04d5c2f",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "a0c6a26515cd49e48c6c4082473d1ba5",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "b4a159d1d0f1474ca2550865673d9657",
+          "stage": "context_scan",
+          "input_chars": 8336,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "38c4c64d4f234bce83eeb1581e3787ba",
+          "stage": "context_scan",
+          "input_chars": 8343,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "6131e0edf228450fbc3f5357cdab9c02",
+          "stage": "context_scan",
+          "input_chars": 6925,
+          "field": "state",
+          "source_fragment_chars": 3254,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "536eae40bf934d28b0fb0078dad29105",
+          "stage": "context_scan",
+          "input_chars": 4772,
+          "field": "character_context",
+          "source_fragment_chars": 2049,
+          "output_chars": 2272
+        },
+        {
+          "task_id": "dec5b2cd32c74177aba06ca19c9b0263",
+          "stage": "context_scan",
+          "input_chars": 4533,
+          "field": "design_context",
+          "source_fragment_chars": 2232,
+          "output_chars": 2272
+        },
+        {
+          "task_id": "7b9dee43a3144abca42ec016ff6f5f47",
+          "stage": "context_scan",
+          "input_chars": 2312,
+          "field": "selected",
+          "source_fragment_chars": 303,
+          "output_chars": 2271
+        },
+        {
+          "task_id": "0b5f75e988af4fedaf41ad5783d91d42",
+          "stage": "context_reduce",
+          "input_chars": 7903,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2651
+        },
+        {
+          "task_id": "439b6f5ca1dc4921be9a48764d32bf51",
+          "stage": "context_reduce",
+          "input_chars": 7917,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "5df5b5f90fb941ddad0b19f8d7bace38",
+          "stage": "context_reduce",
+          "input_chars": 7918,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2658
+        },
+        {
+          "task_id": "b512d1ae9ded4be7bdb64875a62ed06b",
+          "stage": "context_reduce",
+          "input_chars": 7917,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "2b10462513d74606b91a1347ec246285",
+          "stage": "context_reduce",
+          "input_chars": 7918,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "3a4529e2c93f4e38a3afb9ecb0998739",
+          "stage": "context_reduce",
+          "input_chars": 7919,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2658
+        },
+        {
+          "task_id": "85eae2e22e0746bca255a42052a848ec",
+          "stage": "context_reduce",
+          "input_chars": 7918,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "d3195d96b0864349adfa5369c2fd3cd2",
+          "stage": "context_reduce",
+          "input_chars": 7919,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "b114413361c147fd9958788d8aea8d9a",
+          "stage": "context_reduce",
+          "input_chars": 7928,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "6a847a06b950463896842e17261ad63e",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "273aef56ca1d45a4a8cfe8ff95bf1e91",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "8732695b00224187a89939c1d7ed2639",
+          "stage": "context_reduce",
+          "input_chars": 7928,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "dc81f5e4eb6b4bcfafb164852f2c5793",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "9fb9f46c97a149f59e583bb89f1eeb74",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "7ff6d4d5d4b84bb0aa297ab01323f5ff",
+          "stage": "context_reduce",
+          "input_chars": 7928,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "73b186458f94419782021417968bbd57",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "7c4d5b3b581c4e8c96543c70e2197294",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "6bc6e0be54e148dc8f33c485fbcf8d6d",
+          "stage": "context_reduce",
+          "input_chars": 7928,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "00c6c348476646f98a2eecc5625ebd13",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "0a5b865492f34f858bb6701a81d43fbe",
+          "stage": "context_reduce",
+          "input_chars": 7927,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "d674a087cb564029a938d907231b811d",
+          "stage": "context_reduce",
+          "input_chars": 7928,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "1a5bf2f574044c9cb813b146c6ec99bf",
+          "stage": "context_reduce",
+          "input_chars": 7890,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2645
+        },
+        {
+          "task_id": "6fce00d4ece74beea89d7df5094328af",
+          "stage": "context_reduce",
+          "input_chars": 9040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3048
+        },
+        {
+          "task_id": "f227ad8cca374afb815437759f1fd8ef",
+          "stage": "context_reduce",
+          "input_chars": 9046,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3054
+        },
+        {
+          "task_id": "82687c9622f240b9a153dd8664b1232e",
+          "stage": "context_reduce",
+          "input_chars": 9049,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3057
+        },
+        {
+          "task_id": "1932c81d86984cbfb19cfc123eadbdb4",
+          "stage": "context_reduce",
+          "input_chars": 9055,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "612d24816ce4459d9a0a70a047b1f158",
+          "stage": "context_reduce",
+          "input_chars": 9056,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "e1cd618c85cf47968c475c0868591320",
+          "stage": "context_reduce",
+          "input_chars": 9056,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "68c983d0c72d41b4a07e00561cad64f0",
+          "stage": "context_reduce",
+          "input_chars": 9056,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "2762e68d63ff4a00bd7782b7d82e4e3d",
+          "stage": "context_reduce",
+          "input_chars": 4118,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2391
+        },
+        {
+          "task_id": "4d606c30ff674f58a58a646dbfd41c42",
+          "stage": "draft",
+          "input_chars": 29653,
+          "output_chars": 3359
+        },
+        {
+          "task_id": "2c560490824c46ed93d9b8ef0e071faf",
+          "stage": "context_scan",
+          "input_chars": 7196,
+          "field": "state",
+          "source_fragment_chars": 3360,
+          "output_chars": 2272
+        },
+        {
+          "task_id": "91a4672d89bd48ca87c20489b70b0f0a",
+          "stage": "context_scan",
+          "input_chars": 8317,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2278
+        },
+        {
+          "task_id": "10d810a3ee024a3d96b1989d1a4c14fd",
+          "stage": "context_scan",
+          "input_chars": 8355,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2279
+        },
+        {
+          "task_id": "f5aedf707a4c4b4cbb2c1972b1e17185",
+          "stage": "context_scan",
+          "input_chars": 8383,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "3ddfa7d3c5514312af3c738283baedf3",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "93c51cd00e2e4c83be1307fe6b62db6b",
+          "stage": "context_scan",
+          "input_chars": 8383,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "124aba175ba24a7aa15d61fe1db811b5",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "c71d11f691464837ad170c6b2c0d27be",
+          "stage": "context_scan",
+          "input_chars": 8376,
+          "field": "state",
+          "source_fragment_chars": 4286,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "77f621476fa8485f8f27a05152030dc9",
+          "stage": "context_scan",
+          "input_chars": 8383,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2282
+        },
+        {
+          "task_id": "d11324e22645414fa4885f2419d10cc9",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "94eddbcfa2c14bd2b6522f4d4624120c",
+          "stage": "context_scan",
+          "input_chars": 8383,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "9932d3514d2a4c2bbb14cd269fc4637b",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "54bdebf6b9dd4c2c9604e9768bbd419b",
+          "stage": "context_scan",
+          "input_chars": 8383,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "a066c33ea1414292a8398bd11d595370",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "ad85aed3dde142a795e28659b9a8dda6",
+          "stage": "context_scan",
+          "input_chars": 8369,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "606358107e2647f180adc9ed3936e27d",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "2aa65854c0f3445aab45ad3960dc8fcd",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "287802daf0444ce586834037b9e353d2",
+          "stage": "context_scan",
+          "input_chars": 8383,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2282
+        },
+        {
+          "task_id": "664b309111314c048d37233ba7f299b1",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "4543c8e875ad4408b7ddd3e94be9178f",
+          "stage": "context_scan",
+          "input_chars": 8383,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "c5b0391853e149a0bc952e289373bba1",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "e9a416e388394f7eaec82549950ee211",
+          "stage": "context_scan",
+          "input_chars": 8369,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "669b3617ee2b49449abc31471aa931de",
+          "stage": "context_scan",
+          "input_chars": 8390,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2281
+        },
+        {
+          "task_id": "30f81d3d2339438cb49fb34a20f0eaa8",
+          "stage": "context_scan",
+          "input_chars": 8414,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2282
+        },
+        {
+          "task_id": "5a6fc8cb0479401881fba41657983486",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "5d8160d501f24ca4909c3f0d90fd3ba1",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "d8729a3383b443eb904efade294ed19f",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "c47d3454119b41849c919f239d68a2de",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "1229e929ca54490385978412aef45bb5",
+          "stage": "context_scan",
+          "input_chars": 8435,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "cb177b3f40a14dbc8dae7b0da218c778",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "72a2bc9b97054a8ca978021663fb5086",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "d97b2309521a4396be46bb6dea3d5447",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "4ce8635825594338ab945b6ffb56cb78",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "505fd2d52872463c983256c1c5c4e557",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "d35f926f952f4e0daa3752abb7b8fd2e",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "81f1ec4dc02b42a595fd3a084df68251",
+          "stage": "context_scan",
+          "input_chars": 8435,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "f1795ad3afae44e695c0b42c319c61fb",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "7896fcf3c83e4ca8911d7c67da97668b",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "d540e119021d44299637f4a9693e7345",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "ae7d90ebbd31445c9087c010bcba1cc2",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "050727035053423ab37933e1c8f30319",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "680163cf92fd4c69a3114244d5cd5ad4",
+          "stage": "context_scan",
+          "input_chars": 8442,
+          "field": "state",
+          "source_fragment_chars": 4286,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "45a5988c44cd4f319b54651d3bb2f0a6",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "a166d86336ec420daa7c9672599f5a05",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "a23f6904f7d04299832afdbac7c20373",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "679d43d5637042a1bfdd217c074d116d",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "942dbe86bfbf4b1f841ad4cc9737bb76",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "35ddf21fd1a14ec7b6b6848fc6074912",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "1deabf685a1446d884b20cf99f82d2f2",
+          "stage": "context_scan",
+          "input_chars": 8435,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "b99fa9be37e04fee83776b21e4188fa8",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "bbb4bfd2a15244629e4bdcd0a077d4b1",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "8f8a802253214732b93295a9fade6a89",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "7b2dc9ff40ef4b3093451b6da1bbe683",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "a26be8d7a69d4cc1a9bdacc653c50388",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "e68131540714406b91bdfb4ca55e47ca",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "eadc229156ef4f028fdb11f86991e33d",
+          "stage": "context_scan",
+          "input_chars": 8435,
+          "field": "state",
+          "source_fragment_chars": 4280,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "cd5594eecd35407b8308d25717e39500",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "7fbbb3c820754a35a3741d68a69729c7",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "c7bc882efa4a4ae289bbe9292237d6a7",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "637c5ec6365646c8b77dfb8c79f56039",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "a77685f494064ed0abc91753e48305f3",
+          "stage": "context_scan",
+          "input_chars": 8449,
+          "field": "state",
+          "source_fragment_chars": 4292,
+          "output_chars": 2285
+        },
+        {
+          "task_id": "201b16fccdf7442bae0cc4d29d11b5dd",
+          "stage": "context_scan",
+          "input_chars": 8456,
+          "field": "state",
+          "source_fragment_chars": 4298,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "b7adbad2df5746baa5b30757874cfdb2",
+          "stage": "context_scan",
+          "input_chars": 7038,
+          "field": "state",
+          "source_fragment_chars": 3254,
+          "output_chars": 2284
+        },
+        {
+          "task_id": "42b65bf0eb234f1f95f80c2b7c67d727",
+          "stage": "context_scan",
+          "input_chars": 4885,
+          "field": "character_context",
+          "source_fragment_chars": 2049,
+          "output_chars": 2272
+        },
+        {
+          "task_id": "26558a408e264ff78889dab6adcf6ff2",
+          "stage": "context_scan",
+          "input_chars": 2425,
+          "field": "selected",
+          "source_fragment_chars": 303,
+          "output_chars": 2271
+        },
+        {
+          "task_id": "92fe83d3096c47939a0da85747849f6f",
+          "stage": "context_reduce",
+          "input_chars": 8016,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2651
+        },
+        {
+          "task_id": "fa8215751e924c04b630af48a38e6ef0",
+          "stage": "context_reduce",
+          "input_chars": 8030,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "b173cc0496084d548e88e5e519fcde3b",
+          "stage": "context_reduce",
+          "input_chars": 8031,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2658
+        },
+        {
+          "task_id": "1ffbcc125daf42879e708ad7db2e4f2d",
+          "stage": "context_reduce",
+          "input_chars": 8030,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "b45e868ca97f4e71ae68e1fcb5c193a1",
+          "stage": "context_reduce",
+          "input_chars": 8031,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "af25c5bdd7cf4e0aa6c494f1d8df6eb7",
+          "stage": "context_reduce",
+          "input_chars": 8032,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2658
+        },
+        {
+          "task_id": "dfbf076cd6d4423b918bba81403bd1cf",
+          "stage": "context_reduce",
+          "input_chars": 8031,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "7cfd3b6da9e44a6bbc89df6836b54820",
+          "stage": "context_reduce",
+          "input_chars": 8032,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2657
+        },
+        {
+          "task_id": "42b6e168d9034ac5b58b2d59c1e3a56a",
+          "stage": "context_reduce",
+          "input_chars": 8041,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "285e4c33d39e444eb94d7767299bd90b",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "b7e6ebc9224e4e2cb56af8be29daa5fb",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "ba4edb1a778f48a4bddf1a460fe5656d",
+          "stage": "context_reduce",
+          "input_chars": 8041,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "07b05c49a0544c059e4d3ae2830fcfab",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "bd3c31b296f0436d975cc290fc9e605c",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "bf124c5afab14f0ab9882fed1faf48b2",
+          "stage": "context_reduce",
+          "input_chars": 8041,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "03785450a8f84a14939142a0d7789f56",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "a7a57fb9d4f04801b6b944713c7a8d77",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "a9c242b34d4048b3bade0288577974fc",
+          "stage": "context_reduce",
+          "input_chars": 8041,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "43829892d19a41bab9fb92c529fde9b9",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "ebb183507b0844b6abe369f53d6925f6",
+          "stage": "context_reduce",
+          "input_chars": 8040,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2660
+        },
+        {
+          "task_id": "10d4aaa55b264c7c9ae8321c281fabc8",
+          "stage": "context_reduce",
+          "input_chars": 8041,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2661
+        },
+        {
+          "task_id": "dca443d698814c66b5cfc5a532a5506a",
+          "stage": "context_reduce",
+          "input_chars": 5930,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2456
+        },
+        {
+          "task_id": "45953cf449e543cdaf87f6656eb17081",
+          "stage": "context_reduce",
+          "input_chars": 9153,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3048
+        },
+        {
+          "task_id": "8d43b49baaa2475ea8fd3021404ea67d",
+          "stage": "context_reduce",
+          "input_chars": 9159,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3054
+        },
+        {
+          "task_id": "2208a3a41ffb4576a51dd53518833a57",
+          "stage": "context_reduce",
+          "input_chars": 9162,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3057
+        },
+        {
+          "task_id": "739ef2af305147b3a8c05e519dd9caf3",
+          "stage": "context_reduce",
+          "input_chars": 9168,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "0d7a9c18700248439975c787a8fef3b8",
+          "stage": "context_reduce",
+          "input_chars": 9169,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "a7f47a2100ec448b8bafcc2ffaf0da24",
+          "stage": "context_reduce",
+          "input_chars": 9169,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "0d54667e30b9490c892dec34067303bc",
+          "stage": "context_reduce",
+          "input_chars": 9169,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 3063
+        },
+        {
+          "task_id": "a343fa2580d84a9ebb428d266310f564",
+          "stage": "context_reduce",
+          "input_chars": 4042,
+          "field": "merged notes",
+          "source_fragment_chars": 0,
+          "output_chars": 2329
+        },
+        {
+          "task_id": "fbbe461c1efb4c748161a581258019e9",
+          "stage": "facts",
+          "input_chars": 31474,
+          "output_chars": 1363
+        },
+        {
+          "task_id": "9df8e10619a54cb3a118448bc4071b05",
+          "stage": "reader",
+          "input_chars": 4712,
+          "output_chars": 1291
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains future long-term promises approaching a common deadline, not overdue debt or a completed novel."
+    },
+    {
+      "case": "dependencies",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "character_limits_enforced": false,
+      "knowledge_records": 0,
+      "continued_prose_characters": 3000,
+      "open_hooks": 0,
+      "overdue_open_hooks": 0,
+      "knowledge_topic_scope": "explicit",
+      "tasks": 3,
+      "max_input_chars": 62852,
+      "total_input_chars": 77112,
+      "total_output_chars": 6013,
+      "preparation_input_chars": 0,
+      "preparation_source_fragment_chars": 0,
+      "protocol_usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 3,
+        "task_input_chars": 77112,
+        "accepted_receipt_chars": 6013,
+        "attempted_receipt_chars": 6013,
+        "preparation_input_chars": 0,
+        "supplemental_read_chars": 0,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "trace": [
+        {
+          "task_id": "97dbddc0bc3e4651b3c143d2e3ffdeb7",
+          "stage": "draft",
+          "input_chars": 62852,
+          "output_chars": 3359
+        },
+        {
+          "task_id": "82b5628711b44ede934293fc4d9da5e1",
+          "stage": "facts",
+          "input_chars": 9548,
+          "output_chars": 1363
+        },
+        {
+          "task_id": "c7e578d65c0e44db8ea472221ae43613",
+          "stage": "reader",
+          "input_chars": 4712,
+          "output_chars": 1291
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains future long-term promises approaching a common deadline, not overdue debt or a completed novel."
+    },
+    {
+      "case": "profiles",
+      "history_chapters": 1000,
+      "history_characters": 3000000,
+      "continued_to": 1001,
+      "preexisting_prose_unchanged": true,
+      "character_limits_enforced": false,
+      "knowledge_records": 0,
+      "continued_prose_characters": 3000,
+      "open_hooks": 0,
+      "overdue_open_hooks": 0,
+      "knowledge_topic_scope": "explicit",
+      "tasks": 3,
+      "max_input_chars": 119557,
+      "total_input_chars": 243614,
+      "total_output_chars": 6013,
+      "preparation_input_chars": 0,
+      "preparation_source_fragment_chars": 0,
+      "protocol_usage": {
+        "unit": "unicode_characters_not_tokens",
+        "tasks": 3,
+        "task_input_chars": 243614,
+        "accepted_receipt_chars": 6013,
+        "attempted_receipt_chars": 6013,
+        "preparation_input_chars": 0,
+        "supplemental_read_chars": 0,
+        "billed_tokens": null,
+        "session_handoffs": null,
+        "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+      },
+      "trace": [
+        {
+          "task_id": "f19d6909096b45659559d4998de012a4",
+          "stage": "draft",
+          "input_chars": 119557,
+          "output_chars": 3359
+        },
+        {
+          "task_id": "d26284df18cc4d539c0226932fe0ee1d",
+          "stage": "facts",
+          "input_chars": 119345,
+          "output_chars": 1363
+        },
+        {
+          "task_id": "a27da5aed7a94e5097e842a090e0fdd6",
+          "stage": "reader",
+          "input_chars": 4712,
+          "output_chars": 1291
+        }
+      ],
+      "note": "Engineering synthetic decisions only; hooks case retains future long-term promises approaching a common deadline, not overdue debt or a completed novel."
+    }
+  ]
+}

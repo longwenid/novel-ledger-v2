@@ -1,0 +1,112 @@
+{
+  "version": "1.20.0",
+  "date": "2026-10-09",
+  "kind": "synthetic_structure_and_local_runtime_not_literary_or_billed_tokens",
+  "preparation": {
+    "initial_stages": [
+      "context_scan",
+      "context_scan",
+      "context_scan",
+      "context_scan"
+    ],
+    "equal_purpose_new_transport_stages": [],
+    "next_chapter_stages": [
+      "context_scan",
+      "context_scan",
+      "context_scan",
+      "context_scan"
+    ],
+    "new_material_stages": [
+      "context_scan",
+      "context_scan",
+      "context_scan",
+      "context_scan",
+      "context_scan"
+    ],
+    "equal_purpose_hit": true,
+    "new_material_index": {
+      "new_units": 1,
+      "reused_units": 64,
+      "structural_walks": 1,
+      "version_hit": false
+    },
+    "notes_preserved": true,
+    "decisions": "synthetic; no real literary relevance or billed-token evidence"
+  },
+  "profile": {
+    "complete_experiences": 1000,
+    "selected_experiences": 1,
+    "full_chars": 190043,
+    "scene_view_chars": 3496,
+    "targeted_read_chars": 3167,
+    "unknown_scope_chars": 190641,
+    "unknown_scope_retains_all": true,
+    "index_worker_input_chars": 190449,
+    "independent_index_semantics_verified": false,
+    "boundary": "synthetic independent-topic fixture; do not generalize its omission ratio to real character histories"
+  },
+  "local_runtime": {
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-local-runtime-s86m0ian",
+    "chapters": 3000,
+    "events": 30000,
+    "prose_unicode_characters": 3004893,
+    "source_build_seconds": 0.566713958978653,
+    "initial_verified_snapshot_seconds": 0.4401702079921961,
+    "initial_event_index_seconds": 0.7276536660501733,
+    "pages": 50,
+    "page_size": 20,
+    "entity_query_matches": 3000,
+    "legacy_scan_seconds": 5.561912000004668,
+    "indexed_seconds": 0.17469612503191456,
+    "exact_records_equal": true,
+    "cold_full_verify": {
+      "runs_seconds": [
+        0.434640749997925,
+        0.43231462500989437,
+        0.4319016670342535
+      ],
+      "median_seconds": 0.43231462500989437
+    },
+    "cold_snapshot": {
+      "runs_seconds": [
+        0.0027518750284798443,
+        0.002685957995709032,
+        0.0026918750372715294
+      ],
+      "median_seconds": 0.0026918750372715294
+    },
+    "actual_cold_cli_status_seconds": [
+      0.035038292000535876,
+      0.03524241701234132,
+      0.03551245800917968
+    ],
+    "actual_cold_cli_recall_seconds": [
+      0.040070375020150095,
+      0.04006224998738617,
+      0.040612208016682416
+    ],
+    "boundary": "Local runtime only. Untargeted substring queries may scan candidates; audit intentionally validates every canonical row."
+  },
+  "billed_tokens": null,
+  "source_sha256": {
+    "validation/structural_benchmark.py": "ec08b2a71dca9d6a4d252cb66873448b5fbad281a444a95b57aee2059448996f",
+    "scripts/novel.py": "4259134ac437dface1e34470cb14e88dae335faa3885a524d51c5fe6f54cbf79",
+    "scripts/novel_core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "scripts/novel_core/bookpage.py": "6b2d07d7cc239cf23a385fad25bb84b7430ec27d65ba878f9efcbcfe90ca7e72",
+    "scripts/novel_core/budget.py": "758d15c09015d6206865d215ef0acd423c5bd02f8c2b4e98f0af0efb5ad2f39a",
+    "scripts/novel_core/characters.py": "b334e83ee09c539a68f763b562cff3a2e5c556e65096a31118fb20aed0bdb13a",
+    "scripts/novel_core/contextflow.py": "50ee47fc340749f0d99c1453d6c3e7d3c6f59e50277a42e31ef5efbe690b1a41",
+    "scripts/novel_core/dependencies.py": "e9cc3269332f34e1607591744666b53745a95bac5f203b2c1374e12425ef7c8f",
+    "scripts/novel_core/design.py": "55fb363df3b652a2a026e2309b34efce00d0bbf9fe0eb5fcd569b5cc54fd4a1b",
+    "scripts/novel_core/engine.py": "27ec398a671d2f65eb6c0e969279d1434b524923e180dba473f71ceef146f1ec",
+    "scripts/novel_core/ledger.py": "3d77be48c7db28710d19659084a1c93e7d56d29ba07ec847817478847cc65282",
+    "scripts/novel_core/memory.py": "bf896807d3760ddf37d3b770dbb35f5eec444ed0637053a664198f1d302cc192",
+    "scripts/novel_core/patches.py": "83339895182fa2009772e91a125f255b797fa8e8c49488b4a4e8436e8cbe662d",
+    "scripts/novel_core/projections.py": "1fb46ab4dede93656bdfd80d17cef3466d71200e12190bea9693d7572a0bf9d9",
+    "scripts/novel_core/sources.py": "324c1b00f3058a79d854d2eefacef9a9e9ba544546a1987e0f830b0c08736b75",
+    "scripts/novel_core/spatial.py": "87aa0dee6b35109512d5fba1c42ffb9862ba2794bbcd1102aa12013f2aecdeb3",
+    "scripts/novel_core/store.py": "0778299ce3230c6f9c030df4bba2a39c9ca0145d4b6612c6eb034de4485949cf",
+    "tests/test_incremental_sources.py": "951bd813906edf62eb28e7fde61bad94e0300b61a686f4ff23e2199180006278",
+    "tests/test_profile_views.py": "c5b86d2ffa9dbeeff0cb5e0390ee303440ac1ae3d114736ef25485f49078f5fa"
+  }
+}

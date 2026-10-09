@@ -1,88 +1,94 @@
-# 长历史与有界上下文
+# 长历史材料组织
 
-v1.5 默认 `context_mode=bounded`。上下文不因历史增长而爆炸，靠的是下面的结构规则；字符容量只是宿主声明的校准锚点，不是 skill 内置的固定预算承诺。数据库保留完整历史，不随上下文压缩删除事实。字符计量不是 tokenizer，也不能探知宿主真实剩余窗口。
+context_mode=bounded 表示按任务和来源组织材料。context_chars/context_output_chars/context_retrieval_chars/context_overhead_chars 不再限制内容；字符统计只观察重复读取。
 
 ## 三层结构
 
-1. **原始记录**：SQLite 中的正文、事件、人物、地图、计划和审稿版本是持久层。正文来源与前态规则继续约束提交。
-2. **材料准备**：过大的相关历史先冻结为带哈希的文档，经 `context_scan` 分页全文审读，必要时经 `context_reduce` 归并。每页覆盖、来源、取舍与游标持久化，中断后接同一任务。
-3. **当前任务**：工作包只包含完整的核心约定、当前任务/正文，以及容量锚点内的历史结论和来源索引。提炼是供检索和决策的解读，不能提交为新的客观事实。
+1. **持久原始记录**：SQLite 保留正文、事件、人物、地图、计划与审稿版本。只有有效正文与作者约定能确立事实，摘要和设计不能覆盖账本。
+2. **材料准备层**：相关历史冻结为带哈希的来源文档，按完整结构化对象或列表项分页；context_scan 提取当前任务所需的约束与疑点，context_reduce 合并重复解释，覆盖、取舍、游标和来源持久化。
+3. **当前任务层**：作者约定、当前正文与必要任务完整保留；相关认知由 topics 和对白 knowledge_topics 共同选取，依赖原文由 dependencies 明确。其他材料保留索引与定向检索通路，缺项不是不存在。
 
-每次 `next` 可能返回材料准备任务。它们同样只做一个任务、写回执、submit；完成后自动回到原来的创作阶段，不消耗文学返修次数。不能跳过准备任务直接写下一章。整体审稿的分段结论及正文证据也走此流程，不能拿覆盖章数或哈希替代实际审读内容。
+按完整语义单元分页，不截断长段、事实对象或因果说明。无法安全归并就保留原节点与来源；事实冲突交 facts/修订处理。
 
-## 防爆炸规则
+准备任务只处理材料，不替目标任务审稿、不消耗文学返修次数；完成后主控 next 取正式阶段。Worker 分工见 [runtime](runtime.md)。
 
-爆炸控制在规则层，不在数字层。以下规则共同保证：无论历史多长，进入单个任务上下文的材料量有结构上界。
+## 结构上的消耗控制
 
-1. **单任务可见**：工作包只含核心约定、当前任务/正文与本任务绑定的材料；其余一切按需检索，不预载全书。
-2. **定向分页检索**：`recall/map/design/character/candidate/material` 必须带实体、话题、章号等目标并分页读取；无目标的全文倾倒被规则拒绝。
-3. **大历史先准备**：相关历史超过工作包锚点时冻结为文档，经扫描/归并变成带来源的结论；原文不整包进入任务。
-4. **一次加载**：同一任务的输入只计量一次，重试不重复加载；`brief` 是 `writer_brief` 的派生阅读视图，不重复加载。
-5. **回执即单元**：一次提交恰好一个创作单元（一章正文、一组补丁、一段审稿、一页准备结论）。回执连同其输入超出声明容量时拆分单元——局部修订用 patches、整卷审稿按 chunk 分段——不静默截断，也不重复输出已提交正文。
-6. **补读有比例界**：同一任务的原文补读累计不超过其工作包体量（下限 2048 字符）；核验类任务例外——工作包声明 `retrieval_allowance`，按其负责核验的正文体量计（正文×1.5+4096）：整段审稿要通读包里没有的正文，facts/reader 要按指引 recall 补读约定与状态，配额都不该随包体积浮动。超出说明所需材料属于准备流程，交 `context_more`，不继续向同一任务倾倒原文。
-7. **主控窗口宿主管**：主控只接收状态与路径，不消费任务包字节；宿主管理主控窗口，接近上限时在新宿主会话恢复——数据库重建一切，不在原会话伪造清零。
+- **定向取材**：按实体、话题、场景和依赖章获取材料，拒绝无目标全历史倾倒；近期摘要和最新事件是导航视图，不代表完整历史。
+- **完整单元分页**：依赖原文按完整章节记录、账本按对象/事件组、人物按档案与成长、设计按卷/节拍分读。candidate 支持按自然段余文或明确原稿范围读取；recall --chapter 当前返回整章，不声称已有章内段落分页。所有页绑定来源版本与游标；已读范围不能混用不同版本。
+- **文件交付**：正文写文件，返修用补丁，未变正文用 reuse_original，不在聊天复述全文。
+- **语义去重**：重复约束可以归并，误信、动机、因果、资源前态、地点和承诺的必要差异必须保留。缓存若复用必须绑定来源哈希、用途及失效依赖，不能把上次任务结论无条件当本次事实。
+- **会话交接**：宿主窗口不足时按完整场景或问题拆任务，按 runtime 续接。
 
-## 容量与计量
+## 准备回执与来源
 
-`context_chars` 是宿主声明的容量锚点（保守默认 48000 个 Unicode 字符），由宿主按模型真实 token 窗口、系统提示、推理与输出需求校准；skill 不把它当作固定预算保证。页尺寸与预留从声明容量派生：工作包约容量一半、读页约 1/6、回执参考约 1/4、其余为宿主指令与工具预留；可用 `context_output_chars/context_retrieval_chars/context_overhead_chars` 单独校准，均至少 256 字符，`context_chars` 至少 4096。锚点只决定分页尺寸，不构成四份硬配额。
+信封沿用 [protocol](protocol.md)。payload 含 fragment、document/hash、start/end、目标阶段、用途、疑点与核心来源索引。用 target_materials 的 core:FIELD 补读完整子节，正式任务保留完整核心；start 是冻结文档字符坐标，不是页内或字节位置。
 
-`input.json` 使用紧凑 JSON，`chars` 等于实际文件字符数（含末尾换行），仅用于工作包容量锚点与分页尺寸，不做全局用量统计，也不以字符数推算 token 或费用。补读按本工作包配额分页，超配额按 context_more 转准备流程。`doctor` 返回实际配置与 `context_window_verified:false`：工作包按需选择材料（历史有界、提炼记忆至多 2 条），遗漏都记账并可用 recall 定向补读，不为省 token 截断必要约束。修改容量先完成或取消当前任务，已有材料快照不改写。
-
-- **主控也要交接**：主控只接收任务状态、路径和短错误，不读所有 worker 正文。长时间运行主控仍须依宿主实际窗口换会话，不能因为 worker 有界就声称主控永久有界。
-
-程序只能校验宿主声明和协议内读写，不能计量任意 shell 读文件、直接查库或聊天平台额外历史。宿主不能重复加载完整 input 和 brief：brief 只是 writer_brief 的派生阅读视图。
-
-## 材料准备回执
-
-任务信封沿用 [结果协议](protocol.md)。准备任务提供 `target_stage/target_payload/plan/contract/material_questions`，用于理解当前疑点；`payload` 是本次分页或归并输入。不要把准备结论当作事实审稿 pass。
-
-`context_scan` 的 data：
+context_scan 的 data：
 
 ```json
 {
-  "coverage": {"document":"d0","document_hash":"照抄本页哈希","start":0,"end":1200},
-  "notes": [{"text":"她仍误信钥匙在东门，本章不能无来源地知道西门真相。","evidence":[{"document":"d0","start":123,"quote":"精确材料原文"}]}]
+  "coverage":{"document":"d0","document_hash":"照抄本页哈希","start":0,"end":1200},
+  "notes":[{"text":"保留当前行动需要核实的因果或认知条件。","evidence":[{"document":"d0","start":123,"quote":"精确材料原文及必要语境"}]}]
 }
 ```
 
-coverage 必须与本页四字段完全一致；引文位置是冻结文档字符串内的字符位置。必须阅读全部 `fragment`；相邻 256 字符的 context_before/after 只帮助断句，本页证据须在 start..end 内。保留影响当前任务的地址、资源前态、认知限制、人物动机及承诺，分清世界事实与计划/误信。没有相关结论时 notes 为空并提供具体 `omission_reason`，不能因难处理而声明不相关。
+通读 fragment，coverage 四项与本页一致；notes 每项绑定原始来源。无相关结论时 notes=[] 并给 omission_reason，不能因复杂而省略。
 
-`context_reduce` 将最多三个输入节点归并到 `notes_max_chars` 内：
+context_reduce 的 data：
 
 ```json
 {
-  "notes":[{"text":"归并后的约束与疑点","evidence":[{"document":"d0","start":123,"quote":"继承的原始引文"}]}],
+  "notes":[{"text":"合并后的约束，保留差异和疑点。","evidence":[{"document":"d0","start":123,"quote":"继承的原始引文"}]}],
   "accounting":[
-    {"input_id":"输入节点ID","disposition":"kept","reason":"与本章行动前提相关"},
-    {"input_id":"另一个输入ID","disposition":"duplicate","duplicate_of":0,"reason":"具体说明与第0条结论重合在哪里"}
+    {"input_id":"输入节点ID","disposition":"kept","reason":"保留其行动前提与来源"},
+    {"input_id":"另一节点ID","disposition":"duplicate","duplicate_of":0,"reason":"说明具体重复内容"}
   ]
 }
 ```
 
-每个输入必须恰好登记一次去向。kept 的每条输入结论至少保留一处原始来源；duplicate 必须指向输出 notes 的有效索引；irrelevant 必须说明与当前任务无关的依据。输出证据只能继承输入中已读来源，不能凭记忆新增。程序检查覆盖和引文，不证明取舍理由的语义正确。结论连同证据必须满足 notes_max_chars。
+每个输入登记一次：kept 由一条输出整体继承全部来源；duplicate 指向有效输出 note 并继承全部来源；irrelevant 说明无关依据。不添加未读来源。cannot_compact:true 配原因时保留原节点；形式校验不替代语义取舍。
 
-必要约束确实无法安全归并时提交 `{"cannot_compact":true,"reason":"具体冲突与必需信息"}`。工具保存阻碍并暂停；不能原样 resume 无限循环，也不能删掉关键条件求过关。不可拆分的作者约定/当前正文过大则报 `context_capacity`，附各材料大小与处理方向；需调整真实可用容量或创作/审读单元，不会私改作者约定。
-
-## 有疑点时补读
-
-准备后的工作包提供 `context_notes` 和 `context_materials.index`（文档 ID、字段类别、长度、哈希）。按证据位置读取原始冻结材料：
+## 疑点补读
 
 ```bash
-python3 "$ROOT/scripts/novel.py" material --project "$PROJECT" --task <当前任务ID> --bundle <材料包ID> --document d0 --start 100
+python3 "$ROOT/scripts/novel.py" recall --project "$PROJECT" --state --entity ID --topic TOPIC
+python3 "$ROOT/scripts/novel.py" recall --project "$PROJECT" --chapter N
+python3 "$ROOT/scripts/novel.py" material --project "$PROJECT" --task TASK --bundle BUNDLE --document d0 --start OFFSET
 ```
 
-`recall/map/design/character/candidate/material` 的输出均有界，并自动计入当前 pending 任务的累计补读；省略 --task 或读取历史任务都不免计量。单页不超过读页锚点，同一任务累计不超过其工作包体量（审稿任务按其声明的 `retrieval_allowance`）。`recall --chapter N` 只返回 `branch/number/hash/prose/summary`——读章即读正文，事件与审稿账目按 `recall` 定向检索，不随正文整包附送。超大结果为 `format=json_text_fragment`，含 content_hash、start/end、next_start，后页用 `--page-start`；它是 JSON 文本片段，不能当成完整对象。material 本身的 `--start` 是源文档偏移，和包装输出分页不同。跨页核对 hash，不能混用不同版本。未读完不是“没有其他信息”。
+补读按实际继续游标取下一页，核对 content_hash/document_hash。recall --chapter N 返回正文与摘要，账目用定向 recall；未读完不能认定无其他信息。
 
-仍需更多材料时，在正式创作/审稿任务提交下列 data；不能同时提交正文、事件或审稿：
+需要新的相关材料时，正式任务可提交：
 
 ```json
-{"context_more":[{"chapter":12},{"entity":"hero","topic":"key","start":1,"end":100}],"reason":"具体疑点与需要核实的前提，最多800字符"}
+{"context_more":[{"chapter":12},{"entity":"hero","topic":"key","start":1,"end":100}],"reason":"说明尚未解决的疑点与需要核实的前提，必要解释不限篇幅"}
 ```
 
-每轮 1～4 项，最多三轮。可按独立章号，或实体/话题及章范围请求。此回执只结束本次尝试，不改变正文和阶段；控制层将原始材料交给后续准备流程，再返回新的同阶段任务。来源不因聊天交接丢失。三轮后仍无法回答应缩小问题或报告障碍，不能无限扫描。
+context_more 结束本次尝试、派材料准备，不混交正文或审稿、不改文学阶段。补读须有新来源或推进疑点；重复请求改为缩小问题或处理冲突。
 
-## 升级和实际边界
+usage 字段见 [protocol](protocol.md)；重复 next 不新增任务输入。
 
-旧数据库未配置 context_mode 时默认 bounded，无需迁移正文。旧版超过当前工作包锚点的 pending 任务在没有有效租约时会取消并重新准备，原输入保留、旧回执失效；不能抢占仍在工作的租约。显式 legacy 仅用于复现旧测试/旧产物，不具备这里的规则与会话保障。
+## 来源索引、用途缓存与读依赖
 
-有界输入不等于低总成本。历史膨胀时可能多次扫描；现阶段没有跨所有任务的增量语义缓存，不能承诺总调用量与章数线性增长。完整档案、巨大核心约定、恶意工具调用及模型漏提关键语义也不因规则机制自动变安全。千章工程压力验证与真实长篇文学质量验证分别报告。
+来源按 branch/field 建 source_id，完整文档和语义单元按内容版本保存。相同版本复用目录，新增条目只登记新单元；变化文档仍需结构定位与完整保存。目录或派生值校验失败时重建或报错。
+
+准备结论绑定目标（章号、阶段、场景、约定、正文）、完整来源 manifest、规则版本与实际读依赖。仅传输标识改变时可复用结论；新增来源或跨章/阶段只复用目录。无法安全归并时保留原节点与材料入口。额外读取 bundle 外材料或缺初始交付记录时禁用结论缓存。
+
+task_reads 保存消费任务、目标任务、返回值哈希、来源与查询范围；分页仅记实际交付页。空查询也保存实体、话题、范围和域版本，新增历史会使其失效。旧无记录任务标 unknown_legacy，不补造交付记录、不改 pending ID/hash/input。
+
+```bash
+python3 "$ROOT/scripts/novel.py" dependencies --project "$PROJECT" --task TASK_ID
+```
+
+coverage=delivered_only 仅证明交付；versions_unchanged 不授权跨 scope 免审。复审仍受 review_context_hash、旧卷补核和全部上游正文相等约束。
+
+## 本地查询与模型成本
+
+人物/话题倒排索引计算准确 total 和分页，查询保留 Python casefold 子串与原顺序，共享事件不会重复。未定向全文子串仍可能遍历候选。冷启动状态使用已验前缀快照并核验纯追加后缀；早插、改删、替换、契约或原章变化失效。完整 audit/历史 replay 仍全量核验。用量和卷预算采用可重建增量计数，预算以实际正文汉字计算，不用元数据代替正文。
+
+本地耗时、协议字符与宿主 token/费用分别计量。
+
+## 验证边界
+
+无 topics 的认知、适用范围未知的经历和未决承诺仍需完整准备，不为缓存命中删内容。结构分页不保证固定窗口或调用量；文学质量按 [独立评测](literary-evaluation.md) 验证。

@@ -18,7 +18,6 @@ from novel_core import engine, design, characters
 from novel_core.store import initialize, connect, get, put, dump, digest, transaction, Error, write_json
 from novel_core.ledger import seed, append_events, replay
 from novel_core.memory import pack, recall
-from novel_core.runner import run
 from novel_core.budget import han_count
 
 DESIGN = json.loads((ROOT/'assets/design.example.json').read_text(encoding='utf-8'))
@@ -101,7 +100,11 @@ def fixture(temp,kind):
         # An accepted candidate requiring facts review reproduces the next_task overflow.
         engine.save_draft(db,'main',1001,{'stage':'facts','prose':'周行继续核对原件。'})
         count_before=db.execute('SELECT COUNT(*) FROM tasks').fetchone()[0]
-        stopped=run(db,path,{'argv':[sys.executable,'-c','raise SystemExit("driver must not launch")'],'max_retries':0},1)
+        try:
+            task_res=engine.next_task(db,path)
+            stopped={'status':task_res.get('status','running'),'reason':None}
+        except Error as exc:
+            stopped={'status':'paused','reason':exc.code}
         after_resume=engine.resume(db)
         try:engine.next_task(db,path);retry='unexpected success'
         except Error as exc:retry=exc.code

@@ -1,4 +1,4 @@
-"""Style anchor governance and token-consumption bounding."""
+"""Style anchor governance and task-scoped historical navigation."""
 import json
 import tempfile
 import unittest
@@ -72,11 +72,11 @@ class StyleAnchorTests(unittest.TestCase):
     def test_invalid_style_shape_rejected(self):
         from novel_core.store import validate_style
         with self.assertRaises(Error): validate_style({'traits':'不是数组'})
-        with self.assertRaises(Error): validate_style({'sample':'x'*2401})
+        with self.assertRaises(Error): validate_style({'sample':{'text':'雨停了。'}})
         validate_style({'traits':['克制'],'sample':'雨停了。'})
 
 
-class TokenBoundingTests(unittest.TestCase):
+class ContextStructureTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.path=Path(self.temp.name)
         c=contract();c['context_mode']='bounded'
@@ -100,16 +100,23 @@ class TokenBoundingTests(unittest.TestCase):
             for i in range(3):
                 self.db.execute('INSERT OR REPLACE INTO memories VALUES (?,?,?,?)',('main','batch',(n-i)*10,dump({'text':f'批次{i}记忆'*400,'sources':[]})))
 
-    def test_history_inclusion_is_bounded(self):
+    def test_history_navigation_preserves_records_and_marks_older_sources(self):
         for n in (1,2,3):
             self._commit_chapter(n)
-        t=self.task();self.assertEqual(t['stage'],'draft')
+        t=self.task()
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        history=[s for s in work['selected'] if s['kind']=='history']
-        spent=sum(len(dump(h)) for h in history)
-        self.assertLessEqual(spent,6400)
-        omitted=next(o for o in work['omitted'] if o['kind']=='history')
-        self.assertGreater(omitted['count'],0)
+        if t['stage']=='context_scan':
+            bundle=get(self.db,'context_bundle:'+work['payload']['bundle'])
+            selected=json.loads(next(d['text'] for d in bundle['documents'] if d['field']=='selected'))
+            omitted_rows=bundle['core']['omitted']
+        else:
+            selected=work['selected'];omitted_rows=work['omitted']
+        history=[s for s in selected if s['kind']=='history']
+        self.assertEqual(len(history),20)
+        self.assertEqual(len({(h['chapter'],h['index'],h['event_hash']) for h in history}),20)
+        omitted=next(o for o in omitted_rows if o['kind']=='history')
+        self.assertEqual(omitted['by_entity']['hero'],4)
+        self.assertTrue(all(h['event']['claim'] for h in history))
 
     def test_memories_capped_at_two(self):
         self._commit_chapter(1)

@@ -1,5 +1,4 @@
-"""Volume-outline to chapter-plan alignment: beat references, rotating closing
-shapes, and the prior-volume handoff material for new-volume design tasks.
+"""Volume-outline alignment, adjacent rhythm and prior-volume handoff.
 
 真实项目的缺陷模式:卷纲节拍与章计划脱钩、多章连用同一种收束模具(审稿反复
 点名收束同质化)。这些测试把方向对齐从软约束变成引擎校验。
@@ -59,15 +58,25 @@ class PlanAlignmentTests(unittest.TestCase):
         self.assertEqual(exc.exception.code,'brief')
         self.submit(self.task(),{'chapters':[self.plan(1)]})  # 合法引用通过
 
-    def test_closing_category_must_rotate_within_three_chapters(self):
+    def test_closing_category_can_repeat_when_story_requires_it(self):
         self.chapter(1,shape='悬念:当铺掌柜认出旧币')
         self.chapter(2,shape='闭环:案子交割')
         self.chapter(3,shape='交接:账册移交事务所')
         t=self.task()
-        with self.assertRaises(Error) as exc:self.submit(t,{'chapters':[self.plan(4,shape='悬念:又用悬念收尾')]})
-        self.assertEqual(exc.exception.code,'plan')
-        self.assertIn('近三章重复',str(exc.exception))
-        self.submit(self.task(),{'chapters':[self.plan(4,shape='爆发:收网当夜')]})  # 换类别通过
+        self.submit(t,{'chapters':[self.plan(4,shape='悬念:追索所得使旧币的归属再次成疑')]})
+        self.assertEqual(self.task()['stage'],'draft')
+
+    def test_rhythm_navigation_contains_adjacent_intentions_not_full_history(self):
+        self.chapter(1,shape='悬念:当铺掌柜认出旧币')
+        self.chapter(2,shape='悬念:追问留下更多疑点')
+        work=pack(self.db,'main',3,'plan',{})
+        rows=[item for item in work['selected'] if item['kind']=='recent_rhythm']
+        self.assertEqual([r['chapter'] for r in rows],[2,1])
+        self.assertTrue(all(r['written'] and r['prose_hash'] and r['plan_hash'] for r in rows))
+        self.assertIn('rhythm',rows[0]['outline'])
+        self.assertNotIn('scenes',rows[0]['outline'])
+        reader=pack(self.db,'main',2,'reader',{'prose':'正文','checks':[]})
+        self.assertFalse(any(item['kind']=='recent_rhythm' for item in reader['selected']))
 
     def test_volume_plan_pack_carries_prior_volume_handoff(self):
         work=pack(self.db,'main',2,'volume_plan',{'design_scope':'v2','previous_design':None})
@@ -85,6 +94,11 @@ class PlanAlignmentTests(unittest.TestCase):
         self.assertIn('sequence_refs',w['discipline']['plan'])
         brief=w['writer_brief']
         self.assertEqual(brief['dramatic_task']['ending_shape'],self.plan(1)['ending_shape'])
+        self.assertEqual(brief['rhythm'],self.plan(1)['rhythm'])
+        self.assertEqual(brief['execution'],self.plan(1)['execution'])
+        self.assertNotIn('rhythm',w['plan'])
+        self.assertNotIn('execution',w['plan'])
+        self.assertEqual(w['plan_section_refs'],{'execution':'writer_brief.execution','rhythm':'writer_brief.rhythm'})
         self.assertIn('收束形态',rpath(t, 'brief_path').read_text(encoding='utf-8'))
 
 

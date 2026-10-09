@@ -191,49 +191,109 @@ _REPLAY_CACHE_LIMIT = 8
 
 
 def _chain_key(db, branch):
-    from .store import get
+    from .store import get, VERSION
+    from .projections import generations
+    gen = generations(db, branch)
     last = db.execute('SELECT hash FROM events WHERE branch=? ORDER BY chapter DESC, idx DESC LIMIT 1', (branch,)).fetchone()
-    count = db.execute('SELECT COUNT(*) FROM events WHERE branch=?', (branch,)).fetchone()[0]
-    # The contract is part of the seed state; include it so distinct projects
-    # can never share a cache entry, and appends cannot collide across books.
-    return (branch, last[0] if last else 'genesis', count, digest(get(db, 'contract')))
+    path = db.execute('PRAGMA database_list').fetchone()['file']
+    # Generation invalidates edits anywhere, not only an unchanged chain tail.
+    # Tail hash also distinguishes different appends after a rolled-back txn.
+    return (path, branch, gen['event_generation'], gen['invalid_generation'],
+            last[0] if last else 'genesis', digest(get(db, 'contract')), VERSION)
+
+
+def _snapshot_checksum(row):
+    return digest({k:row[k] for k in ('branch','version','contract_hash','event_generation',
+                  'invalid_generation','chapter','idx','tail_hash','source_hash','state')})
 
 
 def replay(db, branch, through=None, verify=False):
-    """Reconstruct canonical state. Events are hash-chained and append-only,
-    so (branch, last hash, event count, contract digest) identifies the state:
-    repeated reads (per-entity recall, profiles, html) reuse the verified
-    result instead of replaying the whole chain every call. Audit and
-    historical views pass verify/through to force full chain verification."""
+    from .projections import ensure_schema, local_transaction
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='local_generations'").fetchone():
+        ensure_schema(db)
+    with local_transaction(db):
+        return _replay_current(db,branch,through,verify)
+
+
+def _replay_current(db, branch, through=None, verify=False):
+    """Verified full reads for audits/history; versioned snapshots for cold reads.
+
+    Source mutation triggers invalidate edits/deletions/earlier inserts. Only a
+    pure append can reuse a verified prefix, and its suffix is checked against
+    real event data and exact prose. A damaged snapshot falls back to the full
+    chain; canonical corruption is never caught and hidden by that fallback.
+    """
+    from .store import get, VERSION
+    from .projections import generations, ensure_schema
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='local_generations'").fetchone():
+        ensure_schema(db)
     if through is not None or verify:
         return _replay(db, branch, through)
     key = _chain_key(db, branch)
     cached = _REPLAY_CACHE.get(key)
     if cached is not None:
         return copy.deepcopy(cached)
-    state = _replay(db, branch)
+    gen = generations(db, branch)
+    contract_hash = digest(get(db,'contract'))
+    row = db.execute('SELECT * FROM local_state_snapshots WHERE branch=?',(branch,)).fetchone()
+    snapshot = None
+    if row and row['version']==VERSION and row['contract_hash']==contract_hash and row['invalid_generation']==gen['invalid_generation'] and row['event_generation']<=gen['event_generation'] and row['checksum']==_snapshot_checksum(row):
+        try:
+            state = json.loads(row['state'])
+            if isinstance(state,dict) and all(k in state for k in ('entities','facts','knowledge','resources','hooks','clock')):
+                snapshot = row
+        except (ValueError,TypeError):
+            pass
+    if snapshot:
+        state, chapter, index, tail, source_hash = _replay_rows(db,branch,state=state,
+            previous=snapshot['tail_hash'], after=(snapshot['chapter'],snapshot['idx']),
+            source_hash=snapshot['source_hash'])
+    else:
+        state, chapter, index, tail, source_hash = _replay_rows(db,branch)
+    if not snapshot or snapshot['event_generation']!=gen['event_generation']:
+        # All metadata and state bytes are checksummed together. These are derived
+        # artifacts; neither a snapshot nor its hash is a new canonical fact.
+        value = {'branch':branch,'version':VERSION,'contract_hash':contract_hash,
+                 'event_generation':gen['event_generation'],'invalid_generation':gen['invalid_generation'],
+                 'chapter':chapter,'idx':index,'tail_hash':tail,'source_hash':source_hash,'state':dump(state)}
+        value['checksum'] = _snapshot_checksum(value)
+        db.execute('INSERT OR REPLACE INTO local_state_snapshots VALUES (?,?,?,?,?,?,?,?,?,?,?)',tuple(value.values()))
     if len(_REPLAY_CACHE) >= _REPLAY_CACHE_LIMIT:
         _REPLAY_CACHE.clear()
     _REPLAY_CACHE[key] = copy.deepcopy(state)
     return state
 
 
-def _replay(db, branch, through=None):
+def _replay_rows(db, branch, through=None, state=None, previous='genesis', after=None, source_hash='genesis'):
     from .store import get
-    state = seed(get(db, 'contract'))
-    previous = 'genesis'
-    sql = 'SELECT e.*,c.prose,c.hash AS prose_hash FROM events e JOIN chapters c ON c.branch=e.branch AND c.number=e.chapter WHERE e.branch=?'
+    if state is None:state = seed(get(db,'contract'))
+    chapter, index = after if after is not None else (0,-1)
+    sql = 'SELECT e.*,c.prose,c.hash AS prose_hash FROM events e LEFT JOIN chapters c ON c.branch=e.branch AND c.number=e.chapter WHERE e.branch=?'
     args = [branch]
     if through is not None:
         sql += ' AND e.chapter<=?'
         args.append(through)
-    for row in db.execute(sql + ' ORDER BY e.chapter,e.idx', args):
-        require(row['prev_hash'] == previous, 'event_chain', '事件链断裂')
-        expected = digest({'prev': previous, 'chapter': row['chapter'], 'idx': row['idx'], 'prose_hash': row['prose_hash'], 'event': json.loads(row['data'])})
-        require(expected == row['hash'], 'event_chain', '事件内容或正文版本已改变')
-        apply(state, json.loads(row['data']), row['prose'], row['chapter'])
-        previous = row['hash']
-    return state
+    if after is not None:
+        sql += ' AND (e.chapter>? OR (e.chapter=? AND e.idx>?))'
+        args.extend([after[0],after[0],after[1]])
+    checked_prose = {}
+    for row in db.execute(sql + ' ORDER BY e.chapter,e.idx',args):
+        require(row['prose'] is not None, 'event_chain', '事件引用的正文缺失')
+        if row['chapter'] not in checked_prose:
+            require(digest(row['prose'])==row['prose_hash'], 'event_chain', '正文内容与版本签名不一致')
+            checked_prose[row['chapter']] = row['prose_hash']
+        require(row['prev_hash']==previous, 'event_chain', '事件链断裂')
+        event = json.loads(row['data'])
+        expected = digest({'prev':previous,'chapter':row['chapter'],'idx':row['idx'],'prose_hash':row['prose_hash'],'event':event})
+        require(expected==row['hash'], 'event_chain', '事件内容或正文版本已改变')
+        apply(state,event,row['prose'],row['chapter'])
+        source_hash = digest([source_hash,row['chapter'],row['idx'],digest(row['data']),row['prose_hash']])
+        chapter, index, previous = row['chapter'],row['idx'],row['hash']
+    return state, chapter, index, previous, source_hash
+
+
+def _replay(db, branch, through=None):
+    return _replay_rows(db,branch,through=through)[0]
 
 
 def append_events(db, branch, chapter, prose, events, state):

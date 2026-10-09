@@ -24,15 +24,17 @@ class ScaleTests(unittest.TestCase):
                         db.execute('INSERT INTO chapters VALUES (?,?,?,?,?)',('main',n,prose,dump(data),digest(prose)))
                         db.execute('INSERT INTO plans VALUES (?,?,?)',('main',n,dump(plan(n))))
                         append_events(db,'main',n,prose,events,state)
-                    p=plan(1001);p['dependencies']=[1];p['topics']=['receipt']
+                    p=plan(1001);p['dependencies']=[1];p['topics']=['receipt'];p['hooks']=['receipt']
                     db.execute('INSERT INTO plans VALUES (?,?,?)',('main',1001,dump(p)))
                 recovered=replay(db,'main')
                 self.assertEqual(recovered,state);self.assertEqual(recovered['hooks']['receipt']['status'],'paid')
                 self.assertTrue(engine.audit(db)['ok'])
                 self.assertEqual(recall(db,'main',topic='receipt')['total'],2)
                 data=pack(db,'main',1001,'draft',{})
-                self.assertLessEqual(len(dump(data)),get(db,'context_chars'))
+                self.assertFalse(data['context_capacity']['limits_enforced'])
+                self.assertEqual(data['state']['hooks']['receipt']['status'],'paid')
                 self.assertEqual(data['selected'][0]['chapter'],1)
+                self.assertEqual(data['selected'][0]['text'],db.execute('SELECT prose FROM chapters WHERE number=1').fetchone()[0])
                 self.assertEqual(recall(db,'main',entity='老周')['total'],0) # Unrelated clock events aren't invented as personal facts.
                 self.assertTrue(recall(db,'main',entity='老周')['absence_is_not_proof'])
             finally:db.close()

@@ -86,22 +86,45 @@ class ReviewPackMaterialTests(unittest.TestCase):
         self.assertEqual(set(work['plans']), {'1', '2', '3'})
         self.assertEqual(work['plans']['2']['number'], 2)
 
-    def test_review_pack_declares_prose_sized_reading_allowance(self):
+    def test_review_pack_observes_prose_without_declaring_a_reading_limit(self):
         task, work = self._work()  # default chunk (1,1)
         prose_chars = self.db.execute('SELECT SUM(LENGTH(prose)) FROM chapters WHERE branch=? AND number BETWEEN 1 AND 1', ('main',)).fetchone()[0]
-        self.assertEqual(work['retrieval_allowance'], prose_chars * 3 // 2 + 4096)
+        self.assertEqual(work['review_prose_chars'], prose_chars)
+        self.assertNotIn('retrieval_allowance',work)
 
-    def test_bounded_read_honors_declared_allowance_over_pack_size(self):
+    def test_full_required_paragraph_can_be_read_without_an_allowance(self):
         from novel_core import contextflow
-        put(self.db, 'context_mode', 'bounded')
         with transaction(self.db):
-            self.db.execute("INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES ('t_pack','main','batch_review',10,'h',?,'done')", ('{"a":1}',))
-            self.db.execute("INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES ('t_decl','main','batch_review',10,'h',?,'pending')", ('{"a":1,"retrieval_allowance":9000}',))
-        long_text = {'text': '字' * 5000}
-        fragment = contextflow.bounded_read(self.db, long_text, 't_pack')
-        self.assertEqual(fragment['format'], 'json_text_fragment')  # pack-sized cap
-        whole = contextflow.bounded_read(self.db, long_text, 't_decl')
-        self.assertEqual(whole['text'], '字' * 5000)  # declared allowance wins
+            self.db.execute("INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES ('t_pack','main','batch_review',10,'h',?,'pending')", ('{"a":1}',))
+        prose='一段必要原文的开头。'+('完整段落中的因果证据。'*6000)+'段末关键选择。'
+        source={'chapter':1,'text':prose}
+        for _ in range(3):
+            # The paragraph remains a single semantic unit even after cumulative rereading.
+            whole=contextflow.bounded_read(self.db,source,'t_pack')
+            self.assertEqual(whole['text'],prose)
+            self.assertEqual(whole['chapter'],1)
+        self.assertEqual(get(self.db,'context_reads:t_pack'),3*len(contextflow.wire(source)))
+
+    def test_multiple_chapters_page_at_complete_records_without_losing_prose(self):
+        from novel_core import contextflow
+        source=[{'chapter':i,'prose':f'第{i}章起。'+('不能按字符切断的场景因果。'*700)+f'第{i}章终。'}
+                for i in range(1,36)]
+        fragments=[];hashes=set();start=0
+        for _ in range(len(source)):
+            page=contextflow.bounded_read(self.db,source,start=start)
+            self.assertEqual(page['format'],'json_text_fragment')
+            self.assertTrue(page['complete_semantic_units'])
+            self.assertEqual(page['start'],start)
+            self.assertGreater(page['end'],page['start'])
+            fragments.append(page['text']);hashes.add(page['content_hash'])
+            if page['next_start'] is None:break
+            start=page['next_start']
+        else:self.fail('Complete-record pagination did not finish')
+        self.assertGreater(len(fragments),1)
+        self.assertEqual(len(hashes),1)
+        self.assertEqual(''.join(fragments),contextflow.wire(source))
+        for chapter in source:
+            self.assertTrue(any(chapter['prose'] in fragment for fragment in fragments))
 
     def test_recall_chapter_returns_prose_without_ledger(self):
         import novel
@@ -110,14 +133,19 @@ class ReviewPackMaterialTests(unittest.TestCase):
         self.assertIn('周行在档案室', out['prose'])
         self.assertTrue(out['summary'])
 
-    def test_facts_and_reader_declare_prose_sized_allowance(self):
-        from novel_core.memory import reading_allowance
-        prose = '周行在档案室核对记录，宋禾在门房登记来访。'
+    def test_facts_and_reader_observe_complete_prose_without_a_quota(self):
+        prose = '周行在档案室核对记录，宋禾在门房登记来访。'*3000
         for stage in ('facts', 'reader'):
-            work = pack(self.db, 'main', 3, stage, {'prose': prose, 'checks': ('coverage',)})
-            self.assertEqual(work['retrieval_allowance'], reading_allowance(len(prose)))
+            with self.subTest(stage=stage):
+                work = pack(self.db, 'main', 3, stage, {'prose': prose, 'checks': ('coverage',)})
+                self.assertEqual(work['review_prose_chars'],len(prose))
+                self.assertEqual(work['payload']['prose'],prose)
+                self.assertNotIn('retrieval_allowance',work)
+                if stage=='reader':
+                    for field in ('plan','contract','state','writer_brief'):self.assertNotIn(field,work)
         leftover = pack(self.db, 'main', 3, 'facts', {'checks': ('coverage',)})
-        self.assertNotIn('retrieval_allowance', leftover)  # 无正文可核验时不声明
+        self.assertNotIn('review_prose_chars',leftover)
+        self.assertNotIn('retrieval_allowance',leftover)
 
     def test_review_discipline_names_branch_coordinate(self):
         task, work = self._work()
@@ -157,7 +185,12 @@ class ReviewPackMaterialTests(unittest.TestCase):
         materials = work['synthesis_materials']
         self.assertEqual([m['chapter'] for m in materials], [5, 10])
         self.assertNotIn('quote', dump(materials))
-        self.assertEqual(materials[0]['review']['checks'][0]['evidence'], [{'chapter': 1, 'start': 0}])
+        quote='周行在档案室核对记录，宋禾在门房登记来访。'
+        self.assertEqual(materials[0]['review']['checks'][0]['evidence'],
+                         [{'chapter':1,'start':0,'end':len(quote),'source_hash':digest(quote)}])
+        # The pointer identifies exactly what to reread; the source quote stays intact.
+        stored=json.loads(self.db.execute("SELECT data FROM reviews WHERE branch='main' AND scope='batch_chunk' AND through=5").fetchone()[0])
+        self.assertEqual(stored['checks'][0]['evidence'][0]['quote'],quote)
 
 
 if __name__ == '__main__': unittest.main()

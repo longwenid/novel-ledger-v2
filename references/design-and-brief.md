@@ -1,120 +1,79 @@
-# 分层世界设计与场景任务书
+# 分层设计与场景任务书
 
-## 全书有准备，近期可落笔
+planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 writer_brief。
 
-在创作约定和全书卷纲确定后，先设计支撑全书因果的世界框架；每卷开写前细化该卷；只为近期章节设计实际动作。不要把一到三百万字的每间房、每句台词在开书时全部写死。
+## 三级设计结构
 
-| 层次 | 设计任务 | 应达到的程度 |
+| 层次 | 阶段标识 | 核心交付物 |
 |---|---|---|
-| 全书 `world_plan` | 核心规则的使用方式、主要势力的欲望与限制、地理与连接、核心据点、主要因果链和终局所需前提 | 结局依赖的通道、机制与组织关系提前考虑，避免最后凭空补救 |
-| 本卷 `volume_plan` | 本卷主要区域、常驻场所的候选布局、关键行动条件、因果推进和终局铺设 | 本卷情节在空间与人物动机上可以成立；不制造用不上的家具目录 |
-| 未来 5～10 章 `plan` | 本章体验、人物选择、必要变化、场景提案、历史依赖 | 执笔者能写清当下动作，同时可以调整具体表达和场景顺序 |
+| **全书设计** | `world_plan` | 核心规则、势力限制、大地理区域、四层事件脊柱（`event_spine`）、终局依赖 |
+| **分卷设计** | `volume_plan` | 本卷区域与场所布局、因果序列（`sequence`）、卷纲三件套（`carries_in/climax/handoff`）、裁决留痕（`choice_log`） |
+| **章节计划** | `plan` | 未来 5～10 章的读者体验、推进节拍、人物选择、场景展开依据、压力变化及前后承接 |
 
-新书从 [约定模板](../assets/contract.example.json) 初始化，包含 `planning_mode: "layered"`。顺序由 next/submit 控制：全书设计 → 首卷设计 → 近期章计划 → 正常执笔/审稿。新卷须先通过上卷复核，再准备本卷。近期计划可以少于五章；一次计划仅覆盖当前已准备的一卷，不能为了凑满十章跳过下一卷准备。
+## 约束分层原则
 
-开书按卷职责分配参考 `word_budget`，见 [篇幅分配](creation.md)。规划工作包的 `volume_budget` 列出基准、当前分支实际汉字数和剩余分配建议。设计本卷及下一批时检查所需事件是否与剩余空间相称；建议不是硬配额，不覆盖作者总篇幅区间。设计字段无需复制整张预算表，实际接受的安排及偏离理由写入已有设计内容，由任务回执保留。
+1. **创作约定（contract）**：全书总约束，包含字数区间、文风红线与终局方向，不可被设计提案擅自修改。
+2. **客观事实账本（SQLite）**：已入库的有效正文事件、人物站位、资产流水与地图。
+3. **未来设计提案（`proposal_not_canon`）**：未入库的候选布局与剧情设想，可调整，但不能覆盖已发生事实。
 
-缺少 `planning_mode` 的既有 v2 项目继续旧流程，避免把未完成任务突然改成新阶段；新增任务书仍可从旧章计划派生。`legacy` 用于明确复现旧验证流程。原 novel-ledger 数据库不属于迁移范围。不靠手改数据库给已有书启用新模式。
+## 设计回执规范
 
-## 三种约束不要混在一起
+### world_plan.data
+- `overview`：世界支撑全书核心体验的简要说明。
+- `event_spine`：四层事件脊柱（`main` / `subplot` / `timeline` / `tension`），触点格式 `{"id":"sp:...","span":"幕跨度","event":"触点推进"}`。重大转折必须引用脊柱触点。
+- `factions`：势力组织数组（`name/drive/limits`）。
+- `geography`：宏观区域 `regions` 与连接 `connections`。
+- `core_locations`：候选场所数组（`id/name/purpose`，可选 `canon_place`）。
+- `ending_dependencies`：终局所需的空间、机制或关系前置条件。
 
-1. **作者确认的核心约定**：原有 contract 是约束，分层设计不能替作者改世界规则、红线与结局。
-2. **当前有效事实**：原始正文事件、物理地点、用途绑定、人物认知和站位；以账本为准。
-3. **未来设计**：包括尚未出现的世界细节、布局、人物选择和场景。这些都标为 `proposal_not_canon`，可以改，但要检查依赖与历史。
+### volume_plan.data
+- `volume`：卷 ID，与任务一致。
+- `carries_in` / `climax` / `handoff`：承接上卷债务、本卷高潮走向与下卷交接说明。
+- `sequence`：因果推进节拍数组。
+- `choice_log`：方向与关键节拍裁决。按 [创意工具箱](hatch-ideas.md) 给至少 2 个候选，含至少一个 wild:true；每项 direction/payoff/cost/risk，记录 chosen/reason。
 
-设计里的地点使用 `design:office` 一类候选 ID，与事实地点 ID 分开。若引用已存在地点，填 `canon_place`；这是引用，不是覆盖属性。执笔可以将获选设计写成新的正文事实；facts 在那一章登记 entity/place/link/anchor 等事件。工具不会把设计自动转换为发生过的事件。
+卷纲说明冲突、选择和后果如何承载预算。sequence/sequence_refs 是导航，编号用完不等于展开充分。volume_end 前结合正文和 volume_budget 核对过程、代价与余波；偏离时说明原因及后卷承载，不机械移预算或补字。
 
-已有办公室在四楼101时，候选布局中的“三楼505”不能获得更高优先级。合法搬迁必须走 [空间协议](spatial-continuity.md)。规划者应通过 `recall --state`、定向检索和 `map` 核实所引用的当前场所；不能只看开书时的初态。`canon_refs` 检查显式引用的当前值；自由文本中的语义冲突仍需模型判断。
+## 场景任务书（writer_brief）
 
-## 卷纲选择链：推进方向与关键拍按候选裁决
-
-开书裁决的是每卷过程形态；每卷开写前的卷纲细化沿用同一规则，并把裁决留痕进设计：
-
-- **方向候选**：2～3 个本卷推进方向，至少一个脑爆项（透镜见 [脑爆工具箱](hatch-ideas.md) 卷纲节）；候选差异落在人物选择、代价或关系后果上，且不得推翻开书已裁决的过程形态——那是约定的上界。
-- **关键拍内容选择**：只对改变卷走向的节拍（通常 1～3 个）给内容候选；普通拍直接编排，不为凑数提问。
-- **裁决方式**：作者在线时按选择链询问（`A/B/C`、`换一组`、`D`、`返回`）；无人值守已授权连写时不等待，规划者按约定方向自主裁决并留痕。
-- **留痕与追溯**：候选、裁决与理由写入 `choice_log`；作者事后用 `design --history` 审阅，不同意则 `replan --scope volume` 重新细化，已写正文不受影响。
-
-## 设计任务回执
-
-沿用 task/1 与 result/1 信封。示例 [design.example.json](../assets/design.example.json) 中的 `world_plan`、`volume_plan` 分别放进对应任务的 `data`，不能把整个示例文件直接提交。
-
-`world_plan.data`：
-
-- `overview`：世界如何支撑本书核心体验的短说明。
-- `causal_spine`：主要因果节点字符串数组，至少一项；节点数量由故事需要决定。
-- `event_spine`：四层事件脊柱，`main/subplot/timeline/tension` 四层齐全；每层为非空触点数组，触点为 `{"id","span","event"}`——`id` 以 `sp:` 开头且全书唯一，`span` 是幕/卷粒度的粗跨度（如"第一幕""v2 后半"），`event` 写该触点推进的事。脊柱是幕级骨架，逐章顺序仍由计划层决定；章计划的重大转折（`major_turn`）必须用 `spine_refs` 引用其推进的触点，不能脱离全书结构单独成立。
-- `factions`：数组，每项 `name/drive/limits`；没有组织势力可为空。
-- `geography`：`regions` 非空字符串数组，`connections` 字符串数组；全书层面的区域与重要连接，未知距离不编数字。
-- `core_locations`：非空候选场所数组，每项 `id/name/purpose`，可选 `layout/constraints` 字符串数组及已有地点 `canon_place`。
-- `ending_dependencies`：非空字符串数组，标出终局需要提前成立的空间、机制或关系前提。
-
-`volume_plan.data`：
-
-- `volume` 必须等于任务的 `payload.design_scope`；卷 ID 使用字符串，不能取保留名 world；`purpose` 说明本卷职责。
-- 卷纲三件套（必填）：`carries_in` 承接上卷结尾的状态与债务；`climax` 本卷高潮与结尾方向；`handoff` 下卷交接——末卷写明如何收束到已约定终局。三件套是卷提案的签发部分，先于本卷任何章计划存在。
-- `location_ids` 引用全书候选场所或本卷 `new_locations`；新地点格式同 core_locations，不能覆盖已有候选 ID。
-- `sequence` 为非空因果推进数组；`action_constraints` 为行动条件数组；`ending_setup` 为终局铺设数组。后两项没有需要时可空。
-- `choice_log`：卷纲推理的裁决留痕数组，必填。每项 `kind`（`direction`/`beat`，`beat` 附 1 起的节拍序号）、`mode`（`interactive`/`unattended`）、`candidates`（至少两项，必含一项 `"wild": true` 的脑爆项，每项 `direction/payoff/cost/risk`）、`chosen` 与 `reason`。方向裁决必填；关键拍按需追加；无人值守由规划者自主裁决留痕。
-
-两者均可包含：
-
-- `dependencies`：已提交历史章号数组，保存其正文哈希；被改写或在候选分支不可用时，设计失效。
-- `canon_refs`：`[{"entity":"r4","key":"floor","value":"4"}]`，提交时与现有事实核对，后续引用值改变时该设计也须重审。只引用设计实际依赖的事实，不把每个人当前情绪全锁进世界方案。不能引用尚未发生的提案作为事实。
-- `open_questions`：未决问题字符串数组；在相关情节真正使用前解决，不提前捏造答案。
-
-只有列出的设计字段可以提交。设计持久化在同一 SQLite 中，带任务 ID、修订号、哈希、有效状态与历史依赖；历史任务回执保留旧版本。通过的是结构和事实引用检查，不代表模型提出的世界设计已获文学质量认证。规划时自行检查因果是否成立、是否新增了万能解法及终局是否依赖尚无安排的关键条件；问题未解决先改方案。
-
-## 写作任务书：像剧本一样清楚，保留小说表达空间
-
-分层模式章计划在原有 goal/conflict/change/entities 等字段外，需要：
-
-- `reader_experience`：本章希望读者经历的具体情感或期待。
-- `sequence_refs`：非空整数数组，声明本章推进本卷 `sequence` 的哪些节拍（1 起的序号）。这是卷纲到章纲的方向对齐：卷有 sequence 时必填，引擎校验序号合法；节拍与章不必一一对应，多章推进同一拍或一章推进两拍都合法，但必须显式声明。
-- `ending_shape`：本章收束形态，格式“类别:说明”。类别受控：悬念 / 闭环 / 交接 / 爆发 / 静收 / 反转 / 余波；后接一句本章收尾的具体说明。收束形态描述本章实际如何收尾，不设"章末必须留钩"的要求——安静收束同样合法。引擎强制同一类别不与近三章重复——多章连用同一种收束模具是审稿反复点名的同质化，在计划层轮换比卷末返工便宜得多。
-- `character_choices`：非空数组，每项 `entity/desire/pressure/choice/cost`。cost 可是风险、机会成本或关系影响；不强迫每场戏都有重大牺牲。
-- `scenes`：非空、数量自由。沿用 `place` 或未确立地点 `label` 与 `present`；增加 `intent/conflict/turn`。这里的转变可以是认识、关系或局势变化，不要求反转或爆点。
-- 可选 `expression_space`：字符串数组，说明可调整之处和本书表达取向。
-
-场景可附 `design_location`（本卷已选候选场所）、`time_hint`、`blocking`（站位/动作建议数组）、`perceptual_limits`（感知限制数组）、`props`（已登记物品 ID 数组）。这些均是建议，不能提前登记人物到达或物品转手。新人物或物品先在正文出现并登记，后续计划再引用其 ID。
-
-draft/repair/redesign 输入内自动有 `writer_brief`：
+章计划（`plan`）通过后，引擎自动为执笔任务生成 `writer_brief` 并派生 `brief_path`：
 
 ```text
-创作任务：读者体验、目标、冲突、必要变化
-人物选择：欲望、压力、选择、代价
-场景提案：地点/时间提示、在场者、意图、冲突、变化、站位与感知限制
-材料指引：当前状态、局部地图、相关原文、未来设计
-表达空间：可调整的场景顺序、行动与对话
+创作任务：reader_experience（情感期待）、goal、conflict、change
+节拍推进：sequence_refs（对应的卷纲节拍序号）
+收束形态：ending_shape（类别:说明；悬念/闭环/交接/爆发/静收/反转/余波，可因剧情连续使用）
+人物选择：character_choices（entity/desire/pressure/choice/cost）
+场景提案：scenes（地点、拟在场者、intent/conflict/turn、动作与感知限制）
+展开依据：execution（目标依据、展开单元及各自作用）
+节奏安排：rhythm（本章作用、压力变化原因、呼吸落点与前后承接）
+表达空间：expression_space
 ```
 
-同任务附 `brief_path` 指向 Markdown 阅读视图。它由 input.json 派生，重新 next 可恢复；修改它不会改变任务、正文或事实。模型完整读取 input.json；brief 仅为 writer_brief 的替代视图，不重复加载。历史过大时核对 context_notes 和来源索引，不能只读几行剧本就跳过历史证据。书中秘密可以在作者设计中出现，但是否进入人物内心或对话，要按 knowledge 和当前视角判断。
+topics 与 dialogue_intents.knowledge_topics 列本章需用或核验的认知；dependencies 只列必要原章，不漏行动前提。
 
-通常不提供逐句台词、固定分镜数、每段字数或同一种五拍节奏。执笔负责把选择写成可感知的小说，允许发现新的有效细节；如果既定场景在事实上行不通，报告矛盾并修订计划，不为了照稿执行而忽略门、伤势或认知边界。
+## 章纲展开与节奏
 
-profiled 模式另需各拟发言者的 dialogue_intents，且章计划后会按需插入 character_plan。输入内 character_context 提供相关小传、表达习惯与成长来源；详见 [人物档案](characters.md)。
+新章纲提供 execution/rhythm，旧章纲兼容。通常目标取 contract.chapter_target_han；未设时按场景估 execution.target_han，并写 target_reason。目标不是上限，不均分全书字数、不按事件数算；刻意短章事先说明作用与原因。
 
-## 三种角色的输入
+execution.expansion_units 每项含 id/scene/focus/development/expected_change；scene 从 1 起，可选正数 weight 表相对注意力。同场景可多单元，无需新增账本事件。development 写阻力和演出方法，expected_change 写删后损失。spare_options 为有因果依据的备用展开；scene.dramatization 为动作、试探与潜台词提示字符串数组。
 
-| 角色 | 获得什么 | 要做什么 |
-|---|---|---|
-| 规划与执笔 | 作者约定、未来设计、任务书、当前状态、相关证据与地图 | 设计或创作；只提交当前阶段候选产物 |
-| 事实审稿 | 实际正文、当前事实、相关计划和原文证据；不附执笔任务书或世界设计全文 | 主动提取计划外变化，核对空间、时间、认知和资源 |
-| 读者审稿 | 首读输入只有正文及审查项，无设计、任务书和作者自评 | 先写 first_read，再通过 recall 补读创作约定，判断正文实际呈现的效果 |
+`rhythm` 含：
 
-每个 worker 读取当前任务后只产出对应回执，主控制器串行提交。派发入口、租约和错误恢复沿用 [运行说明](runtime.md)，不增设模型专属接口。
+- `chapter_role`：本章对当前段落的作用，具体到蓄势、推进、兑现或处理后果；不强制采用固定角色列表。
+- `pressure_curve`：按场景顺序的 `{scene,movement,cause}`，说明压力如何因人物行动、信息或选择而变化；同场景可多次变化。
+- `breathing_points`：`{scene,placement,function}`，说明在哪里让读者消化，以及人物、关系或后果得到什么承接。持续高潮章可为空。
+- `carries_in / handoff`：接住前章什么压力，交给后章什么未决选择；不必每章加新悬念。
 
-## 滚动修改与历史追溯
+结合邻章意图、版本及是否已写安排松紧，需要时 recall --chapter N。批内对照开场、冲突和收尾是否重复，兑现后是否无因果重置，铺垫是否产生变化。连续紧张或舒缓均可，最终以正文 pacing/repetition 审稿为准。
+
+执笔前补实不足以承载目标的章纲；返修可改展开与节奏，不自行降标。
+
+## 查询与重规划命令
 
 ```bash
 python3 "$ROOT/scripts/novel.py" design --project "$PROJECT" --scope world
 python3 "$ROOT/scripts/novel.py" design --project "$PROJECT" --scope v1 --history
-python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope volume --volume v1 --reason "未写潜入方案改为公开交接"
-python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope world --reason "调整尚未使用的区域连接"
+python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope volume --volume v1 --reason "原因"
+python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope world --reason "原因"
 ```
-
-设计调整前完成或取消当前任务；当前章已有草稿时通过审稿返工，不能 replan 丢掉失败次数。世界重设计使分卷设计和未来章计划失效；分卷重设计使该设计及待写计划重新细化。旧回执、正文和作者约定保留。改变未来布局若涉及已出现的事实，仍必须通过历史修订或有证据的剧情变化。
-
-`revise` 候选分支继承未受影响的设计；涉及被改正文的设计以及受影响卷和后续卷须重审，后缀章计划重新生成。正式分支及其设计在候选通过前保持可查询；用 `--branch` 查相应分支。候选计划不能提前完结以跳过原有后文。
-
-设计、任务书和必要历史全文计入工作包容量锚点。放不下时明确报错，提炼设计、缩小场景范围或按宿主真实窗口校准容量，不能默默裁掉关键出口。大卷设计保持重点信息，细节用正文账本和地图检索，不把全书所有场景反复塞给每个 agent。
+replan 仅清理未写计划，已提交正文与账本保持完好。

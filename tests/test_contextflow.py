@@ -28,7 +28,13 @@ def preparation(task,work,verbose=False):
                 'omission_reason':'合成测试已知这些记录不是本次钥匙认知约束；不是生产语义审稿。'}
     all_notes=[note for node in p['inputs'] for note in node['notes']]
     important=[note for note in all_notes if '误信' in note['text']]
-    notes=important[:1] or all_notes[:1]
+    notes=copy.deepcopy(important[:1] or all_notes[:1])
+    if notes:
+        # Synthetic duplicate decisions must preserve every original source,
+        # just as production reductions do; one representative quote is not
+        # enough to retain a multi-source causal conclusion.
+        by_source={dump(e):e for note in all_notes for e in note['evidence']}
+        notes[0]['evidence']=list(by_source.values())
     outgoing={dump(e) for note in notes for e in note['evidence']}
     accounting=[]
     for node in p['inputs']:
@@ -72,7 +78,8 @@ class ContextFlowTests(unittest.TestCase):
         seen=[]
         for _ in range(200):
             task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
-            self.assertLessEqual(len(rpath(task, 'input_path').read_text(encoding='utf-8')),contextflow.limits(self.db)['input'])
+            self.assertEqual(len(rpath(task, 'input_path').read_text(encoding='utf-8')),work['chars'])
+            self.assertFalse(work['context_capacity']['limits_enforced'])
             if task['stage'] not in ('context_scan','context_reduce'):return task,work,seen
             seen.append(task['stage']);self.submit(task,preparation(task,work,verbose))
         self.fail('Preparation did not converge')
@@ -108,14 +115,16 @@ class ContextFlowTests(unittest.TestCase):
         with self.assertRaises(Error):self.submit(task,data)
         self.assertEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
 
-    def test_cannot_compact_stops_with_persistent_reason(self):
+    def test_cannot_compact_retains_complete_source_without_pausing(self):
         self.grow();task=engine.next_task(self.db,self.path)
+        work=json.loads(rpath(task).read_text(encoding='utf-8'))
         self.submit(task,{'cannot_compact':True,'reason':'当前任务确实需要全部原始条件同时可见，无法在预算内表达。'})
-        self.assertEqual(get(self.db,'status'),'paused')
-        self.assertEqual(get(self.db,'pause_reason')['code'],'context_unresolved')
-        engine.resume(self.db)
-        with self.assertRaises(Error) as exc:engine.next_task(self.db,self.path)
-        self.assertEqual(exc.exception.code,'context_unresolved')
+        self.assertEqual(get(self.db,'status'),'ready')
+        bundle=get(self.db,contextflow.view_key(work['payload']['bundle']))
+        node=bundle['node_archive'][task['task_id']]
+        self.assertEqual(node['notes'][0]['evidence'][0]['quote'],work['payload']['fragment'])
+        self.assertEqual(node['retained_source']['end'],work['payload']['end'])
+        self.assertNotEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
 
     def test_failed_receipt_consumes_serial_budget_without_advancing_task(self):
         task=engine.next_task(self.db,self.path)
@@ -127,7 +136,7 @@ class ContextFlowTests(unittest.TestCase):
     def test_cli_supplement_automatically_charges_pending_task(self):
         task=engine.next_task(self.db,self.path)
         cli=Path(__file__).resolve().parents[1]/'scripts/novel.py'
-        call=subprocess.run([sys.executable,str(cli),'recall','--project',str(self.path),'--state'],capture_output=True,text=True,encoding='utf-8')
+        call=subprocess.run([sys.executable,str(cli),'recall','--project',str(self.path),'--state','--entity','hero'],capture_output=True,text=True,encoding='utf-8')
         self.assertEqual(call.returncode,0,call.stderr)
         self.assertEqual(get(self.db,'context_reads:'+task['task_id']),len(call.stdout))
 
@@ -157,14 +166,14 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(slim['checks'][0]['finding'],'蓝绳结显示人物信任发生变化')
         self.assertNotIn('quote',dump(slim))
 
-    def test_oversized_legacy_pending_is_replanned_with_stale_output_rejected(self):
+    def test_large_legacy_pending_remains_valid_after_configuration_change(self):
         self.grow();put(self.db,'context_mode','legacy');put(self.db,'context_chars',500000)
         old=engine.next_task(self.db,self.path)
         put(self.db,'context_mode','bounded');put(self.db,'context_chars',48000)
         new=engine.next_task(self.db,self.path)
-        self.assertEqual(new['stage'],'context_scan');self.assertNotEqual(old['task_id'],new['task_id'])
-        with self.assertRaises(Error) as exc:self.submit(old,{'prose':'过期输出'})
-        self.assertEqual(exc.exception.code,'stale_task')
+        self.assertEqual(new['task_id'],old['task_id'])
+        self.submit(old,{'prose':'完整任务仍可提交。'})
+        self.assertEqual(engine.next_task(self.db,self.path)['stage'],'context_scan')
         self.assertEqual(head(self.db,'main'),1)
 
 if __name__=='__main__':unittest.main()

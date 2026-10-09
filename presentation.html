@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="大模型长篇写作与 Coding 的区别：上下文爆炸、内容漂移与文风问题；展示 novel-ledger-v2 的 SQLite 表记录示例、按需取材与独立审稿。六页离线演示。">
+  <title>大模型写小说与 Coding 的区别</title>
+  <style>
+    :root { --bg:#080d1b; --panel:#111a2b; --ink:#f1f5fc; --muted:#b0bdd3; --quiet:#8495b1; --line:#2b3851; --blue:#80aeff; --purple:#b5a0ff; --amber:#ffd080; --green:#7ee1c1; --rose:#ff9eae; --scale:1; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; }
+    body { height:100dvh; overflow:hidden; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; }
+    button,a { -webkit-tap-highlight-color:transparent; }
+    button { font:inherit; color:inherit; cursor:pointer; border:1px solid var(--line); border-radius:7px; background:transparent; padding:7px 12px; }
+    button:hover { background:#1e2a43; border-color:#596f96; }
+    button:focus-visible,a:focus-visible { outline:3px solid var(--amber); outline-offset:4px; }
+    button:disabled { opacity:.3; cursor:default; }
+    .chrome { height:54px; padding:0 28px; display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:13px; }
+    header.chrome { border-bottom:1px solid #25314a; }
+    .brand { font-weight:650; letter-spacing:.015em; }
+    .version { color:var(--quiet); margin-left:12px; font-weight:400; }
+    .tools { display:flex; gap:8px; align-items:center; }
+    .tools button { font-size:12px; padding:5px 10px; }
+    .counter { color:var(--muted); font-variant-numeric:tabular-nums; min-width:52px; }
+    .counter strong { color:var(--amber); }
+    #viewport { height:calc(100dvh - 108px); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    #stage-frame { width:calc(1280px * var(--scale)); height:calc(720px * var(--scale)); flex:none; }
+    #stage { width:1280px; height:720px; transform:scale(var(--scale)); transform-origin:top left; }
+    .slide { display:none; position:relative; width:1280px; height:720px; padding:48px 64px 50px; flex-direction:column; background:radial-gradient(ellipse at 95% 0%,#152043 0%,transparent 48%),var(--bg); overflow:hidden; }
+    .slide.active { display:flex; animation:enter .18s ease-out; }
+    @keyframes enter { from { opacity:.5; transform:translateY(4px); } to { opacity:1; transform:none; } }
+    .kicker { color:var(--purple); font-size:15px; font-weight:650; letter-spacing:.08em; margin:0 0 12px; }
+    h1,h2,h3,p { margin:0; }
+    h1 { font-size:66px; line-height:1.22; font-weight:750; letter-spacing:-.04em; }
+    h2 { font-size:42px; line-height:1.22; letter-spacing:-.025em; font-weight:720; }
+    h3 { font-size:27px; line-height:1.35; font-weight:650; }
+    .subtitle { font-size:23px; color:var(--muted); line-height:1.55; margin-top:14px; }
+    .content { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; padding:24px 0 28px; gap:26px; }
+    .body { font-size:23px; line-height:1.65; color:var(--muted); }
+    .small { font-size:18px; line-height:1.6; color:var(--muted); }
+    .source { margin-top:auto; border-top:1px solid var(--line); padding-top:12px; display:flex; justify-content:space-between; gap:20px; color:var(--quiet); font-size:14px; line-height:1.5; }
+    .source span:first-child { max-width:1060px; }
+    .source a { color:inherit; text-decoration-color:var(--line); text-underline-offset:3px; }
+    .source .page { font-variant-numeric:tabular-nums; }
+    .blue { color:var(--blue); } .amber { color:var(--amber); } .green { color:var(--green); } .rose { color:var(--rose); } .purple { color:var(--purple); }
+    strong { color:var(--ink); font-weight:650; }
+    .cols { display:grid; grid-template-columns:1fr 1fr; gap:46px; }
+    .cols.three { grid-template-columns:repeat(3,1fr); gap:34px; }
+    .col { border-top:3px solid var(--line); padding-top:24px; }
+    .col.blue-line { border-color:var(--blue); } .col.amber-line { border-color:var(--amber); } .col.green-line { border-color:var(--green); }
+    .col h3 { margin-bottom:18px; }
+    .col p+p { margin-top:14px; }
+    .number { font-size:16px; color:var(--quiet); display:block; margin-bottom:10px; }
+    .takeaway { border-left:4px solid var(--amber); padding:12px 22px; font-size:24px; line-height:1.5; color:var(--ink); background:#ffd08008; }
+    .takeaway.green-border { border-color:var(--green); background:#7ee1c108; }
+    .takeaway.rose-border { border-color:var(--rose); background:#ff9eae08; }
+    .list { display:grid; gap:18px; font-size:23px; line-height:1.5; color:var(--muted); }
+    .list p { padding-left:22px; position:relative; }
+    .list p::before { content:""; position:absolute; left:0; top:.65em; width:6px; height:6px; border-radius:50%; background:var(--purple); }
+    table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:22px; line-height:1.5; text-align:left; }
+    th { color:var(--muted); font-weight:500; font-size:17px; padding:12px 16px; border-bottom:2px solid var(--line); }
+    td { padding:20px 16px; border-bottom:1px solid var(--line); color:var(--muted); vertical-align:top; }
+    td:first-child { color:var(--ink); font-weight:600; }
+    .layers { display:grid; gap:14px; }
+    .layer { display:grid; grid-template-columns:240px 1fr; gap:26px; border-bottom:1px solid var(--line); padding:18px 0; }
+    .layer h3 { font-size:25px; }
+    .layer p { font-size:22px; line-height:1.55; color:var(--muted); }
+    .flow { display:grid; grid-template-columns:repeat(5,1fr); gap:26px; }
+    .step { position:relative; border-top:3px solid var(--blue); padding-top:20px; }
+    .step::after { content:"→"; position:absolute; top:21px; right:-25px; color:var(--quiet); font-size:26px; }
+    .step:last-child::after { display:none; }
+    .step b { font-size:24px; line-height:1.3; display:block; margin-bottom:10px; }
+    .step p { font-size:19px; color:var(--muted); line-height:1.6; }
+    .step:nth-child(3) { border-color:var(--amber); } .step:nth-child(4) { border-color:var(--green); }
+    .diagram-compare { display:grid; gap:34px; }
+    .diagram-lane { --lane:var(--blue); display:grid; grid-template-columns:142px minmax(0,1fr); gap:24px; align-items:start; }
+    .novel-lane { --lane:var(--amber); }
+    .diagram-lane>h3 { color:var(--lane); font-size:25px; padding-top:27px; }
+    .diagram-lane>h3 small { display:block; margin-top:6px; font-size:16px; line-height:1.5; font-weight:400; color:var(--muted); }
+    .diagram-path { min-width:0; }
+    .diagram-track { display:grid; grid-template-columns:repeat(var(--nodes),minmax(0,1fr)); gap:28px; margin:0; padding:0; list-style:none; }
+    .diagram-node { position:relative; border:1px solid var(--line); border-top:3px solid var(--lane); border-radius:9px; background:var(--panel); padding:20px 15px; text-align:center; }
+    .diagram-node::after { content:"→"; position:absolute; right:-26px; top:27px; color:var(--lane); font-size:24px; line-height:1; }
+    .diagram-node:last-child::after { display:none; }
+    .diagram-node b { display:block; font-size:23px; line-height:1.4; margin-bottom:8px; }
+    .diagram-node span { display:block; font-size:18px; line-height:1.5; color:var(--muted); }
+    .diagram-return svg { display:block; width:100%; height:30px; overflow:visible; }
+    .diagram-return path { fill:none; stroke:var(--lane); stroke-width:1.5; vector-effect:non-scaling-stroke; }
+    .diagram-return p { text-align:center; color:var(--muted); font-size:16px; line-height:1.5; }
+    .db-slide .content { gap:16px; padding:16px 0; }
+    .db-example th { padding:9px 10px; font-size:16px; }
+    .db-example td { padding:8px 10px; font-size:17px; line-height:1.3; }
+    .db-example code { font-size:15px; overflow-wrap:anywhere; }
+    .db-slide .takeaway { font-size:22px; }
+    .role { font-size:46px; margin-bottom:10px; letter-spacing:-.04em; }
+    .role code { font-size:25px; color:var(--purple); }
+    code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.87em; color:var(--blue); }
+    .rule { display:grid; grid-template-columns:110px 1fr; gap:24px; align-items:start; border-bottom:1px solid var(--line); padding:20px 0; }
+    .rule .label { font-size:25px; line-height:1.4; font-weight:650; }
+    .rule p { font-size:23px; line-height:1.55; color:var(--muted); }
+    .difficulty-grid { display:grid; grid-template-columns:1fr 1fr; gap:26px 46px; }
+    .difficulty-grid>div { border-top:1px solid var(--line); padding-top:18px; }
+    .difficulty-grid h3 { margin-bottom:12px; font-size:25px; }
+    .difficulty-grid p { color:var(--muted); font-size:21px; line-height:1.6; }
+    .difficulty-grid .method { color:var(--quiet); font-size:18px; line-height:1.4; margin-top:10px; }
+    .skill-comparison-slide .content { gap:20px; padding-top:18px; padding-bottom:18px; }
+    .difficulty-slide .content { gap:20px; padding-top:18px; padding-bottom:18px; }
+    .units { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
+    .unit { padding-top:20px; border-top:2px solid var(--purple); }
+    .unit h3 { font-size:25px; margin-bottom:12px; }
+    .unit p { font-size:21px; color:var(--muted); line-height:1.6; }
+    .rhythm { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; align-items:start; }
+    .beat { position:relative; padding-top:22px; border-top:3px solid var(--blue); }
+    .beat:nth-child(2) { border-color:var(--rose); } .beat:nth-child(3) { border-color:var(--green); } .beat:nth-child(4) { border-color:var(--amber); }
+    .beat h3 { font-size:25px; margin-bottom:12px; } .beat p { font-size:21px; line-height:1.55; color:var(--muted); }
+    .repair { display:flex; align-items:center; gap:24px; font-size:27px; font-weight:600; padding:26px 0; border-bottom:1px solid var(--line); }
+    .repair .arrow { color:var(--quiet); font-weight:400; }
+    .metric { font-variant-numeric:tabular-nums; font-size:53px; letter-spacing:-.04em; font-weight:700; line-height:1.1; }
+    .metric-label { font-size:18px; color:var(--muted); margin:10px 0 0; }
+    .metric-pair { display:flex; align-items:center; gap:26px; padding:22px 0; }
+    .metric-pair .arrow { font-size:36px; color:var(--quiet); }
+    .evidence-table td { padding:15px 14px; font-size:21px; }
+    .evidence-table th { padding:10px 14px; }
+    .metric-banner { display:flex; gap:56px; align-items:center; padding:20px 0; border-bottom:1px solid var(--line); }
+    .metric-banner .metric { font-size:48px; }
+    .sample-list { display:grid; grid-template-columns:repeat(3,1fr); gap:18px 30px; font-size:24px; line-height:1.6; }
+    .sample-list span { border-bottom:1px solid var(--line); padding:12px 0; }
+    .sample-list span::before { content:"✓"; color:var(--green); margin-right:12px; }
+    .usage { display:grid; grid-template-columns:repeat(4,1fr); gap:26px; }
+    .usage h3 { font-size:26px; margin:14px 0; } .usage p { color:var(--muted); font-size:21px; line-height:1.6; }
+    .usage .number { color:var(--purple); font-size:36px; }
+    .cover { justify-content:center; }
+    .cover .content { flex:none; padding:0; gap:0; }
+    .cover .kicker { font-size:18px; margin-bottom:25px; }
+    .cover .subtitle { font-size:28px; margin-top:26px; }
+    .cover .cover-principle { margin-top:42px; font-size:23px; line-height:1.65; color:var(--muted); }
+    .cover .agenda { display:flex; gap:45px; margin-top:55px; padding-top:24px; border-top:1px solid var(--line); font-size:21px; color:var(--muted); }
+    .cover .agenda span b { color:var(--purple); margin-right:10px; font-size:15px; }
+    .cover .source { position:absolute; bottom:30px; left:64px; right:64px; border:0; }
+    footer.chrome { border-top:1px solid #25314a; color:var(--quiet); }
+    .footer-left { display:flex; align-items:center; gap:12px; font-size:12px; }
+    #progress { width:155px; height:3px; background:var(--line); border-radius:3px; }
+    #progress-fill { display:block; width:0; height:100%; border-radius:inherit; background:var(--purple); transition:width .15s; }
+    .footer-nav { display:flex; gap:10px; }
+    .footer-nav button { font-size:12px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    dialog { max-width:min(820px,92vw); width:820px; max-height:85dvh; color:var(--ink); background:#10192b; border:1px solid #455777; border-radius:12px; padding:28px; box-shadow:0 24px 100px #0008; }
+    dialog::backdrop { background:#030711ba; backdrop-filter:blur(5px); }
+    .dialog-head { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:22px; }
+    .dialog-head h2 { font-size:23px; }
+    #toc-items { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    #toc-items button { text-align:left; padding:12px; font-size:16px; line-height:1.5; border:0; border-bottom:1px solid var(--line); border-radius:0; }
+    #toc-items button[aria-current="page"] { color:var(--amber); background:#ffd0800d; }
+    #notes-content { font-size:19px; line-height:1.8; color:var(--muted); white-space:pre-line; }
+    .note { display:none; }
+    #print-help { font-size:12px; }
+    @media (prefers-reduced-motion:reduce) { .slide.active { animation:none; } #progress-fill { transition:none; } }
+    @media (max-width:759px) {
+      body { overflow:auto; height:auto; min-height:100dvh; }
+      .chrome { padding:10px 16px; height:auto; min-height:52px; flex-wrap:wrap; }
+      .brand { font-size:12px; } .version { margin-left:6px; } .tools { gap:5px; } .tools button { padding:5px 7px; }
+      #fullscreen-btn { display:none; }
+      #viewport { height:auto; overflow:visible; display:block; }
+      #stage-frame,#stage { width:100%; height:auto; transform:none; }
+      .slide { width:100%; height:auto; min-height:calc(100dvh - 120px); padding:32px 24px 22px; overflow:visible; }
+      h1 { font-size:41px; } h2 { font-size:30px; } h3 { font-size:23px; }
+      .kicker { font-size:13px; } .subtitle { font-size:18px; }
+      .content { padding:25px 0; gap:26px; } .body,.list { font-size:19px; } .small { font-size:16px; }
+      .cols,.cols.three,.units,.rhythm,.usage,.difficulty-grid { grid-template-columns:1fr; gap:24px; }
+      .col { padding-top:16px; } .col h3 { margin-bottom:12px; }
+      .layer { grid-template-columns:1fr; gap:8px; padding:16px 0; } .layer p { font-size:19px; }
+      .flow { grid-template-columns:1fr; gap:20px; } .step::after { content:"↓"; top:auto; bottom:-27px; right:12px; } .step { padding-top:13px; }
+      .step b,.beat h3,.unit h3 { font-size:23px; } .step p,.beat p,.unit p,.usage p { font-size:19px; }
+      .difficulty-grid h3 { font-size:23px; } .difficulty-grid p { font-size:19px; }
+      .diagram-compare { gap:28px; }
+      .diagram-lane { grid-template-columns:1fr; gap:14px; }
+      .diagram-lane>h3 { padding:0; font-size:23px; }
+      .diagram-track { grid-template-columns:1fr; gap:28px; }
+      .diagram-node { padding:14px; }
+      .diagram-node::after { content:"↓"; right:calc(50% - 12px); top:auto; bottom:-26px; }
+      .diagram-node b { font-size:22px; margin-bottom:5px; }
+      .diagram-return { border-left:2px solid var(--lane); margin-top:16px; padding-left:12px; }
+      .diagram-return svg { display:none; }
+      .diagram-return p { text-align:left; }
+      .db-example th { padding:8px 4px; font-size:12px; }
+      .db-example td { padding:10px 4px; font-size:13px; }
+      .db-example code { font-size:11px; }
+      .db-slide .takeaway { font-size:20px; }
+      .role { font-size:34px; }
+      .rule { grid-template-columns:1fr; gap:8px; padding:16px 0; } .rule p { font-size:19px; }
+      .takeaway { font-size:20px; padding:12px 15px; }
+      .repair { flex-wrap:wrap; font-size:21px; gap:10px; }
+      .feedback-loop { flex-wrap:nowrap; font-size:clamp(15px,4.6vw,18px); gap:6px; }
+      .metric { font-size:39px; } .metric-pair { gap:15px; flex-wrap:wrap; } .metric-pair .arrow { font-size:28px; }
+      .metric-banner { flex-wrap:wrap; gap:22px; } .metric-banner .metric { font-size:37px; }
+      .sample-list { grid-template-columns:1fr 1fr; gap:8px 12px; font-size:19px; }
+      .source { font-size:12px; margin-top:10px; padding-top:12px; gap:10px; }
+      table { font-size:16px; } th { font-size:13px; padding:10px 6px; } td { padding:13px 6px; overflow-wrap:anywhere; }
+      .evidence-table th { font-size:13px; padding:9px 5px; } .evidence-table td { font-size:15px; padding:12px 5px; }
+      .cover .kicker { font-size:14px; } .cover .subtitle { font-size:22px; margin-top:22px; } .cover .cover-principle { font-size:19px; margin-top:25px; }
+      .cover .agenda { flex-wrap:wrap; gap:15px 24px; margin-top:32px; font-size:18px; }
+      .cover .source { position:static; margin-top:45px; }
+      #progress { width:80px; } .footer-left { gap:8px; } #print-help { display:none; }
+      #toc-items { grid-template-columns:1fr; } dialog { padding:20px; }
+    }
+    @page { size:13.333333in 7.5in; margin:0; }
+    @media print {
+      html,body { height:auto; overflow:visible; background:var(--bg); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .chrome,dialog,#announcer { display:none!important; }
+      #viewport,#stage-frame,#stage { display:block; width:1280px; height:auto; overflow:visible; transform:none; }
+      .slide,.slide.active { display:flex!important; width:1280px; height:720px; min-height:0; padding:48px 64px 50px; break-after:page; page-break-after:always; animation:none; overflow:hidden; }
+      .slide:last-child { break-after:auto; page-break-after:auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="chrome">
+    <div class="brand">大模型写小说 × Coding<span class="version">novel-ledger-v2 · 1.20.0</span></div>
+    <div class="tools">
+      <span class="counter"><strong id="current-number">01</strong> / <span id="total-number">08</span></span>
+      <button id="toc-btn" type="button" title="目录（G）">目录</button>
+      <button id="notes-btn" type="button" title="讲者备注（N）">备注</button>
+      <button id="fullscreen-btn" type="button" title="全屏（F）">全屏</button>
+      <button id="print-btn" type="button" title="打印全部页面或另存 PDF（P）">打印</button>
+    </div>
+  </header>
+  <main id="viewport" aria-label="分享演示">
+    <div id="stage-frame"><div id="stage">
+
+      <section class="slide cover active" data-title="大模型写小说与 Coding 的区别" aria-labelledby="title-1">
+        <div class="content">
+          <h1 id="title-1">大模型写小说与 Coding 的区别</h1>
+          <p class="subtitle">上下文爆炸、内容漂移、文风问题</p>
+        </div>
+        <aside class="note">用三类问题解释长篇续写为何需要额外的状态管理与验收，再对照 Coding 的工具反馈，展示 SQLite 的实际表结构节选与本 Skill 的应对流程。全稿八页。
+这里比较配合工具的 Coding 与缺少独立核验的小说续写流程；代码也可能漏测，小说也可以加入检查。重点是工作方式，不是模型能力排名。</aside>
+      </section>
+
+      <section class="slide" data-title="长篇连写，三个问题越来越突出" aria-labelledby="title-2">
+        <p class="kicker">01 · 长篇写作的难点</p><h2 id="title-2">长篇连写，三个问题越来越突出</h2>
+        <div class="content">
+          <div class="cols three">
+            <div class="col blue-line"><h3 class="blue">上下文爆炸</h3><p class="body">设定、正文、档案持续叠加<br>全书反复输入，成本上升<br>只留近期，又容易漏依据</p></div>
+            <div class="col amber-line"><h3 class="amber">内容漂移</h3><p class="body">认知、动机与事实前后冲突<br>伏笔丢失，成长缺少依据<br>错误继续被后章沿用</p></div>
+            <div class="col green-line"><h3 class="green">文风问题</h3><p class="body">叙述口吻前后变化<br>不同人物说话同腔<br>套话与重复解释逐渐增多</p></div>
+          </div>
+          <p class="takeaway">长篇需要持续管理历史、因果与声音。</p>
+        </div>
+        <div class="source"><span>风险归纳：context-runtime / characters / editorial</span><span class="page">02</span></div>
+        <aside class="note">上下文爆炸指材料与重复传递不断增长，不是声称算法或费用按指数增长。例如 100 章、每章 3000 字，正文已约 30 万字，再加入设定、人物档案和聊天历史，若每次无差别重读，准备与传递会持续增加。只按字数截断或只取近期，可能遗漏当前选择依赖的早期经历。实际 token 与费用需要宿主账单，不能以字符直接换算。
+内容漂移包括人物提前知情、动机突变、资源或时间矛盾、伏笔与成长未兑现；文风问题包括叙述声音变化、对白同腔、句式与解释反复。三类都是需检查的风险，不保证每次连写都会发生，也不给出未经测量的发生率。
+依据：references/context-runtime.md、characters.md、editorial.md。</aside>
+      </section>
+
+      <section class="slide" data-title="Coding 的优势：外部反馈能反复验证" aria-labelledby="title-3">
+        <p class="kicker">02 · 流程对比</p><h2 id="title-3">Coding 的优势：外部反馈能反复验证</h2>
+        <div class="content">
+          <div class="diagram-compare"><div class="diagram-lane code-lane"><h3>Coding<small>工具辅助</small></h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="Coding 工具辅助 流程"><li class="diagram-node"><b>定位代码</b><span>源码与依赖</span></li><li class="diagram-node"><b>生成改动</b><span>实现需求</span></li><li class="diagram-node"><b>运行检查</b><span>编译、测试、运行</span></li><li class="diagram-node"><b>审查结果</b><span>行为与体验</span></li></ol><div class="diagram-return"><svg viewBox="0 0 1000 32" preserveAspectRatio="none" aria-hidden="true"><path d="M880 2 V22 H380 V2 M370 12 L380 2 L390 12"/></svg><p>发现问题：修正后重新验证</p></div></div></div><div class="diagram-lane novel-lane"><h3>小说续写<small>缺少独立核验</small></h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="缺少独立核验的小说续写流程"><li class="diagram-node"><b>整理上下文</b><span>摘要、档案、按需加载</span></li><li class="diagram-node"><b>生成新章</b><span>依赖当前材料</span></li><li class="diagram-node"><b>缺少核验</b><span>因果与文风未验</span></li><li class="diagram-node"><b>继续沿用</b><span>后章据此展开</span></li></ol><div class="diagram-return"><svg viewBox="0 0 1000 32" preserveAspectRatio="none" aria-hidden="true"><path d="M880 2 V22 H380 V2 M370 12 L380 2 L390 12"/></svg><p>继续生成：漂移与文风问题可能累积</p></div></div></div></div>
+          <p class="takeaway">代码也会出错，编译与测试让部分错误更容易暴露。</p>
+        </div>
+        <div class="source"><span>依据：<a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener noreferrer">Anthropic · Coding agents</a> · 小说风险为流程示意</span><span class="page">03</span></div>
+        <aside class="note">上行是带工具反馈与审查的 Coding；下行示意只做提示、摘要、档案或按需加载，未加入历史核对和独立审稿的常规 Skill。这里按工作机制比较，不声称所有其他 Skill 都缺少核验。
+摘要与检索能缓解上下文膨胀，但整理材料本身不验证材料真假。摘要若记错人物所知或关系，新章仍可能沿用错误；生成后没有对照历史正文核验，就无法可靠发现内容漂移。反复生成不是验证。
+Coding 常能借助源码定位、编译、测试和运行获得部分外部证据，但复杂依赖、需求与体验仍需审查。小说中的人物因果与文风需要读正文、核对历史和风格来源，模型说“已检查”不能替代真实审稿。
+工程参考：https://www.anthropic.com/engineering/building-effective-agents
+长故事参考：https://aclanthology.org/2022.emnlp-main.296/
+比较的是工作条件，不推断内部训练原因，不外推百万字质量。</aside>
+      </section>
+
+      <section class="slide" data-title="常规 Skill：管住上下文，仍会漂移" aria-labelledby="title-4">
+        <p class="kicker">03 · 常规 Skill 的边界</p><h2 id="title-4">常规 Skill：管住上下文，仍会漂移</h2>
+        <div class="content">
+          <div class="diagram-lane code-lane"><h3>上下文管理</h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="常规 Skill 的上下文管理流程"><li class="diagram-node"><b>保存材料</b><span>正文、设定、档案</span></li><li class="diagram-node"><b>提炼摘要</b><span>减少历史复述</span></li><li class="diagram-node"><b>按需加载</b><span>选取当前相关材料</span></li><li class="diagram-node"><b>继续写作</b><span>使用整理后的上下文</span></li></ol></div></div>
+          <div class="cols">
+            <div class="col blue-line"><h3 class="blue">缓解上下文爆炸</h3><p class="body">减少全书反复输入<br>保留当前任务需要的材料</p></div>
+            <div class="col amber-line"><h3 class="amber">内容漂移仍需检查</h3><p class="body">摘要记错，错误也会被沿用<br>材料齐全，新章仍可能偏离</p></div>
+          </div>
+          <p class="takeaway">上下文变小 ≠ 内容正确。整理材料之后，还需要核验。</p>
+        </div>
+        <div class="source"><span>这里指以摘要与按需加载为主、尚未加入独立内容核验的 Skill</span><span class="page">04</span></div>
+        <aside class="note">这一页按机制区分上下文管理与内容一致性，不对所有 Skill 作一概判断。常规 Skill 在此特指以提示、摘要、档案和按需加载为主的流程；它们可以缓解上下文膨胀，但仅凭整理材料不能可靠解决内容漂移。若其他 Skill 已包含持久状态、证据核对与独立审稿，也具备相应治理能力。
+例如摘要把“怀疑”写成“知道”，即便材料变短，后章仍可能沿用错误；即使摘要准确，生成的新章也可能让人物突然无条件信任他人。因此检索既有材料与检查新章是否成立是两项工作。
+按需加载也不能为了缩短输入而删去必要因果依赖，疑点须回查历史正文。来源：references/context-runtime.md、continuity.md、editorial.md。</aside>
+      </section>
+
+      <section class="slide db-slide" data-title="SQLite：人物状态怎么记" aria-labelledby="title-5">
+        <p class="kicker">04 · 本 Skill 的核验</p><h2 id="title-5">SQLite：人物状态怎么记</h2>
+        <div class="content">
+          <p class="small"><code>events</code> 表 · <code>branch=main / chapter=18 / idx=0</code><br>示例：林舟对沈砚的关系变化 · 以下展开 <code>data</code> 内的 JSON 字段</p>
+          <table class="db-example" aria-label="人物关系状态事件的字段明细"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><thead><tr><th>明细字段</th><th>示例值</th><th>作用</th></tr></thead><tbody>
+            <tr><td><code>data.op</code></td><td><code>state</code></td><td>记录人物状态变化</td></tr>
+            <tr><td><code>data.entity</code></td><td><code>C01</code>（林舟）</td><td>稳定 ID，改名也能追踪</td></tr>
+            <tr><td><code>data.key</code></td><td><code>relation:C02</code>（沈砚）</td><td>标明对谁的关系</td></tr>
+            <tr><td><code>data.before</code></td><td>警惕</td><td>前值须与账本一致</td></tr>
+            <tr><td><code>data.after</code></td><td>有限信任</td><td>本章成立的新状态</td></tr>
+            <tr><td><code>data.evidence.start</code></td><td><code>128</code>（字符偏移）</td><td>定位第 18 章的证据</td></tr>
+            <tr><td><code>data.evidence.quote</code></td><td>林舟收起刀：“这一回，我信你。”</td><td>精确引用正文，便于复核</td></tr>
+          </tbody></table>
+          <p class="takeaway">按人物取材，核对“前值 → 后值”，用正文证明变化。</p>
+        </div>
+        <div class="source"><span>实际存储：events.data（JSON） · 演示值 · 当前状态由事件重放得到</span><span class="page">05</span></div>
+        <aside class="note">此页展示真实 events 表中一条 state 事件的 JSON 明细，不新增或声称存在独立的人物状态 SQL 表。events 的实际列为 branch/chapter/idx/data/prev_hash/hash；data.op、data.entity 等是 JSON 路径，不是独立 SQL 列。完整示例事件还需 data.evidence.chapter=18；本页省略哈希等字段。
+人物名、ID、关系值、引文及字符偏移均为演示数据，不是项目中的真实小说记录。假设 C01、C02 已登记，第 18 章提交前 C01:relation:C02 的状态为“警惕”；本章事件 after 为“有限信任”。关系属性采用 continuity.md 建议的 relation:对方ID。伤势、动机等也可用 state 事件记录，属性名须在项目内保持一致。
+程序验证 before 与此前重放得到的状态一致，并核对 evidence 的章号、字符位置和原文。事实审稿还需判断引文及上下文是否足以支持关系变化，匹配字段不能代替语义审稿。按人物与依赖检索当前状态及相关历史，减少每章重复加载全书。
+人物所知另用 knowledge 事件，区分知道、相信与怀疑；人物声线保存在 meta 的版本化人物档案中，属于设计和解读，不作为已发生事实。文风问题仍通过风格锚点、声线材料与读者审稿复核。
+来源：scripts/novel_core/store.py、ledger.py、characters.py；references/continuity.md、characters.md。</aside>
+      </section>
+
+      <section class="slide" data-title="内容漂移：保存状态之后，还要核验" aria-labelledby="title-6">
+        <p class="kicker">04 · 本 Skill 的核验</p><h2 id="title-6">内容漂移：保存状态之后，还要核验</h2>
+        <div class="content">
+          <div class="cols">
+            <div class="col blue-line"><h3 class="blue">第 18 章 · 已成立</h3><p class="body">林舟对沈砚：有限信任<br>“这一回，我信你。”</p></div>
+            <div class="col amber-line"><h3 class="amber">第 19 章 · 候选稿疑点</h3><p class="body">林舟向沈砚坦白全部秘密<br>是否有新的动机与事件支持？</p></div>
+          </div>
+          <div class="diagram-lane novel-lane"><h3>核验与返修</h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="人物关系漂移的核验流程"><li class="diagram-node"><b>读人物前态</b><span>状态与相关正文</span></li><li class="diagram-node"><b>事实审稿</b><span>核对变化与因果</span></li><li class="diagram-node"><b>返修疑点</b><span>补足或调整情节</span></li><li class="diagram-node"><b>重验再入库</b><span>通过后更新状态</span></li></ol></div></div>
+          <p class="takeaway">SQLite 留下核对依据；审稿判断新章变化是否成立。</p>
+        </div>
+        <div class="source"><span>演示情节 · 状态前值由程序核对，变化依据由事实审稿检查</span><span class="page">06</span></div>
+        <aside class="note">沿用上一页的演示人物与关系状态，并非真实小说数据。有限信任后坦白秘密不必然是错误，关键是新章是否通过具体事件、动机与场景给出足够支持；审稿要回查正文，不能只根据状态标签机械否决。
+state 事件的 before 即便正确，也不说明 after 的语义合理。程序核对前值、证据定位等结构条件；facts 独立读取人物所知、关系变化与历史因果，检查候选正文能否支持这次变化。若有疑点则返修、重新审稿，通过正式提交后才更新有效账本。历史修订还需重验受影响后文。
+认知、资源、时间与伏笔也需要相应核验。SQLite 是持久化依据，审稿是判断环节，二者结合仍不自动保证文学质量。来源：scripts/novel_core/ledger.py；references/continuity.md、editorial.md、repairs.md。</aside>
+      </section>
+
+      <section class="slide" data-title="文风：叙述口吻与人物声音分别检查" aria-labelledby="title-7">
+        <p class="kicker">04 · 本 Skill 的核验</p><h2 id="title-7">文风：叙述口吻与人物声音分别检查</h2>
+        <div class="content">
+          <div class="cols three">
+            <div class="col blue-line"><h3 class="blue">叙述口吻</h3><p class="body">保留作者确认的风格样例<br>对照句式、节奏与用词<br>检查前后文是否变调</p></div>
+            <div class="col amber-line"><h3 class="amber">人物声线</h3><p class="body">记录各人的表达习惯<br>区分对谁说、为何这样说<br>声音变化须有成长依据</p></div>
+            <div class="col green-line"><h3 class="green">读者审稿</h3><p class="body">核对实际正文与样例<br>检查对白同腔、套话重复<br>指出疑点，返修后再审</p></div>
+          </div>
+          <p class="takeaway">事实前后一致之后，还要检查声音是否符合人物与场景。</p>
+        </div>
+        <div class="source"><span>风格锚点与人物声线按配置启用 · 检查以实际正文为准</span><span class="page">07</span></div>
+        <aside class="note">叙述文风与人物对白分开准备依据。存在 style_anchor 时，reader 核对作者确认的 traits 与 sample，检查叙述口吻、句式节奏和用词；启用 profiled 人物模式时，以版本化人物 voice 及场景意图检查对白身份。人物档案是设计和解读，不当成已经发生的世界事实。
+检查不等于固定模板或机械重复口头禅。面对不同对象、处于不同压力或经历成长，声音可以合理变化；审稿要检查变化是否符合场景与历史依据。language/repetition 与跨章复核还用于发现重复解释、同款收束和文风漂移。
+这些流程支持发现和返修问题，不保证文学质量。来源：references/characters.md、editorial.md、voices.md。</aside>
+      </section>
+
+      <section class="slide" data-title="让长篇也形成反馈闭环" aria-labelledby="title-8">
+        <p class="kicker">05 · 创作流程</p><h2 id="title-8">让长篇也形成反馈闭环</h2>
+        <div class="content">
+          <div class="diagram-compare"><div class="diagram-lane novel-lane"><h3>小说流程</h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="本 Skill 的小说创作流程"><li class="diagram-node"><b>SQLite 账本</b><span>正文、状态、文风</span></li><li class="diagram-node"><b>按需取材</b><span>当前场景与依赖</span></li><li class="diagram-node"><b>执笔与双审</b><span>事实＋读者</span></li><li class="diagram-node"><b>正式入库</b><span>版本与进度</span></li></ol><div class="diagram-return"><svg viewBox="0 0 1000 32" preserveAspectRatio="none" aria-hidden="true"><path d="M880 2 V22 H125 V2 M115 12 L125 2 L135 12"/></svg><p>通过审稿：成果与依据写回账本；未通过则返修</p></div></div></div></div>
+          <div class="cols"><p class="body"><strong class="blue">中断可续</strong><br>任务与输入持久化<br>恢复当前任务继续执行</p><p class="body"><strong class="amber">修订可追溯</strong><br>保留旧稿、版本与审稿证据<br>重验相关后文</p></div>
+          <p class="takeaway">账本保留依据，审稿发现漂移，返修后再验收。</p>
+        </div>
+        <div class="source"><span>novel-ledger-v2 · 持久状态、按需取材、独立审稿与修订复核</span><span class="page">08</span></div>
+        <aside class="note">图中的入库返回线表示已通过的正式成果写回账本。未通过的候选稿也会保留，但不能当成已发生事实；它走返修，再重新事实与读者审稿。首章口吻与重大约定由作者决定。
+SQLite 保存任务状态和输入，中断后从当前任务恢复。连续运行依赖宿主与调度，不承诺关闭聊天后后台自动续写。局部补丁与历史修订保留旧版本和证据，受影响后文继续复核。
+完成一章或通过形式检查不代表全书质量，跨章、卷末与完本仍核对因果、成长、承诺与文风。
+来源：SKILL.md、references/runtime.md、editorial.md、repairs.md。</aside>
+      </section>
+
+    </div></div>
+  </main>
+  <footer class="chrome">
+    <div class="footer-left"><div id="progress" role="progressbar" aria-label="演示进度" aria-valuemin="1" aria-valuemax="8" aria-valuenow="1"><span id="progress-fill"></span></div><span id="section-label">封面</span><span id="print-help">← → / 空格翻页 · G 目录 · N 备注</span></div>
+    <div class="footer-nav"><button id="prev-btn" type="button" aria-label="上一页">← 上一页</button><button id="next-btn" type="button" aria-label="下一页">下一页 →</button></div>
+  </footer>
+  <dialog id="toc-dialog" aria-labelledby="toc-title"><div class="dialog-head"><h2 id="toc-title">目录</h2><button type="button" data-close="toc-dialog" aria-label="关闭目录">关闭 ×</button></div><nav id="toc-items" aria-label="跳转到页面"></nav></dialog>
+  <dialog id="notes-dialog" aria-labelledby="notes-title"><div class="dialog-head"><h2 id="notes-title">讲者备注</h2><button type="button" data-close="notes-dialog" aria-label="关闭讲者备注">关闭 ×</button></div><div id="notes-content"></div></dialog>
+  <div id="announcer" class="sr-only" aria-live="polite"></div>
+  <noscript><style>body{height:auto;overflow:auto}#viewport,#stage-frame,#stage{height:auto;overflow:visible;transform:none}.slide{display:flex;margin-bottom:24px}.chrome{display:none}</style><p>当前浏览器未启用 JavaScript，所有页面按顺序展示。</p></noscript>
+  <script>
+    'use strict';
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const total = slides.length;
+    const currentNumber = document.getElementById('current-number');
+    const prevButton = document.getElementById('prev-btn');
+    const nextButton = document.getElementById('next-btn');
+    const progress = document.getElementById('progress');
+    const tocDialog = document.getElementById('toc-dialog');
+    const notesDialog = document.getElementById('notes-dialog');
+    let current = 0;
+    let touch = null;
+    document.getElementById('total-number').textContent = String(total).padStart(2,'0');
+    progress.setAttribute('aria-valuemax',String(total));
+    slides.forEach((slide,index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = String(index+1).padStart(2,'0') + '  ' + slide.dataset.title;
+      button.addEventListener('click',() => { tocDialog.close(); goToSlide(index); });
+      document.getElementById('toc-items').appendChild(button);
+    });
+    function fit() {
+      if (window.innerWidth < 760) { document.documentElement.style.setProperty('--scale','1'); return; }
+      const view = document.getElementById('viewport');
+      const scale = Math.max(.1,Math.min((view.clientWidth-24)/1280,(view.clientHeight-16)/720));
+      document.documentElement.style.setProperty('--scale',String(scale));
+    }
+    function updateNotes() {
+      document.getElementById('notes-title').textContent = String(current+1).padStart(2,'0') + ' · ' + slides[current].dataset.title;
+      document.getElementById('notes-content').textContent = slides[current].querySelector('.note').textContent.trim();
+    }
+    function goToSlide(index,writeHash=true) {
+      if (!Number.isInteger(index) || index<0 || index>=total) return;
+      current = index;
+      slides.forEach((slide,i) => { const active = i===current; slide.classList.toggle('active',active); slide.setAttribute('aria-hidden',String(!active)); slide.inert = !active; });
+      currentNumber.textContent = String(current+1).padStart(2,'0');
+      prevButton.disabled = current===0;
+      nextButton.disabled = current===total-1;
+      progress.setAttribute('aria-valuenow',String(current+1));
+      document.getElementById('progress-fill').style.width = ((current+1)/total*100)+'%';
+      document.getElementById('section-label').textContent = current===0?'封面':slides[current].querySelector('.kicker').textContent;
+      Array.from(document.getElementById('toc-items').children).forEach((button,i) => { if(i===current) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); });
+      document.getElementById('announcer').textContent = '第 '+(current+1)+' 页，共 '+total+' 页：'+slides[current].dataset.title;
+      updateNotes();
+      if(writeHash) history.replaceState(null,'','#slide-'+String(current+1).padStart(2,'0'));
+      if(window.innerWidth<760) window.scrollTo({top:0,behavior:'instant'});
+    }
+    function readHash() {
+      const match = /^#slide-(\d{1,2})$/.exec(location.hash);
+      const index = match?Number(match[1])-1:0;
+      goToSlide(index>=0 && index<total?index:0,false);
+    }
+    function toggleDialog(dialog) { if(dialog.open) dialog.close(); else dialog.showModal(); }
+    async function toggleFullscreen() {
+      const button = document.getElementById('fullscreen-btn');
+      try { if(document.fullscreenElement) await document.exitFullscreen(); else if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }
+      catch { button.textContent='请手动全屏'; }
+    }
+    document.getElementById('toc-btn').addEventListener('click',()=>toggleDialog(tocDialog));
+    document.getElementById('notes-btn').addEventListener('click',()=>{updateNotes();toggleDialog(notesDialog);});
+    document.getElementById('fullscreen-btn').addEventListener('click',toggleFullscreen);
+    document.getElementById('print-btn').addEventListener('click',()=>window.print());
+    prevButton.addEventListener('click',()=>goToSlide(current-1));
+    nextButton.addEventListener('click',()=>goToSlide(current+1));
+    document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>document.getElementById(button.dataset.close).close()));
+    document.addEventListener('fullscreenchange',()=>{document.getElementById('fullscreen-btn').textContent=document.fullscreenElement?'退出全屏':'全屏';fit();});
+    window.addEventListener('resize',fit);
+    window.addEventListener('hashchange',readHash);
+    window.addEventListener('keydown',event=>{
+      if(event.ctrlKey || event.metaKey || event.altKey || event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
+      if(tocDialog.open || notesDialog.open) return;
+      if(event.target.closest('button,a') && (event.key===' ' || event.key==='Enter')) return;
+      switch(event.key) {
+        case 'ArrowRight': case ' ': case 'PageDown': event.preventDefault();goToSlide(current+1);break;
+        case 'ArrowLeft': case 'PageUp': event.preventDefault();goToSlide(current-1);break;
+        case 'Home': event.preventDefault();goToSlide(0);break;
+        case 'End': event.preventDefault();goToSlide(total-1);break;
+        case 'g': case 'G': event.preventDefault();toggleDialog(tocDialog);break;
+        case 'n': case 'N': event.preventDefault();updateNotes();toggleDialog(notesDialog);break;
+        case 'f': case 'F': event.preventDefault();toggleFullscreen();break;
+        case 'p': case 'P': event.preventDefault();window.print();break;
+      }
+    });
+    const viewport = document.getElementById('viewport');
+    viewport.addEventListener('touchstart',event=>{ if(event.touches.length===1) touch={x:event.touches[0].clientX,y:event.touches[0].clientY}; },{passive:true});
+    viewport.addEventListener('touchend',event=>{ if(!touch || !event.changedTouches.length) return; const dx=event.changedTouches[0].clientX-touch.x; const dy=event.changedTouches[0].clientY-touch.y; touch=null; if(Math.abs(dx)>70 && Math.abs(dx)>Math.abs(dy)*1.5) goToSlide(current+(dx<0?1:-1)); },{passive:true});
+    viewport.addEventListener('touchcancel',()=>{touch=null;},{passive:true});
+    readHash();fit();
+  </script>
+</body>
+</html>

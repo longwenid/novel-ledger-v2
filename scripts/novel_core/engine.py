@@ -21,6 +21,21 @@ TIME_CHARS = ('日', '天', '夜', '晨', '早', '晚', '午', '时', '年', '�
 TIME_TOKENS = ('星期', '一周', '下周', '上周', '本周', '小时', '分钟', '秒钟', '时钟', '刻钟',
                '次日', '当日', '当天', '隔日', '今日', '昨日', '明日', '翌日', '深夜', '半夜',
                '午夜', '黄昏', '黎明', '清晨', '傍晚', '正午', '上午', '下午', '上周', '周后')
+EVENT_EVIDENCE_FIELDS=('evidence','change_evidence','cause_evidence')
+
+
+def event_sentence_context(prose,ref):
+    """Return complete enclosing sentence(s), with no character-length cap."""
+    quote=ref.get('quote')
+    if not isinstance(quote,str) or not quote or prose.count(quote)!=1:return None
+    start=prose.index(quote);end=start+len(quote)
+    boundaries='。！？!?；;\n'
+    begin=max((prose.rfind(mark,0,start) for mark in boundaries),default=-1)+1
+    if prose[end-1] not in boundaries:
+        following=[prose.find(mark,end) for mark in boundaries]
+        following=[offset for offset in following if offset>=0]
+        end=min(following)+1 if following else len(prose)
+    return prose[begin:end]
 
 
 def load_draft(db, branch, n):
@@ -32,9 +47,59 @@ def save_draft(db, branch, n, data):
     db.execute('INSERT OR REPLACE INTO drafts VALUES (?,?,?)', (branch,n,dump(data)))
 
 
+def chapter_length(db,branch,n,prose=None):
+    from .budget import chapter_length as observe
+    row=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
+    return observe(get(db,'contract'),json.loads(row[0]) if row else {},prose)
+
+
+def develop_short_draft(db,branch,n,draft,observation,prior_prose=None):
+    """Keep the submitted prose and ask for anchored development, never a rewrite rejection."""
+    from .patches import save_source
+    retained_findings=[]
+    for previous in draft.get('findings',[]):
+        if previous.get('kind')=='chapter_development':continue
+        previous=copy.deepcopy(previous)
+        if 'source_prose_hash' not in previous:
+            previous['source_prose_hash']=save_source(db,prior_prose if prior_prose is not None else draft['prose'])
+        previous['evidence_scope']='previous_candidate_review'
+        retained_findings.append(previous)
+    if retained_findings:draft.setdefault('prior_repair_scope',draft.get('repair_scope','chapter'))
+    if isinstance(draft.get('events'),list):
+        draft['prior_event_snapshot']={'events':copy.deepcopy(draft['events']),'prose':draft['prose'],
+                                       'verified':draft.get('facts_context_hash') is not None}
+    first=re.search(r'[^\n。！？!?；;]+[。！？!?；;]?',draft['prose'])
+    quote=first.group() if first else draft['prose']
+    finding={'severity':'quality','kind':'chapter_development',
+             'impact':f"当前候选稿为 {observation['actual_han']} 汉字，作者本章目标为 {observation['target_han']} 汉字，尚需核对场景展开的承载量。候选稿已保留，数量不足不等于可以灌水。",
+             'goal':'逐场核对既定 expansion_units 和当前章作用，说明哪个场景还缺哪一步试探、阻力、选择、关系变化及其后果，并据此自然展开。保留已经成立的正文，优先定点补丁；不能复制解释或为了字数新增无因果事件。',
+             'evidence':{'chapter':n,'start':first.start() if first else 0,'quote':quote}}
+    if draft.get('length_cycle_target_han')!=observation['target_han']:
+        draft['length_attempts']=0
+        draft['length_cycle_target_han']=observation['target_han']
+    draft['length_attempts']=draft.get('length_attempts',0)+1
+    combined_findings=retained_findings+[finding]
+    draft.update(chapter_length=observation,findings=combined_findings,repair_scope='chapter',
+                 stage='repair' if draft['length_attempts']<=2 else 'redesign')
+    if draft['length_attempts']>3:
+        put(db,'status','paused')
+        put(db,'pause_reason',{'code':'chapter_development_exhausted','chapter':n,
+                              'chapter_length':observation,'findings':combined_findings,
+                              'required_action':'两次自然展开和一次重设计后仍不足；保留候选稿，核对哪个场景缺少可演出的动作、人物选择或后果，再修改承载依据。不能降低已定目标或继续少量加字重试。'})
+    # The full candidate is available through the version-bound candidate API.
+    save_source(db,draft['prose'])
+    for obsolete in ('facts_review','reader_review','facts_context_hash','reader_context_hash'):
+        draft.pop(obsolete,None)
+    save_draft(db,branch,n,draft)
+    log(db,'chapter_development',{'chapter':n,'actual_han':observation['actual_han'],
+                                 'target_han':observation['target_han'],'stage':draft['stage'],
+                                 'candidate_hash':digest(draft['prose'])})
+
+
 def status(db):
     from .budget import overview
     from .store import VERSION
+    from .contextflow import usage
     active, work = get(db,'active_branch'), get(db,'work_branch')
     task = db.execute("SELECT id,stage,chapter,branch,lease_until FROM tasks WHERE state='pending'").fetchone()
     return {'schema':'novel-ledger-v2.status/1', 'status':get(db,'status'), 'active_branch':active,
@@ -43,7 +108,7 @@ def status(db):
             'reason':get(db,'pause_reason'),
             'context_chars':get(db,'context_chars'),
             'skill_version':VERSION, 'db_version':get(db,'version'),
-            'volume_budget':overview(db,work)}
+            'volume_budget':overview(db,work), 'usage':usage(db)}
 
 
 def approve(db):
@@ -54,8 +119,14 @@ def approve(db):
             row = db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',(get(db,'active_branch'),)).fetchone()
             if row:
                 prose = row[0]
-                put(db,'style_anchor',{'source':'pilot','traits':[],'sample':prose[:800],'sample_close':prose[-400:]})
-                log(db,'style_anchor_captured',{'from':'pilot','sample_chars':min(800,len(prose)),'close_chars':min(400,len(prose))})
+                paragraphs=[paragraph for paragraph in prose.splitlines() if paragraph.strip()]
+                if len(paragraphs)>1 and re.match(r'^\s*(?:#{1,6}\s+|第[0-9零〇一二三四五六七八九十百千两]+[章节回卷])',paragraphs[0]):
+                    paragraphs=paragraphs[1:]
+                sample=paragraphs[0]
+                close=paragraphs[-1] if len(paragraphs)>1 else ''
+                put(db,'style_anchor',{'source':'pilot','traits':[],'sample':sample,'sample_close':close})
+                log(db,'style_anchor_captured',{'from':'pilot','selection':'complete_opening_and_closing_paragraphs',
+                                              'sample_chars':len(sample),'close_chars':len(close)})
         put(db,'pilot_approved',True)
         log(db,'pilot_approved',{})
     return status(db)
@@ -69,11 +140,20 @@ def choose(db):
         return design.job(db,branch,'world',n+1)
     draft = load_draft(db,branch,n+1)
     if draft:
+        observation=chapter_length(db,branch,n+1,draft['prose'])
+        changed_length_cycle=observation and draft.get('length_cycle_target_han')!=observation['target_han'] and any(f.get('kind')=='chapter_development' for f in draft.get('findings',[]))
+        if observation and observation['status']=='needs_development' and (draft['stage'] in ('facts','reader') or changed_length_cycle):
+            develop_short_draft(db,branch,n+1,draft,observation)
+        if draft['stage']=='reader' and draft.get('facts_context_hash')!=chapter_review_context_hash(db,branch,n+1):
+            draft['stage']='facts';save_draft(db,branch,n+1,draft)
         stage = draft['stage']
-        payload = {k:draft[k] for k in ('prose','findings','attempts','repair_scope') if k in draft}
+        payload = {k:draft[k] for k in ('prose','findings','attempts','repair_scope','prior_repair_scope') if k in draft}
         if stage == 'reader':
             from .characters import enabled
             checks = READER_CHECKS+(('dialogue_identity',) if enabled(db) else ())+(('voice_match',) if get(db,'style_anchor') else ())
+            if observation:checks+=('substance',)
+            planrow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n+1)).fetchone()
+            if planrow and 'rhythm' in json.loads(planrow[0]):checks+=('pacing',)
             payload = {'prose':draft['prose'], 'checks':checks}
         elif stage == 'facts':
             state=replay(db,branch)
@@ -88,20 +168,27 @@ def choose(db):
             if prior:
                 prose=draft['prose']
                 def resolvable(ev):
-                    # An event can be mechanically carried when every evidence
-                    # quote still pins exactly one location in the new prose.
+                    # A surviving short quote is not enough: its complete
+                    # sentence context must also match the previous source.
                     if not isinstance(ev,dict):return False
-                    for key in ('evidence','change_evidence'):
+                    old_prose=prior.get('prose')
+                    if not isinstance(old_prose,str) or prior.get('verified') is False:return False
+                    for key in EVENT_EVIDENCE_FIELDS:
                         ref=ev.get(key)
                         if isinstance(ref,dict):
-                            q=ref.get('quote')
-                            if not (isinstance(q,str) and q and prose.count(q)==1):return False
+                            # Historical evidence belongs to its own chapter.
+                            # Without replaying that source here, require an
+                            # explicit disposition rather than guessing context.
+                            if ref.get('chapter')!=n+1:return False
+                            old=event_sentence_context(old_prose,ref)
+                            if old is None or old!=event_sentence_context(prose,ref):return False
                         elif key=='evidence':return False
                     return True
                 payload['prior_events']=prior['events']
                 payload['prior_events_source']=prior['source']
                 payload['auto_carry']=[i for i,ev in enumerate(prior['events']) if resolvable(ev)]
-                payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件由引擎自动续算(证据仍唯一命中新正文),不要在 events 中重复提交;其余前序事件须在 prior_dispositions 中逐条声明 dropped/replaced 并说明正文如何变化;也可用同样方式覆盖自动续算。events 只提交新增或变更的事件。'
+                payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件须在 prior_dispositions 中明确 kept/dropped/replaced,kept须原样重报事件并核对新语境,dropped/replaced须说明正文如何变化。也可覆盖自动续算。完整语义仍需facts核验。'
+        if observation:payload['chapter_length']=observation
         return stage,n+1,payload
     if n:
         if n==1 and not get(db,'pilot_approved') and get(db,'work_branch')==get(db,'active_branch'):
@@ -119,6 +206,13 @@ def choose(db):
                 return review_job(db,branch,'revision',revision['start'],n)
             return 'promote',n,{}
         if plan.get('book_end'):
+            # Later profiles/designs can invalidate earlier volume receipts.
+            # Recheck them once at the end, never after every new chapter.
+            for row in db.execute('SELECT number,data FROM plans WHERE branch=? AND number<=? ORDER BY number',(branch,n)):
+                volume_plan=json.loads(row['data'])
+                if volume_plan.get('volume_end') and not reviewed(db,branch,'volume',row['number']):
+                    first=db.execute("SELECT MIN(number) FROM chapters WHERE branch=? AND json_extract(data,'$.volume')=?",(branch,volume_plan['volume'])).fetchone()[0]
+                    return review_job(db,branch,'volume',first,row['number'])
             if not reviewed(db,branch,'book',n):
                 return review_job(db,branch,'book',1,n)
             return 'complete',n,{}
@@ -129,10 +223,15 @@ def choose(db):
         if not design.usable(db,branch,volume):return design.job(db,branch,volume,n+1)
     next_plan = db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n+1)).fetchone()
     if not next_plan:
-        return 'plan',n+1,{'window':[n+1,n+10], 'instruction':'细化未来 5～10 章；临近结局可少于 5 章。重要转折比较两个实质不同方案。'}
-    from .characters import next_job
+        payload={'window':[n+1,n+10], 'instruction':'细化未来 5～10 章；临近结局可少于 5 章。重要转折比较两个实质不同方案。每章按作用安排真正可演出的场景展开，不以账本事件条数估算篇幅；有作者篇幅目标时用 execution.expansion_units 说明承载依据，短章须事先说明作用和目标。'}
+        if get(db,'contract').get('chapter_target_han'):
+            payload['chapter_target_han']=get(db,'contract')['chapter_target_han']
+        return 'plan',n+1,payload
+    from .characters import next_job,next_index_job
     character_job=next_job(db,branch,n+1,json.loads(next_plan[0]))
     if character_job:return character_job
+    character_index_job=next_index_job(db,branch,n+1,json.loads(next_plan[0]))
+    if character_index_job:return character_index_job
     payload = {}
     rev = db.execute('SELECT * FROM branches WHERE id=?',(branch,)).fetchone()
     if rev['status']=='candidate':
@@ -141,12 +240,71 @@ def choose(db):
         while ancestor and original is None:
             original=db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(ancestor,n+1)).fetchone()
             ancestor=db.execute('SELECT parent FROM branches WHERE id=?',(ancestor,)).fetchone()[0]
-        payload = {'original_prose':original[0] if original else '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章提交 reuse_original——与原章逐字相同且事件可复算时直接复验通过,不再派发审稿。事实/因果类发现才需要改正文并重登记事件。'}
+        payload = {'original_prose':original[0] if original else '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。'}
+    observation=chapter_length(db,branch,n+1)
+    if observation:payload['chapter_length']=observation
     return 'draft',n+1,payload
 
 
+def review_context_hash(db,branch,first,through,canonical_through=None):
+    """Hash actual review dependencies locally; do not resend their contents.
+
+    Current profile/design versions are conservatively bound because metadata
+    does not provide a complete historical read-set. Only range plans and the
+    relevant canonical prefix are bound, never unwritten future plans/events.
+    """
+    from .store import VERSION
+    canonical_through=through if canonical_through is None else canonical_through
+    plans=[(row['number'],json.loads(row['data'])) for row in db.execute('SELECT number,data FROM plans WHERE branch=? AND number BETWEEN ? AND ? ORDER BY number',(branch,first,through))]
+    volumes={plan.get('volume') for _,plan in plans}
+    entities=set()
+    for _,plan in plans:
+        entities.update(plan.get('entities',[]))
+        entities.update(choice['entity'] for choice in plan.get('character_choices',[]))
+        for scene in plan.get('scenes',[]):
+            entities.update(scene.get('present',[]));entities.update(scene.get('speakers',[]));entities.update(scene.get('props',[]))
+            for intent in scene.get('dialogue_intents',[]):
+                entities.add(intent['entity'])
+                if intent.get('to'):entities.add(intent['to'])
+    prose=[row['prose'] for row in db.execute('SELECT prose FROM chapters WHERE branch=? AND number BETWEEN ? AND ?',(branch,first,through))]
+    for number,_ in plans:
+        draft=load_draft(db,branch,number)
+        if draft and isinstance(draft.get('prose'),str):prose.append(draft['prose'])
+    state=replay(db,branch)
+    for eid,entity in state['entities'].items():
+        if any(name in text for name in [entity['name']]+entity.get('aliases',[]) for text in prose):entities.add(eid)
+    versions={}
+    for kind in ('character','design'):
+        prefix=kind+':'+branch+':'
+        for row in db.execute('SELECT key,value FROM meta WHERE substr(key,1,?)=? ORDER BY key',(len(prefix),prefix)):
+            ident=row['key'][len(prefix):]
+            if (kind=='character' and ident in entities) or (kind=='design' and ident in volumes|{'world'}):
+                versions[kind+':'+ident]=digest(json.loads(row['value']))
+    last=db.execute('SELECT hash FROM events WHERE branch=? AND chapter<=? ORDER BY chapter DESC,idx DESC LIMIT 1',
+                    (branch,canonical_through)).fetchone()
+    return digest({'schema':'novel-ledger-v2.review-context/1','engine_version':VERSION,
+                   'check_definitions':[FACT_CHECKS,READER_CHECKS,LONG_CHECKS],
+                   'contract':get(db,'contract'),'style_anchor':get(db,'style_anchor'),
+                   'plans':plans,
+                   'history':[(row['number'],row['hash']) for row in db.execute('SELECT number,hash FROM chapters WHERE branch=? AND number<? ORDER BY number',(branch,first))],
+                   'event_prefix':last['hash'] if last else 'genesis','versions':versions})
+
+
+def chapter_review_context_hash(db,branch,chapter):
+    return review_context_hash(db,branch,chapter,chapter,chapter-1)
+
+
+def task_review_context_hash(db,task,work):
+    if task['stage'] in ('facts','reader'):
+        return chapter_review_context_hash(db,task['branch'],task['chapter'])
+    if task['stage'].endswith('_review'):
+        return review_hash(db,task['branch'],work['payload']['first'],work['payload']['through'])
+    return None
+
+
 def review_hash(db,branch,first,through):
-    return digest({'contract':get(db,'contract'), 'chapters':[(r['number'],r['hash']) for r in db.execute('SELECT number,hash FROM chapters WHERE branch=? AND number BETWEEN ? AND ? ORDER BY number',(branch,first,through))]})
+    return digest({'context':review_context_hash(db,branch,first,through),
+                   'chapters':[(r['number'],r['hash']) for r in db.execute('SELECT number,hash FROM chapters WHERE branch=? AND number BETWEEN ? AND ? ORDER BY number',(branch,first,through))]})
 
 
 def reviewed(db,branch,scope,n):
@@ -155,6 +313,37 @@ def reviewed(db,branch,scope,n):
         return False
     data = json.loads(row['data'])
     return row['input_hash']==review_hash(db,branch,data['first'],n)
+
+
+def volume_development_context(db,branch,n):
+    """Freeze volume intentions and measured progress for semantic closure review.
+
+    Reference budgets explain allocation; they never decide whether a volume
+    can close. Counts come from the same canonical projection as status, even
+    for contracts that have no volume allocations.
+    """
+    from . import design
+    from .projections import chapter_counts
+    contract=get(db,'contract')
+    plan=json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
+    volumes=contract['volumes'];index=next(i for i,v in enumerate(volumes) if v['id']==plan['volume'])
+    volume=volumes[index]
+    counts={row['volume']:row for row in chapter_counts(db,branch)}
+    written=counts.get(volume['id'],{}).get('han',0)
+    total=sum(row['han'] for row in counts.values())
+    reference=volume.get('word_budget')
+    low,high=contract['word_range']
+    return {'volume':volume['id'],'purpose':volume['purpose'],'unit':'han_characters',
+            'written_han':written,'reference_han':reference,
+            'deviation_han':written-reference if reference is not None else None,
+            'policy':'advisory_not_quota',
+            'book':{'written_han':total,'word_range':[low,high],
+                    'remaining_to_range_han':[max(0,low-total),max(0,high-total)]},
+            'later_volumes':[{'volume':v['id'],'purpose':v['purpose'],'reference_han':v.get('word_budget'),
+                              'written_han':counts.get(v['id'],{}).get('han',0),
+                              'closed':bool(counts.get(v['id'],{}).get('closed',False))}
+                             for v in volumes[index+1:]],
+            'design':design.current(db,branch,volume['id'])}
 
 
 def review_job(db,branch,scope,first,n):
@@ -174,9 +363,14 @@ def review_job(db,branch,scope,first,n):
                                     'prose':prose,'prose_hash':digest(prose),'checks':checks}
         chapter=end+1
     receipts = [{'chapter':r['through'],'input_hash':r['input_hash']} for r in db.execute('SELECT through,input_hash FROM reviews WHERE branch=? AND scope=? AND through BETWEEN ? AND ? ORDER BY through',(branch,scopekey,first,n))]
-    return scope+'_review',n,{'scope':scope,'first':first,'through':n,'coverage_receipts':{'count':len(receipts),'first':first,'through':n,'scope':scopekey,'hash':digest(receipts)},
-                             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。发现须分流:表达类(重复/收束/节奏/声线)在 finding 上加 repair_route:"patch" 并指向可定位的单章证据——修订时只定点改被点名章,其余章原文复用免复验;事实/因果/认知/时间类标 revise 或省略,从最早受影响章修订。',
-                             'checks':checks + ('repetition',) + (('ending','length','core_promises') if scope=='book' else ())}
+    payload={'scope':scope,'first':first,'through':n,'coverage_receipts':{'count':len(receipts),'first':first,'through':n,'scope':scopekey,'hash':digest(receipts)},
+             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。发现须分流:表达类(重复/收束/节奏/声线)在 finding 上加 repair_route:"patch" 并指向可定位的单章证据——修订时定点改被点名章,其余章可原文复用以省去重传;免逐章审稿须本章及全部前文版本未变。事实/因果/认知/时间类标 revise 或省略,从最早受影响章修订。',
+             'checks':checks + ('repetition',) + (('ending','length','core_promises') if scope=='book' else ())}
+    if scope=='volume':
+        payload['checks']+=('volume_development',)
+        payload['volume_development']=volume_development_context(db,branch,n)
+        payload['instruction']+=' volume_development 必须用正文证据判断本卷职责和重要过程、选择代价及余波是否充分演出；sequence_refs 出现不等于节拍完成。design 是 proposal_not_canon，须与实际正文对照。结合实际篇幅、参考预算偏离和全书剩余区间说明收卷是否合理，以及后卷职责与承载路径是否成立；未配置参考预算仍须审查展开充分性。预算仅供解释，不因字数差额、固定比例或章数自动判失败，也不能用后卷自动重分配代替展开判断。'
+    return scope+'_review',n,payload
 
 
 def work_rel(task):
@@ -244,12 +438,12 @@ def next_task(db,project):
             return status(db)
         pending = db.execute("SELECT * FROM tasks WHERE state='pending'").fetchone()
         if pending:
-            from .contextflow import enabled,limits,wire
             old_work=json.loads(pending['input'])
-            if enabled(db) and not ({'context_capacity','context_budget'} & set(old_work)) and len(wire(old_work))>limits(db)['input']:
-                require(not pending['lease_owner'] or (pending['lease_until'] or 0)<=time.time(),'lease','旧工作包仍有活动租约，先等待原 worker 退出')
+            signature=task_review_context_hash(db,pending,old_work)
+            if signature is not None and 'review_context_hash' in old_work and old_work['review_context_hash']!=signature:
+                require(not pending['lease_owner'] or (pending['lease_until'] or 0)<=time.time(),'lease','审稿依赖已变化，但旧任务仍有活动租约；先等待原worker退出')
                 db.execute("UPDATE tasks SET state='cancelled' WHERE id=?",(pending['id'],))
-                log(db,'context_legacy_repack',{'old_task':pending['id'],'reason':'旧工作包超过声明容量的工作包锚点，保留原任务并重新准备'})
+                log(db,'review_context_refresh',{'old_task':pending['id'],'reason':'作者约定、声线、计划或事实/人物/设计版本已变化'})
                 pending=None
         if pending:
             task = dict(pending)
@@ -268,12 +462,19 @@ def next_task(db,project):
             payload=prepare(db,stage,payload)
             work = pack(db,branch,n,stage,payload)
             stage=work['stage']
+            signature=task_review_context_hash(db,{'branch':branch,'chapter':n,'stage':stage},work)
+            if signature is not None:
+                work['review_context_hash']=signature
+                from .contextflow import stamp
+                stamp(db,work)
             tid = uuid.uuid4().hex
             fingerprint = digest(work)
             task = {'id':tid,'branch':branch,'stage':stage,'chapter':n,'input_hash':fingerprint,'input':dump(work)}
             db.execute('INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES (?,?,?,?,?,?,?)',(tid,branch,stage,n,fingerprint,dump(work),'pending'))
             created=True
             log(db,'dispatch',{'task':tid,'stage':stage,'chapter':n,'branch':branch})
+        from .dependencies import record_initial
+        record_initial(db,task['id'],work)
     if created:
         # Consolidate output: finished task directories are derived views; keep the
         # newest few for debugging and let `tidy` remove the rest on demand.
@@ -315,6 +516,12 @@ def validate_plan(db,branch,start,data):
         require(isinstance(scenes,list) and all(isinstance(s,dict) for s in scenes),'scene','scenes 须为场景对象数组')
         for scene in scenes:
             require(nonempty_scene(scene,state),'scene','场景须引用已登记 place 或给出未确立新场所的 label；present 使用实体 ID')
+        design.validate_chapter_execution(p)
+        author_target=get(db,'contract').get('chapter_target_han')
+        execution=p.get('execution',{})
+        if author_target and execution.get('target_han',author_target)<author_target:
+            require(isinstance(execution.get('target_reason'),str) and execution['target_reason'].strip(),
+                    'chapter_target','刻意短章须事先在 execution.target_reason 说明本章作用及较短目标的理由')
         require(all(type(n) is int and 1<=n<start for n in p.get('dependencies',[])), 'plan','历史依赖须为已提交章号')
         require(not last_volume or volumes.index(p['volume'])>=volumes.index(last_volume), 'plan','卷序不能倒退')
         spans=[]
@@ -343,14 +550,8 @@ def validate_plan(db,branch,start,data):
             world=design.current(db,branch,'world');volume=design.current(db,branch,expected_volume)
             known=set(volume['data']['location_ids'])
             design.validate_brief(p,state,known,volume['data'])
-            # 章末收束类别在近三章窗口内强制轮换:同模具收束(如连续以同一物件静收)
-            # 是审稿反复点名的同质化,在计划层拦住比卷末返工便宜得多。
-            recent=set()
-            for row in db.execute('SELECT data FROM plans WHERE branch=? AND number>=? AND number<?',(branch,max(1,i-3),i)):
-                category=design.closing_category(json.loads(row['data']).get('ending_shape'))
-                if category:recent.add(category)
-            category=design.closing_category(p.get('ending_shape'))
-            require(category not in recent,'plan',f'收束类别「{category}」与近三章重复;章末收束须轮换形态,同类别至少隔三章')
+            # Repeated shapes may be deliberate; pacing and repetition require
+            # semantic review rather than a forced category rotation.
             # Major turns must cite which spine touchpoints they advance when a
             # spine exists; older spineless world designs are grandfathered.
             spine=design.spine_ids(db,branch)
@@ -375,7 +576,7 @@ def validate_review(data,checks,sources):
         require(row.get('result') in ('pass','fix') and isinstance(row.get('reason'),str) and row['reason'].strip(), 'review','每项需要结论及具体理由')
         refs = row.get('evidence',[])
         require(isinstance(refs,list) and all(isinstance(ref,dict) for ref in refs),'review','evidence 必须为对象数组')
-        mandatory={'coverage','continuity','read_on','character','change','language','causality','character_arcs','payoffs','pacing','ending','length','core_promises','spatial','stable_facts','character_consistency','voice_evolution','voice_match'}
+        mandatory={'coverage','continuity','read_on','character','change','language','substance','causality','character_arcs','payoffs','pacing','ending','length','core_promises','spatial','stable_facts','character_consistency','voice_evolution','voice_match','volume_development'}
         exception=row.get('not_applicable')
         require(bool(refs) or (row['id'] not in mandatory and isinstance(exception,str) and exception.strip()), 'review','核心审稿项必须有正文证据；可选项确不适用须说明具体原因')
         for item in refs:
@@ -396,6 +597,9 @@ def validate_review(data,checks,sources):
 def repair(db,branch,n,draft,findings,scope='chapter'):
     attempts = draft.get('attempts',0)+1
     draft.update(attempts=attempts, findings=findings,repair_scope=scope)
+    if isinstance(draft.get('events'),list):
+        draft['prior_event_snapshot']={'events':copy.deepcopy(draft['events']),'prose':draft['prose'],
+                                       'verified':draft.get('facts_context_hash') is not None}
     # Preserve every candidate in the task log/receipt. Last good prose stays available.
     draft['stage']='repair' if attempts<=2 else 'redesign'
     if attempts>3:
@@ -407,15 +611,32 @@ def repair(db,branch,n,draft,findings,scope='chapter'):
     save_draft(db,branch,n,draft)
 
 
+def validate_hook_deadlines(state,chapter):
+    overdue=((hid,hook) for hid,hook in state['hooks'].items() if hook['status']=='open' and hook['due']<=chapter)
+    first=next(overdue,None)
+    if first:
+        total=1+sum(1 for _ in overdue)
+        hid,hook=first
+        raise Error('overdue_hook',f'第 {chapter} 章结算后仍有 {total} 项到期承诺；请核对首项并在本章兑现、关闭或按因果合法延期',
+                    {'chapter':chapter,'total':total,'first':{'id':hid,'due':hook['due']},
+                     'retrieval':{'command':'recall','topic':hid,'instruction':'按此话题查询完整埋设和变更证据；处理后再次提交会报告下一项'}})
+
+
 def commit_draft(db,branch,n,draft):
     state=replay(db,branch)
     plan=json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
     require(n==head(db,branch)+1,'sequence','不能跳章提交')
+    observation=chapter_length(db,branch,n,draft['prose'])
+    require(not observation or observation['status']!='needs_development','chapter_development',
+            '作者已明确本章目标；须先保留短稿并完成自然展开及语义复核，不能直接入账')
     stored={k:draft[k] for k in ('events','summary','facts_review','reader_review')}
+    stored.update(facts_context_hash=draft.get('facts_context_hash'),reader_context_hash=draft.get('reader_context_hash'))
     from .budget import han_count
     stored.update(volume=plan['volume'],prose_hash=digest(draft['prose']),han_characters=han_count(draft['prose']))
+    if observation:stored['chapter_length']=observation
     db.execute('INSERT INTO chapters VALUES (?,?,?,?,?)',(branch,n,draft['prose'],dump(stored),digest(draft['prose'])))
     append_events(db,branch,n,draft['prose'],draft['events'],state)
+    validate_hook_deadlines(state,n)
     db.execute('DELETE FROM drafts WHERE branch=? AND number=?',(branch,n))
     log(db,'commit',{'branch':branch,'chapter':n,'hash':digest(draft['prose'])})
 
@@ -424,15 +645,22 @@ def prior_events(db, branch, n):
     """Previously registered events for chapter n: the newest facts receipt on
     this branch (repair loop), else the nearest ancestor's committed chain
     (revision re-drafts). Baseline for re-registration accounting."""
-    for row in db.execute("SELECT receipt FROM tasks WHERE branch=? AND chapter=? AND stage='facts' AND receipt IS NOT NULL ORDER BY rowid DESC", (branch, n)):
-        events = json.loads(row[0]).get('data', {}).get('events')
+    draft=load_draft(db,branch,n)
+    snapshot=draft.get('prior_event_snapshot') if draft else None
+    if isinstance(snapshot,dict) and isinstance(snapshot.get('events'),list):
+        return {**copy.deepcopy(snapshot),'source':'repair'}
+    for row in db.execute("SELECT receipt,input FROM tasks WHERE branch=? AND chapter=? AND stage='facts' AND receipt IS NOT NULL ORDER BY rowid DESC", (branch, n)):
+        events = json.loads(row['receipt']).get('data', {}).get('events')
         if isinstance(events, list) and events:
-            return {'events': events, 'source': 'repair'}
+            old_work=json.loads(row['input'])
+            return {'events':events,'source':'repair','prose':old_work.get('payload',{}).get('prose'),
+                    'verified':'review_context_hash' in old_work}
     ancestor = db.execute('SELECT parent FROM branches WHERE id=?', (branch,)).fetchone()
     while ancestor and ancestor[0]:
         rows = db.execute('SELECT data FROM events WHERE branch=? AND chapter=? ORDER BY idx', (ancestor[0], n)).fetchall()
         if rows:
-            return {'events': [json.loads(r[0]) for r in rows], 'source': 'revision'}
+            prose=db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(ancestor[0],n)).fetchone()
+            return {'events': [json.loads(r[0]) for r in rows], 'source': 'revision','prose':prose[0] if prose else None}
         ancestor = db.execute('SELECT parent FROM branches WHERE id=?', (ancestor[0],)).fetchone()
     return None
 
@@ -509,6 +737,9 @@ def submit(db, result):
         branch,n,stage=task['branch'],task['chapter'],task['stage']
         require(branch==get(db,'work_branch'),'stale_branch','任务不属于当前工作分支')
         work=json.loads(task['input'])
+        current_signature=task_review_context_hash(db,task,work)
+        require(current_signature is None or 'review_context_hash' not in work or work['review_context_hash']==current_signature,'review_context_stale','审稿依赖已变化；重新next取得冻结的新输入，不能沿用旧审稿回执')
+        signature=work.get('review_context_hash') if current_signature is not None else None
         from . import contextflow
         draft=load_draft(db,branch,n)
         if 'context_more' in data:
@@ -518,6 +749,9 @@ def submit(db, result):
         elif stage=='character_plan':
             from .characters import save
             save(db,branch,n,data,work['payload']['entities'],task['id'])
+        elif stage=='character_index':
+            from .characters import save_index
+            save_index(db,branch,data,task['id'],work)
         elif stage in ('world_plan','volume_plan'):
             from .design import save
             save(db,branch,work['payload']['design_scope'],n,data,task['id'])
@@ -535,12 +769,20 @@ def submit(db, result):
             prose=parse_prose({'prose':compose(db,stage,work,data,draft)})
             rev_row=db.execute('SELECT status,parent FROM branches WHERE id=?',(branch,)).fetchone()
             if stage=='draft' and rev_row['status']=='candidate' and data.get('reuse_original') is True:
-                # Unchanged-chapter fast path: bit-identical prose plus events that
-                # still replay cleanly against the new upstream state is provably
-                # the chapter that already passed both reviews on the parent.
-                prow=db.execute('SELECT prose,data FROM chapters WHERE branch=? AND number=?',(rev_row['parent'],n)).fetchone()
+                # Event preconditions describe writes, not every historical fact
+                # the prose reads. Without a persisted complete read-set, reuse
+                # is safe only while all upstream prose versions also match.
+                # Compare stored version hashes locally; no worker reread needed.
+                upstream_changed=db.execute('''SELECT 1 FROM chapters p
+                    LEFT JOIN chapters c ON c.branch=? AND c.number=p.number
+                    WHERE p.branch=? AND p.number<?
+                    AND (c.hash IS NULL OR c.hash!=p.hash) LIMIT 1''',
+                    (branch,rev_row['parent'],n)).fetchone()
+                prow=db.execute('SELECT prose,data,hash FROM chapters WHERE branch=? AND number=?',(rev_row['parent'],n)).fetchone()
                 pdata=json.loads(prow['data']) if prow and prow['prose']==prose else None
-                if isinstance(pdata,dict) and all(isinstance(pdata.get(k),dict) for k in ('facts_review','reader_review')) and isinstance(pdata.get('events'),list) and isinstance(pdata.get('summary'),str):
+                current_context=chapter_review_context_hash(db,branch,n)
+                length=chapter_length(db,branch,n,prose)
+                if not upstream_changed and (not length or not length['shortfall_han']) and isinstance(pdata,dict) and pdata.get('facts_context_hash')==pdata.get('reader_context_hash')==current_context and pdata.get('prose_hash')==prow['hash']==digest(prose) and all(isinstance(pdata.get(k),dict) and pdata[k].get('verdict')=='pass' for k in ('facts_review','reader_review')) and isinstance(pdata.get('events'),list) and isinstance(pdata.get('summary'),str):
                     try:
                         probe=replay(db,branch)
                         from .ledger import apply as ledger_apply
@@ -551,6 +793,7 @@ def submit(db, result):
                     else:
                         committed={'prose':prose,'events':pdata['events'],'summary':pdata['summary'],
                                    'facts_review':pdata['facts_review'],'reader_review':pdata['reader_review'],
+                                   'facts_context_hash':pdata['facts_context_hash'],'reader_context_hash':pdata['reader_context_hash'],
                                    'attempts':0}
                         commit_draft(db,branch,n,committed)
                         log(db,'fast_commit',{'branch':branch,'chapter':n,'parent':rev_row['parent']})
@@ -559,10 +802,17 @@ def submit(db, result):
                         return {'accepted':True,'fast_committed':True,'chapter':n,**status(db)}
             if stage=='redesign':
                 require(data.get('design_change'),'redesign','重写须说明设计改动，不能原样重试')
+                require(draft and prose!=draft['prose'],'redesign','重设计须产生实际变化的正文；说明设计改动不能替代原样重试')
                 if data.get('plan_update'):
                     old_plan=json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
                     update=data['plan_update']
-                    require(isinstance(update,dict) and set(update)<=set(('goal','conflict','change','entities','topics','hooks','dependencies','scenes','reader_experience','character_choices','expression_space')), 'plan_update','重设计只能调整当前章具体内容，不可更改卷序或终局标记')
+                    require(isinstance(update,dict) and set(update)<=set(('goal','conflict','change','entities','topics','hooks','dependencies','scenes','reader_experience','character_choices','expression_space','execution','rhythm')), 'plan_update','重设计只能调整当前章具体内容，不可更改卷序或终局标记')
+                    from .budget import chapter_length as observe
+                    old_length=observe(get(db,'contract'),old_plan)
+                    proposed={**old_plan,**update}
+                    new_length=observe(get(db,'contract'),proposed)
+                    require(not old_length or (new_length and new_length['target_han']==old_length['target_han']),
+                            'chapter_target','返修不能擅改已定篇幅目标；可重设计展开依据，目标变更须来自作者约定或事先章纲')
                     old_plan.update(update)
                     db.execute('DELETE FROM plans WHERE branch=? AND number=?',(branch,n))
                     validate_plan(db,branch,n,{'chapters':[old_plan]})
@@ -570,9 +820,15 @@ def submit(db, result):
                 require(data.get('repair_note') and prose!=draft['prose'],'repair','修订须包含实际修改及说明')
             if not draft:
                 draft={'attempts':0}
+            prior_prose=draft.get('prose')
             for obsolete in ('events','summary','facts_review','reader_review'):draft.pop(obsolete,None)
             draft.update(prose=prose,stage='facts')
-            save_draft(db,branch,n,draft)
+            observation=chapter_length(db,branch,n,prose)
+            if observation and observation['shortfall_han']:
+                develop_short_draft(db,branch,n,draft,observation,prior_prose)
+            else:
+                if observation:draft['chapter_length']=observation
+                save_draft(db,branch,n,draft)
         elif stage=='facts':
             validate_review(data,work['payload'].get('checks',FACT_CHECKS),{n:draft['prose']})
             from .spatial import check_address_responses
@@ -582,12 +838,11 @@ def submit(db, result):
             else:
                 events=data.get('events')
                 require(isinstance(events,list) and isinstance(data.get('summary'),str) and data['summary'].strip(),'facts','需 events 和非空摘要')
-                require(len(data['summary'])<=1600,'summary','章摘要超过 1600 字符，请提炼并保留正文来源')
                 prior=work['payload'].get('prior_events')
                 if isinstance(prior,list) and prior:
                     def anchor(ev):
                         clone=dict(ev)
-                        for key in ('evidence','change_evidence'):
+                        for key in EVENT_EVIDENCE_FIELDS:
                             ref=clone.get(key)
                             if isinstance(ref,dict):clone[key]={k:v for k,v in ref.items() if k!='start'}
                         return dump(clone)
@@ -606,9 +861,9 @@ def submit(db, result):
                             entries[idx]=d
                         def reanchor(ev):
                             clone=copy.deepcopy(ev)
-                            for key in ('evidence','change_evidence'):
+                            for key in EVENT_EVIDENCE_FIELDS:
                                 ref=clone.get(key)
-                                if isinstance(ref,dict) and isinstance(ref.get('quote'),str):
+                                if isinstance(ref,dict) and ref.get('chapter')==n and isinstance(ref.get('quote'),str):
                                     clone[key]['start']=draft['prose'].find(ref['quote'])
                             return clone
                         carried=[]
@@ -617,7 +872,7 @@ def submit(db, result):
                             if d and d['disposition'] in ('dropped','replaced'):continue
                             if i in auto:carried.append(reanchor(ev))
                             else:
-                                require(d is not None,'event_accounting',f'第 {i} 条前序事件的证据已不在新正文,须在 prior_dispositions 中声明 dropped/replaced')
+                                require(d is not None,'event_accounting',f'第 {i} 条前序事件的证据或完整句语境已变，须在 prior_dispositions 中明确 kept/dropped/replaced；kept须原样重报事件')
                         for i,d in entries.items():
                             if d['disposition']=='kept' and i not in auto:
                                 require(anchor(prior[i]) in {anchor(e) for e in events},'event_accounting',f'第 {i} 条声明 kept 但未出现在新 events 中;内容有变应标 replaced 并说明')
@@ -651,6 +906,7 @@ def submit(db, result):
                 state=replay(db,branch)
                 for e in events:
                     apply(state,e,draft['prose'],n)
+                validate_hook_deadlines(state,n)
                 prow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
                 if prow:
                     p=json.loads(prow[0])
@@ -658,7 +914,9 @@ def submit(db, result):
                         lo=p['day_anchor']+p['day_span'][0];hi=p['day_anchor']+p['day_span'][1]+1
                         require(lo<=state['clock']<=hi,'time_schedule',
                                 f'章末时钟 {state["clock"]} 不在计划日程 [{lo},{hi}] 内(锚 {p["day_anchor"]} + D{tuple(p["day_span"])});核对时间语句或修订计划 time_hint')
-                draft.update(events=events,summary=data['summary'],facts_review=data,stage='reader')
+                draft.update(events=events,summary=data['summary'],facts_review=data,facts_context_hash=signature,
+                             stage='reader' if signature is not None else 'facts')
+                draft['prior_event_snapshot']={'events':copy.deepcopy(events),'prose':draft['prose'],'verified':signature is not None}
                 save_draft(db,branch,n,draft)
         elif stage=='reader':
             validate_review(data,work['payload'].get('checks',READER_CHECKS),{n:draft['prose']})
@@ -667,7 +925,10 @@ def submit(db, result):
                 repair(db,branch,n,draft,data['findings'],data.get('repair_scope','chapter'))
             else:
                 draft['reader_review']=data
-                commit_draft(db,branch,n,draft)
+                draft['reader_context_hash']=signature
+                if signature is None:
+                    draft['stage']='facts';save_draft(db,branch,n,draft)
+                else:commit_draft(db,branch,n,draft)
         elif stage.endswith('_review'):
             info=work['payload']
             first,through,scope=info['first'],info['through'],info['scope']
@@ -684,26 +945,31 @@ def submit(db, result):
                     put(db,'revision_failures',get(db,'revision_failures',0)+1)
                     begin_revision(db,start,dump(data['findings']),internal=True)
             else:
-                if not scope.endswith('_chunk'):
+                if signature is not None and not scope.endswith('_chunk'):
                     summary=data.get('memory')
                     was_text=isinstance(summary,str)
                     if was_text:
                         # Structural repair: text-only synthesis; per-chapter provenance stays with chunk receipts.
                         summary={'text':summary,'sources':[]}
                         data['memory']=summary
-                    require(isinstance(summary,dict) and isinstance(summary.get('text'),str) and 0<len(summary['text'])<=2400 and isinstance(summary.get('sources'),list) and (was_text or summary['sources']),'memory','整体复核须提交不超过 2400 字符的提炼记忆和证据来源；纯文本 memory 可省略 sources，来源以分段审稿回执为准')
+                    require(isinstance(summary,dict) and isinstance(summary.get('text'),str) and summary['text'].strip() and isinstance(summary.get('sources'),list) and (was_text or summary['sources']),'memory','整体复核须提交非空提炼记忆和有效证据来源；纯文本 memory 可省略 sources，来源以分段审稿回执为准')
                     for ref in summary['sources']:
                         require(ref.get('chapter') in sources,'memory','记忆来源不在审稿范围内')
                         evidence(sources[ref['chapter']],ref,ref['chapter'])
                     db.execute('INSERT OR REPLACE INTO memories VALUES (?,?,?,?)',(branch,scope,through,dump(summary)))
-                stored={**data,'first':first,'through':through}
-                db.execute('INSERT OR REPLACE INTO reviews VALUES (?,?,?,?,?)',(branch,scope,through,review_hash(db,branch,first,through),dump(stored)))
+                stored={**data,'first':first,'through':through,'review_context_verified':signature is not None}
+                bound_hash=signature if signature is not None else 'unverified:'+task['input_hash']
+                db.execute('INSERT OR REPLACE INTO reviews VALUES (?,?,?,?,?)',(branch,scope,through,bound_hash,dump(stored)))
         else:
             raise Error('stage',f'未知阶段 {stage}')
         db.execute("UPDATE tasks SET state='done',result_hash=?,receipt=? WHERE id=?",(hashed,dump(result),task['id']))
         put(db,'seq',get(db,'seq')+1)
         log(db,'submit',{'task':task['id'],'stage':stage,'chapter':n})
-        return {'accepted':True,'task_id':task['id'],**status(db)}
+        extra={}
+        if current_signature is not None and signature is None:
+            log(db,'legacy_review_recheck',{'task':task['id'],'stage':stage,'reason':'旧任务未冻结审稿上下文签名，保留回执但重新核验'})
+            extra['review_recheck_required']=True
+        return {'accepted':True,'task_id':task['id'],**extra,**status(db)}
 
 
 def begin_revision(db,start,reason,internal=False):

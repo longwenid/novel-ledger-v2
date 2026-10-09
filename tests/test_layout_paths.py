@@ -87,7 +87,7 @@ class LayoutPathTests(unittest.TestCase):
 
     def test_invalid_voice_rejected(self):
         from novel_core.store import validate_style
-        with self.assertRaises(Error): validate_style({'voice':'x'*61,'sample':'雨停了。'})
+        with self.assertRaises(Error): validate_style({'voice':['平实白描'],'sample':'雨停了。'})
 
 
 if __name__=='__main__':unittest.main()

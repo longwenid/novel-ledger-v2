@@ -1,0 +1,148 @@
+{
+  "date": "2026-10-08",
+  "version": "1.19.0",
+  "scope": "One real host-agent chapter pilot; not a guarantee for a whole novel or every first draft.",
+  "source_hashes_sha256": {
+    "scripts/novel.py": "3e3deaa0a3f9e7f908ef78db65b82c694b2931076cf60a00720594ad229d68f2",
+    "scripts/novel_core/budget.py": "a2731b916ac0f977c5812fa36857ba8dbf5f868297337fe8d7dab71cb8b0b7dc",
+    "scripts/novel_core/design.py": "55fb363df3b652a2a026e2309b34efce00d0bbf9fe0eb5fcd569b5cc54fd4a1b",
+    "scripts/novel_core/engine.py": "fa5910a734873315008a0478b8549a4077e78c551cd5634f3cdb857a7ed5577f",
+    "scripts/novel_core/memory.py": "d8b9ab05847a77adf1ef95648b53dd2f7c5d2925eff8351a64b8405042e34ef9",
+    "scripts/novel_core/store.py": "78556ff62ab45ba1de1a299200f746d7c40c75cda9ec928a9909af7237e1636f",
+    "scripts/novel_core/patches.py": "83339895182fa2009772e91a125f255b797fa8e8c49488b4a4e8436e8cbe662d"
+  },
+  "project": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-chapter-forward-6k7tbygz",
+  "scenario": {
+    "core_exchange": 1,
+    "planned_scenes": 1,
+    "development_units": 3,
+    "target_han": 3000
+  },
+  "first_submit_han": 3276,
+  "committed_han": 3274,
+  "committed_prose_hash": "a47a10842d34af9cf54c33bb449289a8b60b2d0591cce68c668f9c576123a750",
+  "chapter_length": {
+    "actual_han": 3274,
+    "policy": "development_target_not_content_cap",
+    "quality_note": "篇幅达标只代表数量；仍须核对有效动作、信息、选择、关系及后果，重复解释和新增无因果事件不能用于凑数。",
+    "shortfall_han": 0,
+    "source": "chapter_execution",
+    "status": "ready_for_semantic_review",
+    "target_han": 3000,
+    "unit": "han_characters"
+  },
+  "writer_preflight": "fresh worker reported actual measure before real submit; read-only preflight has separate regression evidence",
+  "fresh_workers": [
+    "chapter_forward_writer",
+    "chapter_forward_facts",
+    "chapter_forward_repair",
+    "chapter_forward_facts_recheck",
+    "chapter_forward_reader"
+  ],
+  "fork_turns": "none for each real collaboration.spawn_agent call",
+  "reader_has_plan_contract_or_writer_brief": false,
+  "reader_has_substance_and_pacing": true,
+  "trace": [
+    {
+      "task_id": "1f7a9533024e4c57aeb4017722281a23",
+      "stage": "plan",
+      "state": "done",
+      "input_hash": "87c0a51421088a3521592bc350fa02b9d9e69bacabbd4a1e35df167ccf104cdd",
+      "result_hash": "952c1b5a44ade1322c5d83f82e6c85d16d1017017a8e847e5a37f9576ff6c101",
+      "verdict": null
+    },
+    {
+      "task_id": "6f7d1579b85944e38539aa40e8ff117b",
+      "stage": "draft",
+      "state": "done",
+      "input_hash": "e31f7e003595916cb9652e6fbd120f5c67f31a935ec16d10b695a2d593beaef4",
+      "result_hash": "5b8061911f04d668fbf8308dc18f7925fc6903e02684b422988c3f0413482327",
+      "verdict": null,
+      "actual_han": 3276
+    },
+    {
+      "task_id": "931faa44430841e894aaa718c51e656f",
+      "stage": "facts",
+      "state": "done",
+      "input_hash": "d0aad0c1d8d899376e71084b70118a3e959c49ee770f416f71dda635cfd35224",
+      "result_hash": "89eb8e4f228d3d34a78533a771a9ed9e0168705f04e17ee1030a534382a62a20",
+      "verdict": "fix",
+      "checks": {
+        "coverage": "pass",
+        "continuity": "fix",
+        "resources": "pass",
+        "knowledge": "pass",
+        "time": "pass",
+        "world_rules": "pass",
+        "spatial": "fix"
+      }
+    },
+    {
+      "task_id": "8a3e6449a09242c4b58dae9ac176f76e",
+      "stage": "repair",
+      "state": "done",
+      "input_hash": "5a590a920f3bcace7a6ffafc252211899c78e815c31ee712c358e4e2c2f6ec03",
+      "result_hash": "d5d975f0c646b1f99d235422563f9c2379bd2d5b24deb4c3956a54e4cdcfcda1",
+      "verdict": null,
+      "patch_count": 1
+    },
+    {
+      "task_id": "b213aa8f44784ee392a6487d2ec03597",
+      "stage": "facts",
+      "state": "done",
+      "input_hash": "fc126e1271dc2a1d5d3341c06d9e11043a21c78ee5e4f2296750727e4a1f0351",
+      "result_hash": "1e59cce0892714072a487f16233e94e449a7950cae471957f540e6c3ddd3cbf3",
+      "verdict": "pass",
+      "checks": {
+        "coverage": "pass",
+        "continuity": "pass",
+        "resources": "pass",
+        "knowledge": "pass",
+        "time": "pass",
+        "world_rules": "pass",
+        "spatial": "pass"
+      },
+      "ledger_event_count": 48
+    },
+    {
+      "task_id": "af728af8fe424065987909ef09463693",
+      "stage": "reader",
+      "state": "done",
+      "input_hash": "90f38bbe8241b4bd7660e41266521156fd816073ff7f78606c5d4ae179dee5f4",
+      "result_hash": "db03e09f6d0d507c487ab30ba5a3bca93e18274de5dc84cd277f5f6fe39bbdaa",
+      "verdict": "pass",
+      "checks": {
+        "read_on": "pass",
+        "character": "pass",
+        "change": "pass",
+        "emotion_cost": "pass",
+        "language": "pass",
+        "repetition": "pass",
+        "substance": "pass",
+        "pacing": "pass"
+      }
+    }
+  ],
+  "audit_ok": true,
+  "next_stage": "await_author",
+  "pilot_approved": false,
+  "usage": {
+    "unit": "unicode_characters_not_tokens",
+    "tasks": 6,
+    "task_input_chars": 37756,
+    "accepted_receipt_chars": 31642,
+    "attempted_receipt_chars": 0,
+    "preparation_input_chars": 0,
+    "supplemental_read_chars": 0,
+    "billed_tokens": null,
+    "session_handoffs": null,
+    "boundary": "字符仅观测，不限制必要内容；输入按持久任务计一次；不含系统提示、聊天历史和协议外读取，不换算token。"
+  },
+  "billed_tokens": null,
+  "boundaries": [
+    "The first draft input was frozen before final pack deduplication; field values and target were unchanged.",
+    "One facts finding was repaired; first submission reached its target but was not quality-perfect.",
+    "Reader pass is a single independent model judgment, not measured audience reception.",
+    "Fiction prose and project assets remain outside the shared Skill resources."
+  ]
+}

@@ -52,7 +52,7 @@ def prepare(db,stage,payload):
             payload['excerpts']=excerpts(prose,payload['findings']);payload.pop('prose')
             payload['omitted_chars']=len(prose)-sum(e['end']-e['start'] for e in payload['excerpts'])
         payload['instruction']='优先返回 base_hash + patches + repair_note，只输出替换片段。start 是本次完整基稿的 Python 字符位置，old 必须精确匹配。局部任务需扩大修改范围时返回 expand_context=true 与 reason。补丁合成后仍重新进行事实与读者审稿。'
-        payload['retrieval']='candidate --task 当前task_id --start 起始字符 --end 结束字符；省略 end 默认最多4000字符'
+        payload['retrieval']='candidate --task 当前task_id --start 起始字符 --end 结束字符；省略 end 读取包含 start 的完整段落余文'
     elif stage=='draft' and payload.get('original_prose'):
         payload['base_hash']=save_source(db,payload['original_prose']);payload['base_chars']=len(payload['original_prose'])
         payload['instruction']+=' 可提交 base_hash + patches + repair_note 局部修改；确无需变更时提交 base_hash + reuse_original=true，仍重审事实及正文。'
@@ -112,7 +112,9 @@ def read_slice(db,task,start=0,end=None):
     import json
     work=json.loads(task['input']);base=source(db,work)
     require(type(start) is int and 0<=start<=len(base),'candidate_range','start 超出基稿范围')
-    end=min(len(base),start+4000) if end is None else end
-    require(type(end) is int and start<=end<=len(base) and end-start<=16000,'candidate_range','单次最多读取16000字符，范围须有效')
+    if end is None:
+        boundary=base.find('\n',start)
+        end=boundary+1 if boundary>=0 else len(base)
+    require(type(end) is int and start<=end<=len(base),'candidate_range','读取范围须属于同一基稿，必要段落不按字符数截断')
     return {'task_id':task['id'],'base_hash':digest(base),'start':start,'end':end,'text':base[start:end],
             'total_chars':len(base),'omitted_before':start,'omitted_after':len(base)-end,'status':'candidate_not_canon'}

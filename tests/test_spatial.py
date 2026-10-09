@@ -155,14 +155,20 @@ class SpatialPipelineTests(unittest.TestCase):
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(work['continuity']['anchors']['r4:floor']['value'],'4')
         self.assertEqual(work['continuity']['conditions']['door:open'],False)
-    def test_direct_place_reference_includes_layout_and_package_anchor_is_hard(self):
+    def test_direct_place_reference_keeps_full_required_layout(self):
+        c=get(self.db,'contract')
+        evacuation='紧急疏散只能经过走廊的东侧出口，另一扇门通往封闭档案室。'*2500
+        c['anchors'].append({'entity':'r4','key':'evacuation','value':evacuation,'policy':'fixed'})
+        put(self.db,'contract',c);put(self.db,'context_chars',4096)
         task=engine.next_task(self.db,self.path);p=plan(1);p['entities']=['r4']
         engine.submit(self.db,result(task,{'chapters':[p]}))
         work=pack(self.db,'main',1,'draft',{})
         self.assertIn('r4',{p['id'] for p in work['continuity']['places']})
-        self.assertLessEqual(len(dump(work)),work['context_anchors']['package_chars'])
-        put(self.db,'context_chars',len(dump(work))-500)
-        with self.assertRaises(Error):pack(self.db,'main',1,'draft',{})
+        self.assertEqual(work['continuity']['anchors']['r4:evacuation']['value'],evacuation)
+        self.assertEqual(work['continuity']['anchors']['r4:floor']['value'],'4')
+        self.assertEqual(work['continuity']['anchors']['r4:room_number']['value'],'101')
+        self.assertIn('office-door',work['continuity']['links'])
+        self.assertTrue(work['continuity']['absence_is_not_proof'])
     def test_omitted_events_do_not_silently_ignore_explicit_address_drift(self):
         text='周行来到局长办公室，办公室在3楼505。'
         task=self.to_facts(text);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))

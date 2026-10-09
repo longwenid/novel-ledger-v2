@@ -1,5 +1,4 @@
-"""Advisory volume allocations; never a chapter gate or a replacement for prose."""
-import json
+"""Author length intentions and advisory volume allocations, never prose caps."""
 import re
 from .store import get, require
 
@@ -8,7 +7,32 @@ def han_count(prose):
     return len(re.findall(r'[\u3400-\u4dbf\u4e00-\u9fff]', prose))
 
 
+def validate_chapter_target(value):
+    require(type(value) is int and value > 0, 'chapter_target',
+            'chapter_target_han / execution.target_han 为作者显式约定的正整数汉字目标；不是上下文字符限额')
+
+
+def chapter_length(contract, plan, prose=None):
+    """Observe an explicitly declared point target; never infer one from book size."""
+    execution=plan.get('execution',{})
+    require(isinstance(execution,dict),'chapter_execution','execution 必须为对象')
+    target=execution.get('target_han',contract.get('chapter_target_han'))
+    if target is None:return None
+    validate_chapter_target(target)
+    result={'unit':'han_characters','target_han':target,
+            'source':'chapter_execution' if 'target_han' in execution else 'author_default',
+            'policy':'development_target_not_content_cap',
+            'quality_note':'篇幅达标只代表数量；仍须核对有效动作、信息、选择、关系及后果，重复解释和新增无因果事件不能用于凑数。'}
+    if prose is not None:
+        actual=han_count(prose)
+        result.update(actual_han=actual,shortfall_han=max(0,target-actual),
+                      status='needs_development' if actual<target else 'ready_for_semantic_review')
+    else:result['status']='planned'
+    return result
+
+
 def validate(contract):
+    if 'chapter_target_han' in contract:validate_chapter_target(contract['chapter_target_han'])
     volumes = contract['volumes']
     if not any('word_budget' in v for v in volumes):
         return
@@ -25,19 +49,11 @@ def overview(db, branch):
         return {'status': 'not_configured', 'branch': branch}
     rows = {v['id']: {'volume': v['id'], 'baseline_han': v['word_budget'],
                      'written_han': 0, 'closed': False} for v in contract['volumes']}
-    # New chapters store a derived count; legacy chapters are counted only when needed.
-    for chapter in db.execute('SELECT c.number,c.data,p.data AS plan FROM chapters c '
-                              'JOIN plans p ON p.branch=c.branch AND p.number=c.number '
-                              'WHERE c.branch=? ORDER BY c.number', (branch,)):
-        data = json.loads(chapter['data']); plan = json.loads(chapter['plan'])
-        count = data.get('han_characters')
-        if count is None:
-            prose = db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
-                               (branch, chapter['number'])).fetchone()[0]
-            count = han_count(prose)
-        row = rows[data['volume']]
-        row['written_han'] += count
-        row['closed'] = row['closed'] or bool(plan.get('volume_end'))
+    from .projections import chapter_counts
+    for chapter in chapter_counts(db,branch):
+        row = rows[chapter['volume']]
+        row['written_han'] += chapter['han']
+        row['closed'] = bool(chapter['closed'])
     total = sum(r['baseline_han'] for r in rows.values())
     written = sum(r['written_han'] for r in rows.values())
     pool = max(0, total - written)

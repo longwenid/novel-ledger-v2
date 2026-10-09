@@ -23,9 +23,9 @@ class CharacterTests(unittest.TestCase):
     def submit(self,t,data):return engine.submit(self.db,result(t,copy.deepcopy(data)))
     def plan(self,n=1):
         p=copy.deepcopy(PLAN);p['number']=n;return p
-    def prepare(self):
+    def prepare(self,profiles=PROFILES):
         self.submit(self.task(),{'chapters':[self.plan()]});t=self.task();self.assertEqual(t['stage'],'character_plan')
-        self.submit(t,PROFILES)
+        self.submit(t,profiles)
     def write(self,prose='周行问：“最后一个签收的人是谁？”宋禾把表格推过去：“先写清你要拿什么。”',events=None):
         t=self.task();self.assertEqual(t['stage'],'draft');self.submit(t,{'prose':prose})
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['checks'],prose,t['chapter'])
@@ -48,19 +48,25 @@ class CharacterTests(unittest.TestCase):
         bad['profiles'][0]['biography'].pop('contradiction')
         with self.assertRaises(Error):self.submit(t,bad)
         self.submit(t,PROFILES)
-    def test_writer_packet_is_relevant_budgeted_and_reader_first_read_is_clean(self):
-        self.prepare();t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+    def test_writer_keeps_full_required_profile_and_reader_first_read_is_clean(self):
+        profiles=copy.deepcopy(PROFILES)
+        detail='他愿意合作，却害怕把同伴置于自己无法承担的危险。'*3000
+        profiles['profiles'][0]['biography']['contradiction']=detail
+        # Older projects may still store this setting; it cannot cut off a required profile.
+        put(self.db,'context_chars',4096)
+        self.prepare(profiles);t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(set(w['character_context']['profiles']),{'hero','ally'})
+        self.assertEqual(w['character_context']['profiles']['hero']['data']['biography']['contradiction'],detail)
         self.assertIn('人物小传',rpath(t, 'brief_path').read_text(encoding='utf-8'));self.assertIn('本场景',rpath(t, 'brief_path').read_text(encoding='utf-8'))
-        put(self.db,'context_chars',len(dump(w))-100)
-        with self.assertRaises(Error):pack(self.db,'main',1,'draft',{})
-        put(self.db,'context_chars',48000)
+        again=pack(self.db,'main',1,'draft',{})
+        self.assertEqual(again['character_context']['profiles'],w['character_context']['profiles'])
         self.submit(t,{'prose':'周行问：“最后谁签收？”宋禾说：“把范围写清楚。”'})
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['checks'])
         data=review(w['payload']['checks'],w['payload']['prose']);data.update(events=[],summary='核对责任');self.submit(t,data)
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertIn('dialogue_identity',w['payload']['checks'])
-        for k in ('character_context','writer_brief','state','design_context'):self.assertNotIn(k,w)
+        for k in ('character_context','writer_brief','state','design_context','plan','contract'):self.assertNotIn(k,w)
+        self.assertNotIn(detail,dump(w))
     def test_speaker_intentions_must_be_separate(self):
         p=self.plan();p['scenes'][0]['dialogue_intents'].pop()
         with self.assertRaises(Error):self.submit(self.task(),{'chapters':[p]})

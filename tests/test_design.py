@@ -94,12 +94,20 @@ class DesignTests(unittest.TestCase):
         data.pop('events');data['canon_refs']=[{'entity':'hero','key':'floor','value':'3'}]
         with self.assertRaises(Error):self.submit(t,data)
         self.assertEqual(self.task()['task_id'],t['task_id'])
-    def test_required_world_material_cannot_be_silently_truncated(self):
-        self.prepare();self.submit(self.task(),{'chapters':[self.plan()]})
-        w=pack(self.db,'main',1,'draft',{})
-        put(self.db,'context_chars',len(dump(w))-100)
-        with self.assertRaises(Error):self.task()
-        self.assertFalse(self.db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone())
+    def test_required_world_material_is_complete_without_character_rejection(self):
+        world=copy.deepcopy(EXAMPLE['world_plan'])
+        region='北岸旧城的水道决定运送证据的路线，不能在推进剧情时凭空消失。'*2500
+        world['geography']['regions'].append(region)
+        put(self.db,'context_chars',4096)
+        self.submit(self.task(),world);self.submit(self.task(),EXAMPLE['volume_plan'])
+        self.submit(self.task(),{'chapters':[self.plan()]})
+        task=self.task();self.assertEqual(task['stage'],'draft')
+        work=json.loads(rpath(task,'input_path').read_text(encoding='utf-8'))
+        self.assertEqual(work['design_context']['world']['data'],world)
+        self.assertEqual(work['design_context']['volume']['data'],EXAMPLE['volume_plan'])
+        self.assertEqual(work['design_context']['status'],'proposal_not_canon')
+        self.assertEqual(self.task()['input_hash'],task['input_hash'])
+        self.assertFalse(replay(self.db,'main')['facts'])
     def test_volume_transition_prepares_next_volume_after_review(self):
         self.prepare();self.chapter(end=True);engine.approve(self.db)
         for _ in range(5):

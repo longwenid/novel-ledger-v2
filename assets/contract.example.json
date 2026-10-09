@@ -28,7 +28,7 @@
     3000000
   ],
   "red_lines": [],
-  "voice": "具体、克制，有事务与人情；不强制古雅腔。",
+  "voice": "用动作、账目、交涉与后果呈现事务和人情；禁用非必要形容词，仅保留承担辨识或事实作用的必要描述；不强制古雅腔。",
   "clock_unit": "天",
   "entities": [
     {
@@ -82,5 +82,6 @@
   ],
   "planning_mode": "layered",
   "character_mode": "profiled",
+  "character_views": "scoped",
   "context_mode": "bounded"
 }
