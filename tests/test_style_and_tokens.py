@@ -62,7 +62,7 @@ class StyleAnchorTests(unittest.TestCase):
         with transaction(self.db):put(self.db,'style_anchor',{'traits':['短句'],'sample':'雨未停。','source':'author'})
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
         t=self.task();work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        data=review(work['payload']['checks'],work['payload']['prose'])
+        data=review(work['payload']['checks'],pack_prose(self.path, work))
         row=next(r for r in data['checks'] if r['id']=='voice_match');row['evidence']=[]
         row['not_applicable']='跳过'
         data['first_read']={'desire':'d','obstacle':'o','change':'c','read_on_reason':'r'}

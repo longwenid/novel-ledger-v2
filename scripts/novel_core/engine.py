@@ -359,10 +359,11 @@ def review_job(db,branch,scope,first,n):
     while chapter<=n:
         end=min(chapter+step-1,n)
         if not reviewed(db,branch,scopekey,end):
-            rows=db.execute('SELECT number,prose FROM chapters WHERE branch=? AND number BETWEEN ? AND ? ORDER BY number',(branch,chapter,end)).fetchall()
-            prose='\n\n'.join(f"【第{r['number']}章】\n{r['prose']}" for r in rows)
+            rows=db.execute('SELECT number FROM chapters WHERE branch=? AND number BETWEEN ? AND ? ORDER BY number',(branch,chapter,end)).fetchall()
+            # Prose is delivered per chapter as separate files (attach_prose);
+            # no concatenation markers that could contaminate quote coordinates.
             return scope+'_review',n,{'scope':scopekey,'first':chapter,'through':end,
-                                    'prose':prose,'prose_hash':digest(prose),'checks':checks}
+                                    'prose_chapters':[r['number'] for r in rows],'checks':checks}
         chapter=end+1
     receipts = [{'chapter':r['through'],'input_hash':r['input_hash']} for r in db.execute('SELECT through,input_hash FROM reviews WHERE branch=? AND scope=? AND through BETWEEN ? AND ? ORDER BY through',(branch,scopekey,first,n))]
     payload={'scope':scope,'first':first,'through':n,'coverage_receipts':{'count':len(receipts),'first':first,'through':n,'scope':scopekey,'hash':digest(receipts)},
@@ -460,11 +461,46 @@ def sweep_legacy(project, apply=True):
     return {'removed': removed, 'kept': kept}
 
 
-def task_files(project, task):
+def materialize_prose(db, project, work):
+    """Write every prose file the pack references from the authoritative store.
+
+    Pack references carry path+hash only; resume paths re-materialize from the
+    same store, so a crashed dispatch leaves nothing dangling. File bytes equal
+    the stored prose exactly, keeping {chapter,start,quote} coordinates valid.
+    """
+    base = Path(project).resolve()
+    refs = set()
+    def visit(node):
+        if isinstance(node, dict):
+            path = node.get('prose_path')
+            if isinstance(path, str) and isinstance(node.get('prose_hash'), str):
+                refs.add((path, node['prose_hash']))
+            for value in node.values():
+                visit(value)
+        elif isinstance(node, list):
+            for value in node:
+                visit(value)
+    visit(work)
+    written = []
+    for path, prose_hash in sorted(refs):
+        prose = get(db, 'candidate_text:' + prose_hash)
+        require(isinstance(prose, str) and digest(prose) == prose_hash,
+                'prose_store', '正文快照缺失或校验失败：' + prose_hash[:12])
+        target = base/path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        data = prose.encode('utf-8')
+        if not target.exists() or target.read_bytes() != data:
+            target.write_bytes(data)
+        written.append(path)
+    return written
+
+
+def task_files(db, project, task):
     root = Path(project).resolve()/work_rel(task)
     root.mkdir(parents=True,exist_ok=True)
     work = json.loads(task['input'])
     write_json(root/'input.json',work,compact=True)
+    prose_files = materialize_prose(db, project, work)
     base = work_rel(task)
     result = {'schema':'novel-ledger-v2.task/1','task_id':task['id'],'stage':task['stage'],
               'chapter':task['chapter'],'branch':task['branch'],'input_hash':task['input_hash'],
@@ -472,6 +508,8 @@ def task_files(project, task):
               'input_path':(base+'/input.json'),'output_path':(base+'/result.json'),
               'path_base':'routes are relative to project; join with project before reading/writing',
               'state':'pending'}
+    if prose_files:
+        result['prose_files'] = prose_files
     if 'writer_brief' in work:
         from .design import render_brief
         brief=root/'brief.md'
@@ -515,8 +553,6 @@ def next_task(db,project):
             signature=task_review_context_hash(db,{'branch':branch,'chapter':n,'stage':stage},work)
             if signature is not None:
                 work['review_context_hash']=signature
-                from .contextflow import stamp
-                stamp(db,work)
             tid = uuid.uuid4().hex
             fingerprint = digest(work)
             task = {'id':tid,'branch':branch,'stage':stage,'chapter':n,'input_hash':fingerprint,'input':dump(work)}
@@ -531,7 +567,7 @@ def next_task(db,project):
         removed=prune_work(db,project)
         if removed:
             with transaction(db):log(db,'work_tidy',{'removed':removed,'kept':3})
-    return task_files(project,task)
+    return task_files(db,project,task)
 
 
 def parse_prose(data):

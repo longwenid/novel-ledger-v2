@@ -31,10 +31,10 @@ class ScaleTests(unittest.TestCase):
                 self.assertTrue(engine.audit(db)['ok'])
                 self.assertEqual(recall(db,'main',topic='receipt')['total'],2)
                 data=pack(db,'main',1001,'draft',{})
-                self.assertFalse(data['context_capacity']['limits_enforced'])
+                self.assertIn('[观测]',data['guide'])
                 self.assertEqual(data['state']['hooks']['receipt']['status'],'paid')
                 self.assertEqual(data['selected'][0]['chapter'],1)
-                self.assertEqual(data['selected'][0]['text'],db.execute('SELECT prose FROM chapters WHERE number=1').fetchone()[0])
+                self.assertEqual(data['selected'][0]['prose_hash'],digest(db.execute('SELECT prose FROM chapters WHERE number=1').fetchone()[0]))
                 self.assertEqual(recall(db,'main',entity='老周')['total'],0) # Unrelated clock events aren't invented as personal facts.
                 self.assertTrue(recall(db,'main',entity='老周')['absence_is_not_proof'])
             finally:db.close()

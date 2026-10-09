@@ -44,7 +44,7 @@ doctor/next 不启动 agent，主控须真实调用委派工具。有委派能�
 委派消息仅带：
 
 - ROOT、PROJECT、当前 task.json 的绝对路径；task.json 与信封 input_path 同目录。
-- 只完成该任务，读 input 一次，遵守 discipline 与阶段指南；brief 为替代视图。
+- 只完成该任务，读 input 与包内 prose_path/prose_files 正文文件一次，遵守 guide（单节提交契约+纪律）；brief 为替代视图。
 - 写 output_path 后真实 submit，按错误修正；成功后返回 task_id、stage、状态和短错误，退出，不 next、不复述正文或完整回执。
 
 Worker 从 ROOT 读 Skill 与阶段指南，命令用绝对路径，不依赖父环境变量、不嵌套派工。结果须写成 `result/1` JSON 文件，再 measure/submit；聊天代码块不算文件。

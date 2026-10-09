@@ -76,7 +76,7 @@ class PatchPipelineTests(unittest.TestCase):
         t=self.start();data=self.patch(t);engine.submit(self.db,data)
         self.assertTrue(engine.submit(self.db,data)['idempotent']);self.assertEqual(head(self.db,'main'),0)
         next_=self.task();w=json.loads(rpath(next_, 'input_path').read_text(encoding='utf-8'))
-        self.assertEqual(next_['stage'],'facts');self.assertEqual(w['payload']['prose'],self.text.replace(self.target,data['data']['patches'][0]['new']))
+        self.assertEqual(next_['stage'],'facts');self.assertEqual(pack_prose(self.path, w),self.text.replace(self.target,data['data']['patches'][0]['new']))
         self.assertNotIn('facts_review',engine.load_draft(self.db,'main',1))
         respond(self.db,self.path,next_);self.assertEqual(self.task()['stage'],'reader');respond(self.db,self.path,self.task())
         self.assertTrue(engine.audit(self.db)['ok'])
@@ -91,7 +91,7 @@ class PatchPipelineTests(unittest.TestCase):
     def test_expansion_is_bounded_and_does_not_reset_failure_count(self):
         t=self.start();attempts=engine.load_draft(self.db,'main',1)['attempts']
         engine.submit(self.db,result(t,{'expand_context':True,'reason':'需要核对章首的交接条件'}))
-        next_=self.task();w=json.loads(rpath(next_, 'input_path').read_text(encoding='utf-8'));self.assertEqual(w['payload']['prose'],self.text)
+        next_=self.task();w=json.loads(rpath(next_, 'input_path').read_text(encoding='utf-8'));self.assertEqual(pack_prose(self.path, w),self.text)
         self.assertEqual(engine.load_draft(self.db,'main',1)['attempts'],attempts)
         with self.assertRaises(Error):engine.submit(self.db,result(next_,{'expand_context':True,'reason':'再次扩大'}))
         self.assertEqual(head(self.db,'main'),0)

@@ -76,7 +76,7 @@ class ChapterLengthTests(unittest.TestCase):
         self.assertEqual(saved['stage'],'repair')
         self.db.close();self.db=connect(self.path)
         repair_task=self.task();work=self.work(repair_task)
-        self.assertEqual(work['payload']['prose'],short)
+        self.assertEqual(pack_prose(self.path, work),short)
         self.assertEqual(work['payload']['chapter_length']['shortfall_han'],90-han_count(short))
         expanded='宋禾没有立刻按手印。她先问清凭证上的名字由谁填写，又把两张纸放在光下比对。周行依她的要求逐项说明来源，没有跳过自己保存凭证的那一晚。她听完后提出亲自见证人的条件，周行发现这会让自己也必须到场，仍然答应。她这才用旧布擦掉桌边的水渍，将需要核验的字迹逐处圈出，准备在对质时一项项追问。'
         engine.submit(self.db,result(repair_task,{'base_hash':work['payload']['base_hash'],

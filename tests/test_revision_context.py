@@ -32,7 +32,7 @@ class RevisionContextTests(unittest.TestCase):
 
     def reader_fix(self):
         task=self.task();self.assertEqual(task['stage'],'reader')
-        work=self.work(task);prose=work['payload']['prose']
+        work=self.work(task);prose=pack_prose(self.path, work)
         data=review(work['payload']['checks'],prose,task['chapter'])
         data['verdict']='fix';data['checks'][0]['result']='fix'
         data['first_read']={'desire':'交付证据','obstacle':'犹豫','change':'决定','read_on_reason':'后果'}
@@ -40,7 +40,7 @@ class RevisionContextTests(unittest.TestCase):
         engine.submit(self.db,result(task,data))
 
     def facts_result(self,task,events=None,**extra):
-        work=self.work(task);data=review(work['payload']['checks'],work['payload']['prose'],task['chapter'])
+        work=self.work(task);data=review(work['payload']['checks'],pack_prose(self.path, work),task['chapter'])
         data.update(events=events or [],summary='经正文核验后重新登记。',**extra)
         return engine.submit(self.db,result(task,data))
 

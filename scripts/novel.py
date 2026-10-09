@@ -211,10 +211,12 @@ def dispatch_raw(args):
         if cmd=='complete':
             with transaction(db): return engine.complete_inner(db)
         if cmd=='doctor':
-            from novel_core.contextflow import limits,usage
+            from novel_core.contextflow import usage, SCAN_UNITS, DIRECT_UNITS, REDUCE_INPUTS
             import platform, shutil
             report={'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
-                    'context_mode':get(db,'context_mode','bounded'),'character_limits_enforced':False,'material_structure':limits(db),
+                    'context_mode':get(db,'context_mode','bounded'),'character_limits_enforced':False,
+                    'material_structure':{'scan_units_per_page':SCAN_UNITS,'direct_material_units':DIRECT_UNITS,
+                                          'reduction_inputs_per_group':REDUCE_INPUTS,'limits_enforced':False},
                     'explosion_control':'task isolation, topic selection, complete semantic-unit pages, source-bound preparation, load-once, actual host handoff',
                     'context_window_verified':False,'usage':usage(db),'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'host_must_verify_fresh_review_workers','independent_review_verified':False}
             litter=engine.sweep_legacy(args.project,apply=False)['removed']

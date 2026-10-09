@@ -160,6 +160,6 @@ def test_pack_carries_stage_primer(tmp_path):
                             ('plan', 'ending_shape'), ('volume_plan', 'choice_log'),
                             ('batch_review', 'findings')):
         work = pack(db, 'main', 1, stage, {'prose': 'x', 'summary': 's', 'entities': ['hero']} if stage.startswith('character') else {'prose': 'x', 'summary': 's'})
-        primer = work.get('stage_primer') or ''
-        assert fragment in primer, stage
-        assert 'stage_primer' in work['self_contained']
+        assert fragment in work['guide'], stage
+        assert work['guide'].startswith('[提交契约] '), stage
+        assert ('[任务]' in work['guide']) == (stage == 'reader'), stage  # 仅 reader 附带任务指令行

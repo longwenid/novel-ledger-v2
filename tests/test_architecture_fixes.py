@@ -77,7 +77,7 @@ class ArchitectureTests(unittest.TestCase):
         respond(self.db,self.path,self.task())                     # plan
         t=self.task();respond(self.db,self.path,t)                 # draft
         t=self.task()                                              # facts
-        pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack['payload']['prose']
+        pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, pack)
         data=review(pack['payload']['checks'],prose)
         data.update(summary='登记两条事件。',events=[
             {'op':'state','entity':'hero','key':'mood','before':None,'after':'坚定','evidence':ev(prose)},
@@ -100,7 +100,7 @@ class ArchitectureTests(unittest.TestCase):
         engine.submit(self.db,result(t,{'base_hash':base,'repair_note':'替换关键道具词',
                                         'patches':[{'start':start,'end':end,'text':'密信'}]}))
         t=self.task();self.assertEqual(t['stage'],'facts')
-        self.assertIn('密信',json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']['prose'])
+        self.assertIn('密信',pack_prose(self.path, json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))))
 
     def test_repair_patch_invalid_span_not_converted(self):
         t,prose=self._draft_with_events()
@@ -134,7 +134,7 @@ class ArchitectureTests(unittest.TestCase):
         self.assertEqual(len(prior),2);self.assertEqual(work['payload']['prior_events_source'],'repair')
         self.assertEqual(work['payload']['auto_carry'],[0,1])
         self.assertIn('prior_dispositions',work['payload']['prior_events_note'])
-        data=review(work['payload']['checks'],work['payload']['prose'])
+        data=review(work['payload']['checks'],pack_prose(self.path, work))
         data.update(events=[],summary='引擎自动续算，无新增事件。')
         engine.submit(self.db,result(t,data))
         t=self.task();self.assertEqual(t['stage'],'reader')
@@ -145,7 +145,7 @@ class ArchitectureTests(unittest.TestCase):
 
     def test_post_repair_override_drop_honored(self):
         t,work,full=self._reach_post_repair_facts()
-        data=review(work['payload']['checks'],work['payload']['prose'])
+        data=review(work['payload']['checks'],pack_prose(self.path, work))
         data.update(events=[],summary='声明丢弃资源流。',
                     prior_dispositions=[{'index':1,'disposition':'dropped','reason':'补句后该购买不再发生'}])
         engine.submit(self.db,result(t,data))
@@ -158,7 +158,7 @@ class ArchitectureTests(unittest.TestCase):
     def test_post_repair_duplicate_of_carried_rejected(self):
         t,work,full=self._reach_post_repair_facts()
         prior=work['payload']['prior_events']
-        data=review(work['payload']['checks'],work['payload']['prose'])
+        data=review(work['payload']['checks'],pack_prose(self.path, work))
         data.update(events=[prior[0]],summary='重复提交已续算事件。')
         with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))
         self.assertEqual(exc.exception.code,'event_accounting')
@@ -182,7 +182,7 @@ class ArchitectureTests(unittest.TestCase):
     def test_post_repair_broken_evidence_requires_disposition(self):
         t,work=self._reach_patched_facts()
         self.assertEqual(work['payload']['auto_carry'],[])
-        data=review(work['payload']['checks'],work['payload']['prose'])
+        data=review(work['payload']['checks'],pack_prose(self.path, work))
         data.update(events=[],summary='漏交代。')
         with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))
         self.assertEqual(exc.exception.code,'event_accounting')
@@ -194,7 +194,7 @@ class ArchitectureTests(unittest.TestCase):
 
     def test_post_repair_kept_on_broken_requires_event(self):
         t,work=self._reach_patched_facts()
-        data=review(work['payload']['checks'],work['payload']['prose'])
+        data=review(work['payload']['checks'],pack_prose(self.path, work))
         data.update(events=[],summary='声称保留却未重报。',
                     prior_dispositions=[{'index':0,'disposition':'kept'},{'index':1,'disposition':'dropped','reason':'资源流移除'}])
         with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))
@@ -202,7 +202,7 @@ class ArchitectureTests(unittest.TestCase):
 
     def test_post_repair_dropped_without_reason_rejected(self):
         t,work,full=self._reach_post_repair_facts()
-        prose=work['payload']['prose']
+        prose=pack_prose(self.path, work)
         data=review(work['payload']['checks'],prose)
         data.update(events=[],summary='无理由丢弃。',
                     prior_dispositions=[{'index':0,'disposition':'dropped'},{'index':1,'disposition':'dropped'}])

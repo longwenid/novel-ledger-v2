@@ -1,8 +1,9 @@
 """Review-pack material correctness: evidence coordinates and per-chapter plans.
 
-Chunk-review packs concatenate chapters behind 【第N章】 display headers, while
-evidence validates against each chapter's stored raw prose. These tests pin the
-header-stripping fallback, the range plan attachment, and synthesis slimming.
+Chunk-review packs deliver prose as one content-addressed file per chapter
+(payload.prose_files), while evidence validates against each chapter's stored
+raw prose. These tests pin per-chapter delivery, the legacy header-stripping
+fallback, the range plan attachment, and synthesis slimming.
 """
 import json
 import tempfile
@@ -139,7 +140,11 @@ class ReviewPackMaterialTests(unittest.TestCase):
             with self.subTest(stage=stage):
                 work = pack(self.db, 'main', 3, stage, {'prose': prose, 'checks': ('coverage',)})
                 self.assertEqual(work['review_prose_chars'],len(prose))
-                self.assertEqual(work['payload']['prose'],prose)
+                self.assertNotIn('prose',work['payload'])
+                engine.materialize_prose(self.db, self.path, work)
+                delivered=(Path(self.path)/work['payload']['prose_path']).read_text(encoding='utf-8')
+                self.assertEqual(delivered,prose)
+                self.assertEqual(work['payload']['prose_hash'],digest(prose))
                 self.assertNotIn('retrieval_allowance',work)
                 if stage=='reader':
                     for field in ('plan','contract','state','writer_brief'):self.assertNotIn(field,work)
@@ -149,8 +154,8 @@ class ReviewPackMaterialTests(unittest.TestCase):
 
     def test_review_discipline_names_branch_coordinate(self):
         task, work = self._work()
-        self.assertIn('branch 字段所指分支', work['discipline']['review'])
-        self.assertIn('active 分支', work['discipline']['review'])
+        self.assertIn('branch 字段所指分支', work['guide'])
+        self.assertNotIn('【第', work['guide'])
 
     def test_chunk_plans_track_reviewed_range_not_anchor(self):
         with transaction(self.db): put(self.db, 'review_chunk', 5)
@@ -165,7 +170,9 @@ class ReviewPackMaterialTests(unittest.TestCase):
         self.assertEqual((work['payload']['first'], work['payload']['through']), (6, 10))
         self.assertNotIn('plan', work)
         self.assertEqual(set(work['plans']), {'6', '7', '8', '9', '10'})
-        self.assertIn('【第6章】', work['payload']['prose'])
+        self.assertEqual([f['chapter'] for f in work['payload']['prose_files']], [6, 7, 8, 9, 10])
+        stored=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=6',('main',)).fetchone()[0]
+        self.assertEqual((Path(self.path)/work['payload']['prose_files'][0]['prose_path']).read_text(encoding='utf-8'),stored)
 
     def test_synthesis_materials_drop_evidence_quotes(self):
         with transaction(self.db): put(self.db, 'review_chunk', 5)

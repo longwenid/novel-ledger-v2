@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from support import (
-    contract, drive, engine, ev, initialize, connect, get, plan, respond,
+    contract, drive, engine, ev, initialize, connect, get, pack_prose, plan, respond,
     result, review, rpath, transaction,
 )
 from novel import dispatch, parser
@@ -39,7 +39,7 @@ class IndependentRegressions(unittest.TestCase):
         respond(db, project, engine.next_task(db, project),
                 prose='周行划去那笔一文的收入，将原有银钱全部交出。')
         task = engine.next_task(db, project)
-        prose = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']['prose']
+        prose = pack_prose(project, json.loads(rpath(task, 'input_path').read_text(encoding='utf-8')))
         data = review(engine.FACT_CHECKS, prose)
         data.update(summary='周行交出原有银钱。', events=[{
             'op': 'resource', 'asset': 'cash', 'unit': '文',

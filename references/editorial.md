@@ -42,7 +42,7 @@ profiled 模式增加 dialogue_identity：判断不同人物的关注点、关�
 
 profiled 模式的整体复核增加 voice_evolution，检查声音同质化、无依据的人设突变、情绪重置和合理成长是否持续。存在 `style_anchor` 时 reader 审稿增加 voice_match：对照锚点 traits 与样例段，核对叙事口吻、句式节奏与用词域是否连续，必须有正文证据；声线漂移不是禁词问题，是换了叙述者。
 
-`*_chunk` 提供全文、版本绑定与按章号索引的 plans，覆盖全部有效章节。证据坐标属于任务 branch 的库存正文，不含分隔标题【第N章】；含分隔标题的引文仅在剥离后唯一命中时可重定位。export/html 默认 active 分支，核对工作分支时显式 --branch。
+`*_chunk` 提供全文、版本绑定与按章号索引的 plans，覆盖全部有效章节。正文按 prose_files 每章一个内容寻址文件交付，字节与任务 branch 的各章库存正文一致，证据坐标以对应章文件内容为准；含旧式分隔标题【第N章】的引文仅在剥离后唯一命中时可重定位。export/html 默认 active 分支，核对工作分支时显式 --branch。
 
 整体任务不附单章计划，接收分段结论、发现和 chapter/start/end/source_hash 指针；用 recall --chapter N 补读原文，必要时 context_more。核对跨段因果、人物弧、承诺、节奏、规则和重复，不一次加载全书。
 

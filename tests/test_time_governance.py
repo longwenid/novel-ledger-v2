@@ -21,7 +21,7 @@ class TimeGovernanceTests(unittest.TestCase):
         respond(self.db,self.path,self.task())                     # plan ch1
         t=self.task();respond(self.db,self.path,t,prose='周行在档案室核对记录，逐页写下批注。')
         t=self.task()                                              # facts
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=work['payload']['prose']
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
         data=review(work['payload']['checks'],prose)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose)}],summary='核对档案。')
         with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))
@@ -32,7 +32,7 @@ class TimeGovernanceTests(unittest.TestCase):
         respond(self.db,self.path,self.task())
         t=self.task();respond(self.db,self.path,t,prose='次日清晨，周行在档案室核对记录。')
         t=self.task()
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=work['payload']['prose']
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
         data=review(work['payload']['checks'],prose)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose)}],summary='次日核对档案。')
         engine.submit(self.db,result(t,data))
@@ -52,7 +52,7 @@ class TimeGovernanceTests(unittest.TestCase):
         respond(self.db,self.path,self.task())
         t=self.task();respond(self.db,self.path,t,prose='次日清晨，周行在档案室核对记录。')
         t=self.task()
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=work['payload']['prose']
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
         data=review(work['payload']['checks'],prose)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose)}],summary='次日核对。')
         engine.submit(self.db,result(t,data))
@@ -65,7 +65,7 @@ class TimeGovernanceTests(unittest.TestCase):
         self.assertEqual(prow['day_anchor'],1);self.assertEqual(prow['day_span'],[2,2])
         t=self.task();respond(self.db,self.path,t,prose='两天后，周行走进货栈清点货物。')
         t=self.task()
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=work['payload']['prose']
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
         data=review(work['payload']['checks'],prose,2)
         data.update(events=[{'op':'clock','before':1,'after':2,'evidence':ev(prose,2)}],summary='进货栈。')
         with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))

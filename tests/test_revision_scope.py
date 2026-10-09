@@ -26,7 +26,7 @@ class FastCommitTests(unittest.TestCase):
             t=self.task();self.assertEqual(t['stage'],'draft')
             respond(self.db,self.path,t,prose=f'第{n}天，周行把收据交给宋禾，两人核对每一行。')
             t=self.task();self.assertEqual(t['stage'],'facts')
-            work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=work['payload']['prose']
+            work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
             data=review(work['payload']['checks'],prose,n)
             data.update(events=[{'op':'clock','before':n-1,'after':n,'evidence':ev(prose,n)}],summary=f'第{n}章。')
             engine.submit(self.db,result(t,data))
@@ -68,7 +68,7 @@ class FastCommitTests(unittest.TestCase):
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         prior=work['payload']['prior_events']
         self.assertEqual(work['payload']['prior_events_source'],'revision')
-        data=review(work['payload']['checks'],work['payload']['prose'],2)
+        data=review(work['payload']['checks'],pack_prose(self.path, work),2)
         dispositions=[{'index':i,'disposition':'kept'} for i in range(len(prior))]
         for d in dispositions:d['disposition']='kept'
         data.update(events=[],summary='仅收束段措辞变化。',prior_dispositions=dispositions)
@@ -76,7 +76,7 @@ class FastCommitTests(unittest.TestCase):
         data['prior_dispositions']=[{'index':i,'disposition':'replaced','reason':'收束段措辞变化,事件内容不变但证据需重锚'} for i in range(len(prior))]
         data['events']=[dict(e) for e in prior]
         for e in data['events']:
-            e['evidence']={'chapter':2,'start':0,'quote':work['payload']['prose']}
+            e['evidence']={'chapter':2,'start':0,'quote':pack_prose(self.path, work)}
         engine.submit(self.db,result(t,data))
         self.assertEqual(self.task()['stage'],'reader')
 
@@ -90,7 +90,7 @@ class FastCommitTests(unittest.TestCase):
             if t.get('stage')=='await_author':engine.approve(self.db);t=self.task()
             respond(self.db,self.path,t,prose=f'第{n}天，周行付了{spend}文买纸墨。')
             t=self.task()
-            work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=work['payload']['prose']
+            work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
             data=review(work['payload']['checks'],prose,n)
             before=100 if n==1 else 70
             data.update(events=[{'op':'resource','asset':'cash','unit':'文','quantity':spend,
@@ -112,7 +112,7 @@ class FastCommitTests(unittest.TestCase):
               'patches':[{'start':base.index(old),'old':old,'new':'周行把纸墨记在了赊账簿上。'}]}
         engine.submit(self.db,result(t,data))
         t=self.task();self.assertEqual(t['stage'],'facts')
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=work['payload']['prose']
+        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
         data=review(work['payload']['checks'],prose,1)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose,1)}],summary='记赊账,无支出。',
                     prior_dispositions=[{'index':0,'disposition':'dropped','reason':'支出句已删,资源流水不再发生'}])

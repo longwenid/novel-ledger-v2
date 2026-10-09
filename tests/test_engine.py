@@ -35,7 +35,7 @@ class BookTests(unittest.TestCase):
         t=self.task();respond(self.db,self.path,t)
         t=self.task();respond(self.db,self.path,t)
         t=self.task();respond(self.db,self.path,t)
-        t=self.task();p=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']['prose']
+        t=self.task();p=pack_prose(self.path, json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
         bad=review(engine.READER_CHECKS,p);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']={'desire':'目标','obstacle':'阻力','change':'变化','read_on_reason':'不想读'}
         bad['findings']=[{'severity':'quality','impact':'人物没有选择，场面像汇报','goal':'呈现犹豫与选择','evidence':ev(p)}]
@@ -43,7 +43,7 @@ class BookTests(unittest.TestCase):
         self.assertEqual(head(self.db,'main'),0);self.assertEqual(self.task()['stage'],'repair')
     def test_bad_evidence_transaction_rolls_back(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
-        t=self.task();p=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']['prose']
+        t=self.task();p=pack_prose(self.path, json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
         data=review(engine.FACT_CHECKS,p);data.update(summary='摘要',events=[{'op':'state','entity':'hero','key':'alive','before':None,'after':False,'evidence':{'chapter':1,'start':0,'quote':'不存在'}}])
         with self.assertRaises(Error):engine.submit(self.db,result(t,data))
         self.assertEqual(self.task()['task_id'],t['task_id']);self.assertEqual(head(self.db,'main'),0)
@@ -85,7 +85,8 @@ class BookTests(unittest.TestCase):
             with self.subTest(mode=mode):
                 put(self.db,'context_mode',mode)
                 work=pack(self.db,'main',1,'draft',{'prose':prose})
-                self.assertEqual(work['payload']['prose'],prose)
+                engine.materialize_prose(self.db,self.path,work)
+                self.assertEqual(pack_prose(self.path, work),prose)
                 self.assertEqual(work['contract'],get(self.db,'contract'))
                 self.assertTrue(work['retrieval']['absence_is_not_proof'])
     def test_long_draft_and_fact_summary_are_preserved_for_reader(self):
@@ -93,14 +94,14 @@ class BookTests(unittest.TestCase):
         text='周行选择让宋禾决定是否签字。\n'+('核对档案的过程必须完整保留。'*5000)+'\n她最终承担了作证的风险。'
         draft=self.task();engine.submit(self.db,result(draft,{'prose':text}))
         facts=self.task();work=json.loads(rpath(facts,'input_path').read_text(encoding='utf-8'))
-        self.assertEqual(work['payload']['prose'],text)
+        self.assertEqual(pack_prose(self.path, work),text)
         summary='周行的选择使宋禾有权决定是否作证，双方仍须承担后果。'*200
         checks=[{'id':check,'result':'pass','reason':'合成工程样本验证完整正文与摘要的传递，不评价文学质量。',
                  'evidence':[ev(text,quote='她最终承担了作证的风险。')]} for check in work['payload']['checks']]
         engine.submit(self.db,result(facts,{'verdict':'pass','checks':checks,'findings':[],'events':[],'summary':summary}))
         self.assertEqual(engine.load_draft(self.db,'main',1)['summary'],summary)
         reader=self.task();work=json.loads(rpath(reader,'input_path').read_text(encoding='utf-8'))
-        self.assertEqual(work['payload']['prose'],text)
+        self.assertEqual(pack_prose(self.path, work),text)
         for field in ('facts_review','writer_brief','plan','contract','state'):self.assertNotIn(field,work)
     def test_file_tampering_does_not_change_database(self):
         t=self.task();rpath(t, 'input_path').write_text('{}', encoding='utf-8')

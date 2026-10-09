@@ -58,7 +58,6 @@ class ReplayCacheTests(unittest.TestCase):
         summaries=[s for s in data['selected'] if s['kind']=='recent_summary']
         self.assertTrue(summaries)
         self.assertTrue(all(s.get('derived_view') for s in summaries))
-        self.assertIn('fact_boundary',data['retrieval'])
-        self.assertIn('派生视图',data['retrieval']['fact_boundary'])
+        self.assertIn('派生视图',data['guide'])  # 事实边界并入 guide 单节
 
 if __name__=='__main__':unittest.main()

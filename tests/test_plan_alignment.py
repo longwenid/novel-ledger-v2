@@ -37,7 +37,7 @@ class PlanAlignmentTests(unittest.TestCase):
     def chapter(self,n=1,**over):
         self.submit(self.task(),{'chapters':[self.plan(n,**over)]})
         respond(self.db,self.path,self.task())
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));text=w['payload']['prose']
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));text=pack_prose(self.path, w)
         data=review(w['payload']['checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
         self.submit(t,data);respond(self.db,self.path,self.task())
 
@@ -89,16 +89,23 @@ class PlanAlignmentTests(unittest.TestCase):
 
     def test_writer_brief_and_discipline_carry_the_new_dimensions(self):
         self.submit(self.task(),{'chapters':[self.plan(1)]})
+        from novel_core.memory import guide
+        discipline=[line for line in guide('plan').splitlines() if line.startswith('[纪律] ')]
+        self.assertEqual(len(discipline),1)
+        self.assertEqual(discipline[0].count('ending_shape'),1)
+        self.assertIn('sequence_refs',guide('plan'))
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        self.assertEqual(w['discipline']['plan'].count('ending_shape'),1)
-        self.assertIn('sequence_refs',w['discipline']['plan'])
+        self.assertNotIn('[纪律]',w['guide'])  # 执笔包不再携带整册纪律
         brief=w['writer_brief']
         self.assertEqual(brief['dramatic_task']['ending_shape'],self.plan(1)['ending_shape'])
         self.assertEqual(brief['rhythm'],self.plan(1)['rhythm'])
         self.assertEqual(brief['execution'],self.plan(1)['execution'])
-        self.assertNotIn('rhythm',w['plan'])
-        self.assertNotIn('execution',w['plan'])
-        self.assertEqual(w['plan_section_refs'],{'execution':'writer_brief.execution','rhythm':'writer_brief.rhythm'})
+        # The pack plan view drops every field the writer brief restates.
+        covered={'reader_experience','goal','conflict','change','ending_shape',
+                 'character_choices','scenes','expression_space','execution','rhythm'}
+        self.assertEqual(covered & set(w['plan']),set())
+        stored=json.loads(self.db.execute("SELECT data FROM plans WHERE branch='main' AND number=1").fetchone()[0])
+        self.assertEqual(stored['rhythm'],self.plan(1)['rhythm'])  # 库内计划不变
         self.assertIn('收束形态',rpath(t, 'brief_path').read_text(encoding='utf-8'))
 
 

@@ -53,8 +53,8 @@ class SemanticContextTests(unittest.TestCase):
         self.assertEqual(work['payload']['prose'],base['payload']['prose'])
         self.assertEqual(work['contract'],base['contract'])
         self.assertEqual(work['state'],base['state'])
-        self.assertFalse(work['context_capacity']['limits_enforced'])
-        self.assertGreater(work['chars'],48000)
+        self.assertNotIn('context_capacity',work)
+        self.assertNotIn('chars',work)
 
     def test_record_pages_cover_exact_source_without_splitting_evidence(self):
         value={'knowledge':{f'hero:k{i}':{'claim':'带引号"和反斜杠\\的完整条件'+str(i),
@@ -114,7 +114,7 @@ class SemanticContextTests(unittest.TestCase):
             contextflow.accept(self.db,work,{'cannot_compact':True,'reason':'保留全部来源与结论。'},f'retain{index}')
         else:self.fail('Structural reduction did not finish')
         self.assertEqual(sum(len(n['notes']) for n in work['context_notes']),10)
-        self.assertGreater(work['chars'],48000)
+        self.assertGreater(len(dump(work)),48000)  # 保留体量用整包长度观测，不再有 chars 字段
         self.assertEqual(work['payload']['prose'],base['payload']['prose'])
 
     def test_kept_and_duplicate_reject_loss_of_any_causal_source(self):

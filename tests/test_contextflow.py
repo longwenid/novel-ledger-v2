@@ -78,9 +78,9 @@ class ContextFlowTests(unittest.TestCase):
         seen=[]
         for _ in range(200):
             task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
-            self.assertEqual(len(rpath(task, 'input_path').read_text(encoding='utf-8')),work['chars'])
-            self.assertFalse(work['context_capacity']['limits_enforced'])
-            if task['stage'] not in ('context_scan','context_reduce'):return task,work,seen
+            if task['stage'] not in ('context_scan','context_reduce'):
+                self.assertIn('[观测]',work['guide'])
+                return task,work,seen
             seen.append(task['stage']);self.submit(task,preparation(task,work,verbose))
         self.fail('Preparation did not converge')
 

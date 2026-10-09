@@ -98,7 +98,7 @@ def compose(db,stage,work,data,draft):
     if 'prose' in data:
         require(not local,'patch_required','局部返修只提交 patches；需要整章重写先 expand_context')
         return data['prose']
-    require(stage=='repair' or (stage=='draft' and payload.get('original_prose')),'patch_stage','补丁仅用于 repair 或历史修订 draft，redesign 需完整重写')
+    require(stage=='repair' or (stage=='draft' and (payload.get('base_hash') or payload.get('original_prose'))),'patch_stage','补丁仅用于 repair 或历史修订 draft，redesign 需完整重写')
     base=source(db,work)
     if stage=='repair':require(draft and draft['prose']==base,'patch_base','当前草稿已不再是本任务的补丁基稿')
     if 'reuse_original' in data:

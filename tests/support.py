@@ -25,6 +25,11 @@ def rpath(task, key='input_path'):
     return p if p.is_absolute() else Path(task['project'])/p
 
 
+def pack_prose(base, pack, key='prose'):
+    """Read delivered narrative prose from its content-addressed file."""
+    return (Path(base)/pack['payload'][key+'_path']).read_text(encoding='utf-8')
+
+
 def result(task,data,**extra):
     return {'schema':'novel-ledger-v2.result/1','task_id':task['task_id'],'input_hash':task['input_hash'],'data':data,**extra}
 
@@ -45,10 +50,10 @@ def respond(db,project,task,prose=None,events=None,ending=False):
         text=prose or f'第{n}章，周行把收据交给宋禾。她看了许久，终于按下指印。'
         data={'prose':text,'repair_note':'修正具体矛盾','design_change':'改为人物主动做决定'}
     elif stage=='facts':
-        text=pack['payload']['prose'];data=review(pack['payload']['checks'],text,n)
+        text=pack_prose(project,pack);data=review(pack['payload']['checks'],text,n)
         data.update(events=events or [],summary='周行交付收据，宋禾确认。')
     elif stage=='reader':
-        text=pack['payload']['prose'];data=review(pack['payload']['checks'],text,n)
+        text=pack_prose(project,pack);data=review(pack['payload']['checks'],text,n)
         data['first_read']={'desire':'交收据','obstacle':'不信','change':'认可','read_on_reason':'后果'}
     else:
         payload=pack['payload']; first=payload['first'];through=payload['through']

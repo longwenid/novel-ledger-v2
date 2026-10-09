@@ -62,7 +62,7 @@ class CharacterTests(unittest.TestCase):
         self.assertEqual(again['character_context']['profiles'],w['character_context']['profiles'])
         self.submit(t,{'prose':'周行问：“最后谁签收？”宋禾说：“把范围写清楚。”'})
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['checks'])
-        data=review(w['payload']['checks'],w['payload']['prose']);data.update(events=[],summary='核对责任');self.submit(t,data)
+        data=review(w['payload']['checks'],pack_prose(self.path, w));data.update(events=[],summary='核对责任');self.submit(t,data)
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertIn('dialogue_identity',w['payload']['checks'])
         for k in ('character_context','writer_brief','state','design_context','plan','contract'):self.assertNotIn(k,w)

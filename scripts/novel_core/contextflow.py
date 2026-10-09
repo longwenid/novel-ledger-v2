@@ -25,32 +25,6 @@ def wire(value):return dump(value)+'\n'
 def view_key(bundle):return 'context_bundle:'+bundle
 
 
-def limits(db):
-    """Compatibility metadata: former character limits are inactive."""
-    old={key:get(db,key) for key in ('context_chars','context_output_chars',
-                                   'context_retrieval_chars','context_overhead_chars')}
-    return {'unit':'unicode_characters_not_tokens','capacity':None,'input':None,
-            'output':None,'retrieval':None,'overhead':None,'limits_enforced':False,
-            'obsolete_fields':{k:v for k,v in old.items() if v is not None},
-            'scan_units_per_page':SCAN_UNITS,'direct_material_units':DIRECT_UNITS,
-            'reduction_inputs_per_group':REDUCE_INPUTS,
-            'boundary':'旧字符配置只作兼容记录，不限制质量、输入、回执或补读；语义分页不证明 token 硬上界。'}
-
-
-def stamp(db,work):
-    policy=limits(db)
-    work['context_capacity']={'unit':policy['unit'],'capacity_chars':None,
-        'package_chars':None,'read_page_chars':None,'limits_enforced':False,
-        'obsolete_fields':policy['obsolete_fields'],
-        'rules':'单任务可见；按完整语义单元分页准备和定向补读；同一任务输入只加载一次；正文与作者约定完整保留；必要结论不受字符配额限制；宿主管理会话交接，不能宣称 token 硬上界。'}
-    work['context_structure']={'scan_units_per_page':SCAN_UNITS,
-        'direct_material_units':DIRECT_UNITS,'reduction_inputs_per_group':REDUCE_INPUTS,
-        'grouping_is_not_content_quota':True}
-    work['chars']=0
-    for _ in range(4):work['chars']=len(wire(work))
-    return work
-
-
 def semantic_units(text,field=None,value=None):
     """Locate complete JSON records in explicit material containers.
 
@@ -162,22 +136,29 @@ def needs_preparation(base):
 
 def _frame(base,ident,core_document):
     plan=base.get('plan',{});payload=base.get('payload',{})
+    brief=(base.get('writer_brief') or {}).get('dramatic_task') or {}
+    purpose={}
+    for key,brief_key in (('goal','goal'),('conflict','conflict'),('change','necessary_change')):
+        value=plan.get(key,brief.get(brief_key))
+        if value is not None:purpose[key]=copy.deepcopy(value)
+    for key in ('entities','topics'):
+        if key in plan:purpose[key]=copy.deepcopy(plan[key])
     return {'schema':'novel-ledger-v2.pack/1','branch':base['branch'],'chapter':base['chapter'],
         'target_stage':base['stage'],
-        'target_purpose':{k:copy.deepcopy(plan[k]) for k in ('goal','conflict','change','entities','topics') if k in plan},
+        'target_purpose':purpose,
         'target_scope':{k:copy.deepcopy(payload[k]) for k in ('scope','first','through','checks','repair_scope') if k in payload},
         'target_materials':{'bundle':ident,'document':'core','document_hash':core_document['hash'],
             'retrieve':'material --task TASK_ID --bundle '+ident+' --document core:FIELD',
             'fields':['contract','plan','payload','style_anchor','writer_brief']+
                 (['character_context'] if base.get('stage')=='character_index' else []),
-            'instruction':'目标核心材料完整冻结。按疑点定向读取必要子节，同一材料在本次准备会话只加载一次；未理解目标约定/正文动作时先补读，不能猜测。正式任务仍携带完整约定和当前正文。'},
+            'instruction':'目标核心材料完整冻结。按疑点定向读取必要子节，同一材料在本次准备会话只加载一次；未理解目标约定/正文动作时先补读，不能猜测。正式任务仍携带完整约定，当前正文以包内 prose 文件交付。'},
         'material_questions':copy.deepcopy(base.get('context_questions',[])),
         'instruction':'独立材料准备：审读本页全部完整语义单元，保留当前任务必要的约束/误信/因果/风险；跨章审稿保留章节来源、选择后果、未决矛盾和兑现关联。取舍须有具体依据，提炼不是新事实。引用使用 document/start/quote 原始字符位置。必要结论不限字符，不能因压缩困难删除。'}
 
 
 def _task(db,bundle,stage,payload):
     work=copy.deepcopy(bundle['frame']);work.update(stage=stage,payload=payload)
-    return stamp(db,work)
+    return work
 
 
 def _upgrade_bundle(db,bundle):
@@ -221,7 +202,7 @@ def _preparation_basis(core,documents):
     Source/unit indexes remain reusable across chapters and different stages.
     """
     target=copy.deepcopy(core)
-    for key in ('context_identity','chars','context_capacity','context_structure','context_materials'):
+    for key in ('context_identity','chars','context_capacity','context_structure','context_materials','guide'):
         target.pop(key,None)
     manifest=[{'source_id':d['source_id'],'field':d['field'],'version':d['version'],
                'unit_versions':[[u['unit_id'],u['unit_version']] for u in d['units']]}
@@ -297,12 +278,12 @@ def _prepared(db,bundle,ident):
                 sources.cache_put(db,basis['key'],basis['purpose_hash'],basis['dependency_signature'],
                     {'nodes':nodes,'node_archive':bundle['node_archive'],'source_bundle':ident,
                      'read_dependencies':reads,'source_manifest':basis['source_manifest']})
-    return stamp(db,work)
+    return work
 
 
 def fit(db,base):
     core,documents=_documents(base,db)
-    if sum(len(d['units']) for d in documents)<=DIRECT_UNITS:return stamp(db,copy.deepcopy(base))
+    if sum(len(d['units']) for d in documents)<=DIRECT_UNITS:return copy.deepcopy(base)
     ident=digest(base);bundle=get(db,view_key(ident))
     if bundle is None:
         core.pop('chars',None)

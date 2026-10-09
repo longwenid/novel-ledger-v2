@@ -46,7 +46,9 @@ class ReviewChunkTests(unittest.TestCase):
         self.assertEqual(t['stage'],'batch_review')
         payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
         self.assertEqual((payload['first'],payload['through']),(1,3))
-        self.assertIn('【第1章】',payload['prose']);self.assertIn('【第3章】',payload['prose'])
+        self.assertEqual([f['chapter'] for f in payload['prose_files']],[1,2,3])
+        stored=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=3',('main',)).fetchone()[0]
+        self.assertEqual((Path(self.path)/payload['prose_files'][2]['prose_path']).read_text(encoding='utf-8'),stored)
         # 模拟前两个 chunk 已审:游标推进到 7..9,再 10 单独成块
         with transaction(self.db):
             self.db.execute("UPDATE tasks SET state='cancelled' WHERE state='pending'")

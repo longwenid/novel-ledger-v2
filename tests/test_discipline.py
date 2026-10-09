@@ -21,11 +21,13 @@ class DisciplineTests(unittest.TestCase):
     def test_pack_carries_discipline(self):
         t=self.task()
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        d=work['discipline']
-        self.assertIn('pass/fix',d['review'])
-        self.assertIn('links ID',d['events'])
-        self.assertIn('上限 2 次',d['hooks'])
-        self.assertIn('时间词',d['clock'])
+        self.assertIn('[提交契约]',work['guide'])
+        self.assertIn('ending_shape',work['guide'])  # plan 阶段只挂 plan 纪律
+        facts=pack(self.db,'main',1,'facts',{})
+        self.assertIn('pass/fix',facts['guide'])
+        self.assertIn('links ID',facts['guide'])
+        self.assertIn('上限 2 次',facts['guide'])
+        self.assertIn('时间词',facts['guide'])
 
     def test_resource_error_names_holder_and_holdings(self):
         s=seed(get(self.db,'contract'))
@@ -101,15 +103,16 @@ class DependencyInjectionTests(unittest.TestCase):
         draft=pack(self.db,'main',4,'draft',{})
         kinds={s['chapter']:s for s in draft['selected'] if s['kind']=='required_chapter'}
         self.assertEqual(set(kinds),{1,2,3})
-        self.assertTrue(all(len(k['text'])>10 for k in kinds.values()))
+        self.assertTrue(all(k['prose_hash'] and 'text' not in k for k in kinds.values()))
 
     def test_reader_discipline_trimmed_to_review(self):
         from novel_core.memory import pack
         self._commit_sources()
         reader=pack(self.db,'main',4,'reader',{'prose':'第4章正文。'})
-        self.assertEqual(set(reader['discipline']),{'review'})
+        self.assertEqual(reader['guide'].count('[纪律]'),1)
+        self.assertIn('pass/fix',reader['guide'])
         facts=pack(self.db,'main',4,'facts',{})
-        self.assertGreater(len(facts['discipline']),1)
+        self.assertGreater(facts['guide'].count('[纪律]'),1)
 
 
 if __name__=='__main__':unittest.main()
