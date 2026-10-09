@@ -145,7 +145,8 @@ def save(db,branch,scope,chapter,data,task_id):
     common={'dependencies','canon_refs','open_questions'}
     if scope=='world':
         allowed=common|{'overview','causal_spine','event_spine','factions','geography','core_locations','ending_dependencies'}
-        require(set(data)<=allowed,'design','全书设计包含未知字段；不能提交正文事件或覆盖作者约定')
+        unknown=sorted(set(data)-allowed)
+        require(not unknown,'design',f'全书设计包含未知字段：{unknown}；允许的字段：{sorted(allowed)}。不能提交正文事件或覆盖作者约定')
         require(text(data.get('overview')) and strings(data.get('causal_spine'),True) and strings(data.get('ending_dependencies'),True),'design','全书设计需要概述、主要因果节点和终局依赖')
         validate_spine(data.get('event_spine'))
         geo=data.get('geography')
@@ -157,7 +158,8 @@ def save(db,branch,scope,chapter,data,task_id):
         world_hash=None
     else:
         allowed=common|{'volume','purpose','carries_in','climax','handoff','location_ids','new_locations','sequence','action_constraints','ending_setup','choice_log'}
-        require(set(data)<=allowed,'design','分卷设计包含未知字段')
+        unknown=sorted(set(data)-allowed)
+        require(not unknown,'design',f'分卷设计包含未知字段：{unknown}；允许的字段：{sorted(allowed)}')
         require(usable(db,branch,'world'),'design','先完成有效全书设计')
         require(data.get('volume')==scope and text(data.get('purpose')),'design','分卷用途或 ID 不匹配任务')
         # Volume outline: how this volume is entered, peaked, and handed on —
@@ -208,7 +210,7 @@ def invalidate(db,branch,scope,reason):
     log(db,'design_invalidate',{'branch':branch,'scope':scope,'reason':reason})
 
 
-def copy_for_revision(db,parent,branch,start):
+def copy_for_revision(db,parent,branch,start,style_only=False):
     if not enabled(db):return
     ids=[v['id'] for v in get(db,'contract')['volumes']]
     row=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(parent,start)).fetchone()
@@ -216,10 +218,11 @@ def copy_for_revision(db,parent,branch,start):
     for scope in ['world']+ids:
         record=current(db,parent,scope)
         if not record:continue
-        if any(int(n)>=start for n in record['sources']) or (scope!='world' and ids.index(scope)>=affected):
+        if not style_only and (any(int(n)>=start for n in record['sources']) or (scope!='world' and ids.index(scope)>=affected)):
             record['active']=False;record['invalidation_reason']='正文候选修订，需要重审受影响设计'
         put(db,key(branch,scope),record)
-    db.execute('DELETE FROM plans WHERE branch=? AND number>=?',(branch,start))
+    if not style_only:
+        db.execute('DELETE FROM plans WHERE branch=? AND number>=?',(branch,start))
 
 
 def history(db,branch,scope):

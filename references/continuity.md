@@ -40,6 +40,8 @@ dependencies 指定必要历史全文，entities/topics/hooks 选择材料；omi
 
 `revise --from-chapter N --reason ...` 从最早受影响章建立候选分支。动手前先用 `impact --fact <坐标>` 查影响面：该事实、认知或关系被哪些已提交章断言、其后哪些未来章计划仍列出相关实体——波及章节都须复核或重写。系统复制未改前缀，按新稿重建其后事件、摘要、审稿和记忆；后续计划在重新写作前要核对因果，必要时在正文重设计任务中调整。修订完成并复核后，单一事务切换正式分支。
 
+只改文风不改内容（形容词密度、节奏、声线、章末处理）用 `revise --style-only`：设计记录原样保持激活、全部计划保留，分支上直接从 draft 重写；不得改变事实与因果，facts 审稿仍全额核验。定调前（试章未 approve）的文风驳回更轻：`pilot --reason "<意见>"` 原地重跑第 1 章，不建分支。
+
 原分支始终留存；失败可 `revise --discard` 丢弃候选，恢复正式分支。`config --key published_through --value N` 冻结已经对外发布的正文，边界只前进；导出不等于发布，系统不自动上传小说。
 
 候选可用 [版本补丁](repairs.md) 或 reuse_original，不免除必要复审。candidate 读取不可变基稿快照，不是事实来源。

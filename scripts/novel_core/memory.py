@@ -18,7 +18,7 @@ def recall(db, branch, query='', entity=None, topic=None, start=1, end=None, off
 
 DISCIPLINE = {
     'review': 'checks 结果只能 pass/fix;审稿以充分核验为先:quote 精确定位必要语境,reason 说明事实/因果与阅读影响,不设字数限制;避免重复抄录与自辩,必要证据不得省略;pass 时 findings 必须为 [],first_read 如实记录首读体验,章摘要覆盖选择、后果和未决压力;每项证据 {chapter,start,quote} 以任务 branch 字段所指分支的库存正文为坐标系实测且唯一命中(分段视图中的【第N章】章头只是分隔,不属于正文,quote 不要包含它;export/html 默认输出 active 分支,与工作分支可能不同,须显式 --branch),不适用须 not_applicable+具体理由',
-    'events': 'before 照抄账本当前值(首次登记为 null);move 必须引用 continuity 中已登记的 links ID,不确定先 recall;resource 只登记已入账资产,from_before/to_before 照账本,未登记道具不补流水',
+    'events': 'before 照抄账本当前值(首次登记为 null);clock.before 恒为包内 state.clock 当前值(首章为 0),不是 null;move 必须引用 continuity 中已登记的 links ID,不确定先 recall;resource 只登记已入账资产,from_before/to_before 照账本,未登记道具不补流水',
     'hooks': '钩子只为正文已写明的重大承诺登记(约定定调或读者可指认的明确伏笔),不为章末效果硬造,无钩可留就不留;延期上限 2 次且每次须 reason;closed 不可重开;due 为最迟章号,到期章必须兑现/关闭/再延',
     'clock': '证据须引用含时间词(日/夜/晨/时…)的正文语句;计划 scenes 的 D+N 是日程锚',
     'patches': 'start 为完整基稿的字符位置,old 必须与该处原文精确一致',

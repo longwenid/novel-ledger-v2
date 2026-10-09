@@ -18,7 +18,7 @@ def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact'):
+    for name in ('init','status','next','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
@@ -35,7 +35,9 @@ def parser():
         if name=='map':
             s.add_argument('--place',required=True);s.add_argument('--through',type=int);s.add_argument('--branch');s.add_argument('--depth',type=int,default=2);s.add_argument('--format',choices=['json','mermaid'],default='json')
         if name=='revise':
-            s.add_argument('--from-chapter',type=int);s.add_argument('--reason',default='');s.add_argument('--discard',action='store_true')
+            s.add_argument('--from-chapter',type=int);s.add_argument('--reason',default='');s.add_argument('--discard',action='store_true');s.add_argument('--style-only',action='store_true')
+        if name=='pilot':
+            s.add_argument('--reason',required=True)
         if name=='pause':
             s.add_argument('--reason',required=True);s.add_argument('--cancel-task',action='store_true')
         if name=='export': s.add_argument('--out',required=True)
@@ -176,7 +178,7 @@ def dispatch_raw(args):
             require(isinstance(receipt,dict),'measure','预检结果需为 JSON 对象')
             for key in ('task_id','input_hash'):
                 expected=pending['id'] if key=='task_id' else pending['input_hash']
-                require(key not in receipt or receipt[key]==expected,'stale_task','预检结果不属于当前任务；不能改旧信封继续使用')
+                require(key not in receipt or receipt[key]==expected,'stale_task','预检结果不属于当前任务；不能改旧信封继续使用。result.json 直接省略 task_id/input_hash 即自动绑定当前待处理任务')
             data=receipt.get('data',receipt)
             require(isinstance(data,dict),'measure','预检 data 需为对象')
             work=json.loads(pending['input'])
@@ -265,6 +267,8 @@ def dispatch_raw(args):
         if cmd=='impact':
             branch=args.branch or get(db,'work_branch')
             return engine.fact_impact(db,branch,args.fact)
+        if cmd=='pilot':
+            return engine.pilot_reset(db,args.reason)
         if cmd=='revise':
             with transaction(db):
                 if args.discard:
@@ -275,7 +279,7 @@ def dispatch_raw(args):
                     put(db,'work_branch',get(db,'active_branch'));put(db,'status','ready')
                     log(db,'revision_discard',{'branch':work})
                     return engine.status(db)
-                return engine.begin_revision(db,args.from_chapter,args.reason)
+                return engine.begin_revision(db,args.from_chapter,args.reason,style_only=args.style_only)
         if cmd=='config':
             if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full')}
             if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key)}

@@ -1020,7 +1020,7 @@ def submit(db, result):
         return {'accepted':True,'task_id':task['id'],**extra,**status(db)}
 
 
-def begin_revision(db,start,reason,internal=False):
+def begin_revision(db,start,reason,internal=False,style_only=False):
     parent=get(db,'work_branch')
     n=head(db,parent)
     parent_meta=db.execute('SELECT * FROM branches WHERE id=?',(parent,)).fetchone()
@@ -1037,7 +1037,7 @@ def begin_revision(db,start,reason,internal=False):
         db.execute(f'INSERT INTO {table} SELECT ?,{cols} FROM {table} WHERE branch=? AND {field}<?',(branch,parent,start))
     db.execute('INSERT INTO plans SELECT ?,number,data FROM plans WHERE branch=?',(branch,parent))
     from .design import copy_for_revision
-    copy_for_revision(db,parent,branch,start)
+    copy_for_revision(db,parent,branch,start,style_only=style_only)
     from .characters import copy_for_revision as copy_characters
     copy_characters(db,parent,branch)
     # Reviews entirely before the changed suffix remain valid.
@@ -1046,8 +1046,34 @@ def begin_revision(db,start,reason,internal=False):
     put(db,'work_branch',branch)
     put(db,'status','ready')
     put(db,'pause_reason',None)
-    log(db,'revision_begin',{'branch':branch,'parent':parent,'start':start,'through':through,'reason':reason})
-    return {'branch':branch,'start':start,'through':through}
+    log(db,'revision_begin',{'branch':branch,'parent':parent,'start':start,'through':through,'reason':reason,'style_only':style_only})
+    result={'branch':branch,'start':start,'through':through}
+    if style_only:
+        result['style_only']=True
+        result['boundary']='文风修订：设计与计划保持有效，分支上直接从 draft 重写；不得改变事实、事件与因果，facts 审稿仍全额核验前态'
+    return result
+
+
+def pilot_reset(db,reason):
+    """Discard the awaiting-approval pilot chapter and re-run its chain from draft.
+
+    Tone-setting is a write-review-rewrite loop before approval; it must not
+    cost a candidate branch or a design re-alignment. After approval, style
+    changes go through revise --style-only instead."""
+    require(not get(db,'pilot_approved',False),'pilot','试章已定调；后续文风修订走 revise --style-only')
+    require(reason.strip(),'pilot','驳回重写必须说明定调意见')
+    require(get(db,'status') not in ('paused','completed'),'pilot','运行已暂停或完本，不能驳回试章')
+    require(not db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone(),'pending','先完成当前任务或显式 pause --cancel-task 再驳回重写')
+    branch=get(db,'work_branch')
+    require(branch==get(db,'active_branch'),'revision','存在候选修订分支，先处理完再驳回试章')
+    require(head(db,branch)==1,'pilot','驳回重写只适用于尚未定调的第 1 章')
+    with transaction(db):
+        for table,field in (('events','chapter'),('chapters','number'),('reviews','through'),('memories','through')):
+            db.execute(f'DELETE FROM {table} WHERE branch=?',(branch,))
+        db.execute("UPDATE tasks SET state='cancelled' WHERE state='pending'")
+        log(db,'pilot_reset',{'branch':branch,'reason':reason})
+    put(db,'status','ready')
+    return status(db)
 
 
 def promote(db):
