@@ -22,7 +22,7 @@ context_mode=bounded 表示按任务和来源组织材料。context_chars/contex
 
 ## 准备回执与来源
 
-信封沿用 [protocol](protocol.md)。payload 含 fragment、document/hash、start/end、目标阶段、用途、疑点与核心来源索引。用 target_materials 的 core:FIELD 补读完整子节，正式任务保留完整核心；start 是冻结文档字符坐标，不是页内或字节位置。
+信封沿用 [protocol](protocol.md)。payload 含页文本文件（prose_path/prose_hash）、document/hash、start/end、目标阶段、用途、疑点与核心来源索引。用 target_materials 的 core:FIELD 补读完整子节，正式任务保留完整核心；start 是冻结文档字符坐标，不是页内或字节位置；页文本文件字节即文档 [start:end] 切片。
 
 context_scan 的 data：
 

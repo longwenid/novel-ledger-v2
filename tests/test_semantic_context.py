@@ -30,7 +30,8 @@ class SemanticContextTests(unittest.TestCase):
 
     def scan_reply(self,work):
         p=work['payload'];unit=p['units'][0]
-        quote=p['fragment'][unit['semantic_start']-p['start']:unit['semantic_end']-p['start']]
+        page=get(self.db,'candidate_text:'+p['prose_hash'])  # 直调 fit/accept,无 task_files 物化
+        quote=page[unit['semantic_start']-p['start']:unit['semantic_end']-p['start']]
         return {'coverage':{k:p[k] for k in ('document','document_hash','start','end')},
                 'notes':[{'text':'当前任务需要的完整约束。'*600,
                           'evidence':[{'document':p['document'],'start':unit['semantic_start'],'quote':quote}]}]}

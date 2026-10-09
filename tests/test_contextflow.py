@@ -14,10 +14,10 @@ from novel_core.ledger import seed, append_events, replay
 MARKER='她误信钥匙在东门'
 
 
-def preparation(task,work,verbose=False):
+def preparation(project,task,work,verbose=False):
     p=work['payload']
     if task['stage']=='context_scan':
-        notes=[];text=p['fragment']
+        notes=[];text=(Path(project)/p['prose_path']).read_text(encoding='utf-8')
         if MARKER in text:
             notes=[{'text':'保留误信；不能替人物自动知道真相。','evidence':[{'document':p['document'],'start':p['start']+text.index(MARKER),'quote':MARKER}]}]
         elif verbose:
@@ -81,7 +81,7 @@ class ContextFlowTests(unittest.TestCase):
             if task['stage'] not in ('context_scan','context_reduce'):
                 self.assertIn('[观测]',work['guide'])
                 return task,work,seen
-            seen.append(task['stage']);self.submit(task,preparation(task,work,verbose))
+            seen.append(task['stage']);self.submit(task,preparation(self.path,task,work,verbose))
         self.fail('Preparation did not converge')
 
     def test_growth_prepares_then_writes_without_changing_canon(self):
@@ -101,7 +101,7 @@ class ContextFlowTests(unittest.TestCase):
 
     def test_restart_duplicate_and_bad_coverage_are_atomic(self):
         before=self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
-        data=preparation(task,work);bad=copy.deepcopy(data);bad['coverage']['end']-=1
+        data=preparation(self.path,task,work);bad=copy.deepcopy(data);bad['coverage']['end']-=1
         with self.assertRaises(Error):self.submit(task,bad)
         self.db.close();self.db=connect(self.path)
         same=engine.next_task(self.db,self.path);self.assertEqual(task['input_hash'],same['input_hash'])
@@ -111,7 +111,7 @@ class ContextFlowTests(unittest.TestCase):
 
     def test_forged_note_evidence_is_rejected(self):
         self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
-        data=preparation(task,work);data['notes']=[{'text':'假的来源','evidence':[{'document':work['payload']['document'],'start':0,'quote':'不存在的内容'}]}]
+        data=preparation(self.path,task,work);data['notes']=[{'text':'假的来源','evidence':[{'document':work['payload']['document'],'start':0,'quote':'不存在的内容'}]}]
         with self.assertRaises(Error):self.submit(task,data)
         self.assertEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
 
@@ -122,7 +122,7 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(get(self.db,'status'),'ready')
         bundle=get(self.db,contextflow.view_key(work['payload']['bundle']))
         node=bundle['node_archive'][task['task_id']]
-        self.assertEqual(node['notes'][0]['evidence'][0]['quote'],work['payload']['fragment'])
+        self.assertEqual(node['notes'][0]['evidence'][0]['quote'],pack_prose(self.path,work))
         self.assertEqual(node['retained_source']['end'],work['payload']['end'])
         self.assertNotEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
 
@@ -145,7 +145,7 @@ class ContextFlowTests(unittest.TestCase):
         for _ in range(100):
             task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
             if task['stage']=='context_reduce':break
-            self.submit(task,preparation(task,work,verbose=True))
+            self.submit(task,preparation(self.path,task,work,verbose=True))
         self.assertEqual(task['stage'],'context_reduce')
         bad={'notes':[],'omission_reason':'伪称已经保留','accounting':[{'input_id':n['id'],'disposition':'kept','reason':'伪称保留'} for n in work['payload']['inputs']]}
         with self.assertRaises(Error) as exc:self.submit(task,bad)

@@ -151,7 +151,7 @@ def _frame(base,ident,core_document):
             'retrieve':'material --task TASK_ID --bundle '+ident+' --document core:FIELD',
             'fields':['contract','plan','payload','style_anchor','writer_brief']+
                 (['character_context'] if base.get('stage')=='character_index' else []),
-            'instruction':'目标核心材料完整冻结。按疑点定向读取必要子节，同一材料在本次准备会话只加载一次；未理解目标约定/正文动作时先补读，不能猜测。正式任务仍携带完整约定，当前正文以包内 prose 文件交付。'},
+            'instruction':'目标核心材料完整冻结。按疑点定向读取必要子节，同一材料在本次准备会话只加载一次；未理解目标约定/正文动作时先补读，不能猜测。正式任务仍携带完整约定，当前正文以包内 prose 文件交付；context_scan 页文本按 payload.prose_path 文件交付，evidence.start 为文档绝对字符位置，不是页内位置。'},
         'material_questions':copy.deepcopy(base.get('context_questions',[])),
         'instruction':'独立材料准备：审读本页全部完整语义单元，保留当前任务必要的约束/误信/因果/风险；跨章审稿保留章节来源、选择后果、未决矛盾和兑现关联。取舍须有具体依据，提炼不是新事实。引用使用 document/start/quote 原始字符位置。必要结论不限字符，不能因压缩困难删除。'}
 
@@ -186,9 +186,12 @@ def _page(db,bundle):
     doc=bundle['documents'][bundle['doc_index']]
     require(digest(doc['text'])==doc['hash'],'context_integrity','材料快照损坏')
     start,end,units=_slice_units(doc['text'],doc['units'],bundle['offset'])
+    # Page text travels as a content-addressed file like narrative prose; a
+    # multi-kilobyte JSON string would be truncated by line-oriented readers.
+    from .memory import prose_ref
     return _task(db,bundle,'context_scan',{'bundle':bundle['id'],'document':doc['id'],
         'document_hash':doc['hash'],'field':doc['field'],'start':start,'end':end,
-        'total_chars':len(doc['text']),'fragment':doc['text'][start:end],
+        'total_chars':len(doc['text']),**prose_ref(db,doc['text'][start:end]),
         'units':_unit_view(units),'page_unit_count':len(units),'total_units':len(doc['units']),
         **{k:doc[k] for k in ('source_id','version') if k in doc},
         'notes_max_chars':None,'complete_semantic_units':True})
@@ -331,9 +334,12 @@ def accept(db,work,data,task_id):
                 'accounting':[{'input_id':n['id'],'disposition':'kept','reason':reason} for n in payload['inputs']],
                 'omission_reason':reason}
         else:
+            fragment=payload.get('fragment')
+            if fragment is None:fragment=get(db,'candidate_text:'+payload.get('prose_hash',''))
+            require(isinstance(fragment,str) and fragment,'context_notes','补整页保留缺少本页文本')
             data={'coverage':{k:payload[k] for k in ('document','document_hash','start','end')},
                 'notes':[{'text':'必要原页完整保留：'+reason,'evidence':[{
-                    'document':payload['document'],'start':payload['start'],'quote':payload['fragment']}]}]}
+                    'document':payload['document'],'start':payload['start'],'quote':fragment}]}]}
     notes=data.get('notes');require(isinstance(notes,list),'context_notes','需要 notes 数组')
     documents={d['id']:d for d in bundle['documents']};inherited=set()
     if work['stage']=='context_reduce':

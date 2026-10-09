@@ -499,7 +499,9 @@ def task_files(db, project, task):
     root = Path(project).resolve()/work_rel(task)
     root.mkdir(parents=True,exist_ok=True)
     work = json.loads(task['input'])
-    write_json(root/'input.json',work,compact=True)
+    # Pretty-printed delivery view: workers read it with line-oriented tools
+    # that truncate long lines; the DB-stored input stays the hashed truth.
+    write_json(root/'input.json',work)
     prose_files = materialize_prose(db, project, work)
     base = work_rel(task)
     result = {'schema':'novel-ledger-v2.task/1','task_id':task['id'],'stage':task['stage'],

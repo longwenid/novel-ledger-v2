@@ -39,9 +39,10 @@ class IncrementalSourcesTests(unittest.TestCase):
             p=work['payload']
             if preserve:data={'cannot_compact':True,'reason':'每项条件是本任务不可丢失的对照材料'}
             elif work['stage']=='context_scan':
+                page=get(self.db,'candidate_text:'+p['prose_hash'])  # 直调 fit/accept,无 task_files 物化
                 data={'coverage':{k:p[k] for k in ('document','document_hash','start','end')},
                       'notes':[{'text':'合成测试保留本页的完整已读条件','evidence':[{
-                          'document':p['document'],'start':p['start'],'quote':p['fragment']}]}]}
+                          'document':p['document'],'start':p['start'],'quote':page}]}]}
             else:
                 data={'notes':[copy.deepcopy(note) for n in p['inputs'] for note in n['notes']],
                       'accounting':[{'input_id':n['id'],'disposition':'kept','reason':'保留原条件及全部证据'} for n in p['inputs']]}

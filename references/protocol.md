@@ -2,7 +2,7 @@
 
 ## 不变信封
 
-next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input_hash/project/input_path/output_path。input_path/output_path/brief_path 是 PROJECT 相对 posix 路径，读写时与 project 拼接。输入存于数据库，重复 next 重建同一输入，修改文件不能改变任务。正文按内容寻址文件交付：包内 `prose_path`/`prose_hash`（facts/reader/repair 的 payload）与 `prose_files`（分段审稿每章一项 {chapter,prose_path,prose_hash}）、`selected[].prose_path`（依赖章原文），文件在 `work/prose/<哈希前16>.txt`，字节与账本库存正文逐字一致，`{chapter,start,quote}` 坐标以文件内容为准；文件缺失或损坏时重新 next 即可重建（task 信封的 prose_files 字段列出已写文件）。
+next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input_hash/project/input_path/output_path。input_path/output_path/brief_path 是 PROJECT 相对 posix 路径，读写时与 project 拼接。输入存于数据库，重复 next 重建同一输入，修改文件不能改变任务。input.json 是多行缩进的交付视图（真源在库，逐行读取即可）；context_scan 的页文本按 payload.prose_path/prose_hash 文件交付，evidence.start 为文档绝对字符位置，不是页内位置。正文按内容寻址文件交付：包内 `prose_path`/`prose_hash`（facts/reader/repair 的 payload）与 `prose_files`（分段审稿每章一项 {chapter,prose_path,prose_hash}）、`selected[].prose_path`（依赖章原文），文件在 `work/prose/<哈希前16>.txt`，字节与账本库存正文逐字一致，`{chapter,start,quote}` 坐标以文件内容为准；文件缺失或损坏时重新 next 即可重建（task 信封的 prose_files 字段列出已写文件）。
 
 任务文件在 `work/ch<四位章号>/<阶段>-<ID前8位>/`。派新任务时已完成目录只留最近 3 个，tidy 可清空；真源仍为 SQLite。
 
