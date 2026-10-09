@@ -8,7 +8,7 @@ import json
 import contextlib
 from .store import digest, dump, require
 
-PROJECTION_VERSION = 1
+PROJECTION_VERSION = 2
 
 
 def ensure_schema(db):
@@ -24,6 +24,8 @@ def ensure_schema(db):
         'CREATE INDEX IF NOT EXISTS local_entity_lookup ON local_event_entities(branch,entity,chapter,idx)',
         'CREATE TABLE IF NOT EXISTS local_event_topics(branch TEXT,chapter INTEGER,idx INTEGER,topic TEXT,PRIMARY KEY(branch,chapter,idx,topic))',
         'CREATE INDEX IF NOT EXISTS local_topic_lookup ON local_event_topics(branch,topic,chapter,idx)',
+        'CREATE TABLE IF NOT EXISTS local_event_facts(branch TEXT,chapter INTEGER,idx INTEGER,fact TEXT,PRIMARY KEY(branch,chapter,idx,fact))',
+        'CREATE INDEX IF NOT EXISTS local_fact_lookup ON local_event_facts(branch,fact,chapter,idx)',
         'CREATE TABLE IF NOT EXISTS local_projection_versions(branch TEXT,kind TEXT,generation INTEGER,version INTEGER,PRIMARY KEY(branch,kind))',
         'CREATE TABLE IF NOT EXISTS local_state_snapshots(branch TEXT PRIMARY KEY,version TEXT,contract_hash TEXT,event_generation INTEGER,invalid_generation INTEGER,chapter INTEGER,idx INTEGER,tail_hash TEXT,source_hash TEXT,state TEXT,checksum TEXT)',
         'CREATE TABLE IF NOT EXISTS local_budget_dirty(branch TEXT,chapter INTEGER,PRIMARY KEY(branch,chapter))',
@@ -117,8 +119,26 @@ def event_topics(event):
     return {value for value in values if isinstance(value,str)}
 
 
+def event_facts(event):
+    """Ledger coordinates an event asserts, for revision impact lookups.
+
+    state facts and knowledge topics use the same `entity:key` shape recall
+    shows; relation events are indexed in both directions so a dyad query
+    from either endpoint hits."""
+    op = event.get('op')
+    out = set()
+    if op == 'state' and isinstance(event.get('entity'), str) and isinstance(event.get('key'), str):
+        out.add(event['entity'] + ':' + event['key'])
+    elif op == 'relation' and all(isinstance(event.get(k), str) and event[k] for k in ('from','to','key')):
+        out.add(event['from'] + '>' + event['to'] + ':' + event['key'])
+        out.add(event['to'] + '>' + event['from'] + ':' + event['key'])
+    elif op == 'knowledge' and isinstance(event.get('entity'), str) and isinstance(event.get('topic'), str):
+        out.add(event['entity'] + ':' + event['topic'])
+    return out
+
+
 def _replace_event(db, branch, chapter, idx):
-    for table in ('local_event_rows','local_event_entities','local_event_topics'):
+    for table in ('local_event_rows','local_event_entities','local_event_topics','local_event_facts'):
         db.execute(f'DELETE FROM {table} WHERE branch=? AND chapter=? AND idx=?', (branch, chapter, idx))
     row = db.execute('SELECT data,hash FROM events WHERE branch=? AND chapter=? AND idx=?', (branch,chapter,idx)).fetchone()
     if not row:
@@ -127,6 +147,7 @@ def _replace_event(db, branch, chapter, idx):
     db.execute('INSERT INTO local_event_rows VALUES (?,?,?,?,?,?)', (branch,chapter,idx,digest(row['data']),row['hash'],dump(event)))
     db.executemany('INSERT INTO local_event_entities VALUES (?,?,?,?)', [(branch,chapter,idx,r) for r in sorted(event_references(event))])
     db.executemany('INSERT INTO local_event_topics VALUES (?,?,?,?)', [(branch,chapter,idx,r) for r in sorted(event_topics(event))])
+    db.executemany('INSERT INTO local_event_facts VALUES (?,?,?,?)', [(branch,chapter,idx,r) for r in sorted(event_facts(event))])
 
 
 def _sync_events(db, branch):
@@ -135,7 +156,7 @@ def _sync_events(db, branch):
     if old and old['generation']==generation and old['version']==PROJECTION_VERSION:
         return
     if not old or old['version']!=PROJECTION_VERSION:
-        for table in ('local_event_rows','local_event_entities','local_event_topics'):
+        for table in ('local_event_rows','local_event_entities','local_event_topics','local_event_facts'):
             db.execute(f'DELETE FROM {table} WHERE branch=?', (branch,))
         coords = db.execute('SELECT chapter,idx FROM events WHERE branch=? ORDER BY chapter,idx', (branch,)).fetchall()
     else:
@@ -144,6 +165,19 @@ def _sync_events(db, branch):
         _replace_event(db,branch,row['chapter'],row['idx'])
     db.execute('DELETE FROM local_event_dirty WHERE branch=?', (branch,))
     db.execute("INSERT OR REPLACE INTO local_projection_versions VALUES (?,'events',?,?)", (branch,generation,PROJECTION_VERSION))
+
+
+def impacted_events(db, branch, fact):
+    """Committed events asserting a fact coordinate, in chapter order.
+
+    Exact-match lookup on the inverted fact index; relation coordinates were
+    indexed in both directions, so querying `to>from:key` finds the event that
+    wrote `from>to:key`. Coordinates are the keys recall --state displays."""
+    sync_events(db,branch)
+    rows = db.execute('SELECT f.chapter,f.idx,r.search_data FROM local_event_facts f '
+                      'JOIN local_event_rows r ON r.branch=f.branch AND r.chapter=f.chapter AND r.idx=f.idx '
+                      'WHERE f.branch=? AND f.fact=? ORDER BY f.chapter,f.idx', (branch,fact)).fetchall()
+    return [{'chapter':r['chapter'],'idx':r['idx'],'event':json.loads(r['search_data'])} for r in rows]
 
 
 def recall_events(db, branch, query='', entity=None, topic=None, start=1, end=None, offset=0, limit=20, newest=False):

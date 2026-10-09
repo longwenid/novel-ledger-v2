@@ -101,6 +101,7 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 | entity | entity:{id,name,kind,aliases?} | 注册稳定实体，称呼不能与已登记者冲突 |
 | alias | entity,alias | 为同一实体增加唯一称呼 |
 | state | entity,key,before,after | 前态校验；关系、伤势、能力等动态状态；已有地图站位须用专用事件 |
+| relation | from,to,key,before,after | 有向关系边（from 为视角方）；键不含 : 或 >；两端实体须已注册；前态校验同 state |
 | knowledge | entity,topic,before,claim,stance,source | before 是旧 claim 或 null；stance 为 knows/believes/suspects/disproved |
 | resource | asset,unit,from,to,quantity,reason，以及存在两侧的 from_before/to_before | 同单位资源转移；外部获得/消耗一端可 null |
 | hook | id,before,status；首次 text,due | status 为 open/paid/closed；due 为最迟章号；延期和 closed 需要 reason |
@@ -113,6 +114,10 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 ## 按需扩展与成本观察
 
 空间事件 `anchor/anchor_assert/anchor_change/place/place_change/link/link_change/placement/move/perceive`、address_responses 和地图查询见 [空间协议](spatial-continuity.md)。人物小传、character_development、对白意图见 [人物协议](characters.md)。event_spine、sequence_refs、设计失效与重规划见 [分层设计](design-and-brief.md)。按本任务 payload.checks 返回检查项，不写死旧版列表。
+
+## 修订影响查询
+
+`impact --fact <坐标>` 返回某事实坐标被断言过的全部已提交章节与事件摘要，以及其后仍列出该实体的未来章计划。坐标即 `recall --state` 显示的键：state 事实 `entity:key`、knowledge `entity:topic`、关系 `from>to:key`（任一端查询都命中）。历史修订前先查影响面；查无记录不等于没有牵连。查询计入当前任务的补读配额。
 
 clock 可用 thread 维护独立支线日历；主线时间不因支线事件自动变化。场景 time_hint 的 D+N 以计划签发时的时钟为锚；有 day_span 的章结算须满足 `[锚+N_min,锚+N_max+1]`。这些是日程和引用校验，时间词存在不能证明推算语义正确。
 

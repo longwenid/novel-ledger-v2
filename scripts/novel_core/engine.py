@@ -1066,6 +1066,46 @@ def promote(db):
     log(db,'revision_promote',{'from':old,'to':branch})
 
 
+def _fact_summary(event):
+    op=event.get('op')
+    def clip(v):
+        text=repr(v)
+        return text if len(text)<=48 else text[:45]+'...'
+    if op=='state':
+        return f"{event.get('entity')}:{event.get('key')} {clip(event.get('before'))}→{clip(event.get('after'))}"
+    if op=='relation':
+        return f"{event.get('from')}>{event.get('to')}:{event.get('key')} {clip(event.get('before'))}→{clip(event.get('after'))}"
+    if op=='knowledge':
+        return f"{event.get('entity')} ~{event.get('topic')} {event.get('stance')}: {clip(event.get('claim'))}"
+    return op
+
+
+def fact_impact(db,branch,fact):
+    """Impact surface for history revisions: committed chapters asserting a
+    fact coordinate plus future plans naming the entity. Absence of hits is
+    not proof of absence — plans without the entity may still touch it."""
+    from .projections import impacted_events
+    require(isinstance(fact,str) and fact.strip(),'impact','fact 坐标不能为空')
+    fact=fact.strip()
+    events=impacted_events(db,branch,fact)
+    if '>' in fact and ':' in fact:
+        head,_=fact.rsplit(':',1)
+        entities={part for part in head.split('>') if part}
+    else:
+        entities={fact.split(':',1)[0]} if ':' in fact else set()
+    last=events[-1]['chapter'] if events else 0
+    ahead=[]
+    for row in db.execute('SELECT number,data FROM plans WHERE branch=? AND number>? ORDER BY number',(branch,last)):
+        data=json.loads(row['data'])
+        if entities & set(data.get('entities') or []):
+            ahead.append(row['number'])
+    return {'schema':'novel-ledger-v2.impact/1','branch':branch,'fact':fact,
+            'chapters':[e['chapter'] for e in events],
+            'events':[{'chapter':e['chapter'],'idx':e['idx'],'op':e['event'].get('op'),
+                       'summary':_fact_summary(e['event'])} for e in events],
+            'plans_ahead':ahead,'absence_is_not_proof':True}
+
+
 def audit(db,branch=None,strict=False):
     branch=branch or get(db,'active_branch')
     require(db.execute('PRAGMA integrity_check').fetchone()[0]=='ok','integrity','SQLite 完整性检查失败')

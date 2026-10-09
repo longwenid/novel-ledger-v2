@@ -18,7 +18,7 @@ def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html'):
+    for name in ('init','status','next','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
@@ -54,12 +54,14 @@ def parser():
             s.add_argument('--scope',default='world');s.add_argument('--branch');s.add_argument('--history',action='store_true')
         if name=='replan':
             s.add_argument('--reason',required=True);s.add_argument('--scope',choices=['chapters','world','volume'],default='chapters');s.add_argument('--volume')
+        if name=='impact':
+            s.add_argument('--fact',required=True);s.add_argument('--branch')
     return p
 
 
 def dispatch(args):
     value=dispatch_raw(args)
-    if args.command not in ('recall','map','design','character','candidate','material'):return value
+    if args.command not in ('recall','map','design','character','candidate','material','impact'):return value
     db=connect(args.project)
     try:
         from novel_core.contextflow import enabled,bounded_read
@@ -243,6 +245,9 @@ def dispatch_raw(args):
                       'facts':{k:v for k,v in state['facts'].items() if k.split(':',1)[0]==eid and (not args.topic or k.split(':',1)[1]==args.topic)},
                       'knowledge':{k:v for k,v in state['knowledge'].items() if k.split(':',1)[0]==eid and (not args.topic or k.split(':',1)[1]==args.topic)},
                       'resources':{k:v for k,v in state['resources'].items() if json.loads(k)[0]==eid and (not args.topic or json.loads(k)[1]==args.topic)},
+                      'relations':{k:v for k,v in state.get('relations',{}).items()
+                                   if (k.split('>',1)[0]==eid or k.split('>',1)[1].rsplit(':',1)[0]==eid)
+                                   and (not args.topic or k.rsplit(':',1)[1]==args.topic)},
                       'absence_is_not_proof':True}
                 from novel_core.spatial import spatial_view
                 view['continuity']=spatial_view(state,[],[eid])
@@ -257,6 +262,9 @@ def dispatch_raw(args):
             require(get(db,'context_mode','bounded')=='legacy' or args.query or args.entity or args.topic or args.start!=1 or args.end is not None,
                     'retrieval_scope','bounded recall 须带 entity/topic/query/章范围，不能无目标读取全历史')
             return recall(db,branch,args.query,args.entity,args.topic,args.start,args.end,args.offset,args.limit)
+        if cmd=='impact':
+            branch=args.branch or get(db,'work_branch')
+            return engine.fact_impact(db,branch,args.fact)
         if cmd=='revise':
             with transaction(db):
                 if args.discard:

@@ -21,7 +21,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 ### world_plan.data
 - `overview`：世界支撑全书核心体验的简要说明。
 - `event_spine`：四层事件脊柱（`main` / `subplot` / `timeline` / `tension`），触点格式 `{"id":"sp:...","span":"幕跨度","event":"触点推进"}`。重大转折必须引用脊柱触点。
-- `factions`：势力组织数组（`name/drive/limits`）。
+- `factions`：势力组织数组（`name/drive/limits`）。这里的势力是设计意图；需要账目级管理的势力（阵营战争、粮饷军械、结盟与背叛）应注册为 entity（kind 如 org），粮饷兵力走 `resource` 流水，阵营间立场用 `relation` 有向边登记——设计层写目标，账本层记事实，两层不混。
 - `geography`：宏观区域 `regions` 与连接 `connections`。
 - `core_locations`：候选场所数组（`id/name/purpose`，可选 `canon_place`）。
 - `ending_dependencies`：终局所需的空间、机制或关系前置条件。

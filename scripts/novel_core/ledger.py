@@ -19,12 +19,16 @@ def amount(value):
 
 
 def seed(contract):
-    state = {'entities': {}, 'facts': {}, 'knowledge': {}, 'resources': {}, 'hooks': {}, 'clock': 0, 'clock_threads': {}}
+    state = {'entities': {}, 'facts': {}, 'knowledge': {}, 'resources': {}, 'hooks': {}, 'clock': 0, 'clock_threads': {}, 'relations': {}}
     for entity in contract.get('entities', []):
         add_entity(state, entity)
     for fact in contract.get('initial_facts', []):
         require(fact.get('entity') in state['entities'] and fact.get('key'), 'initial_fact', '初始状态实体或键缺失')
         state['facts'][fact['entity'] + ':' + fact['key']] = fact['value']
+    for rel in contract.get('initial_relations', []):
+        require(rel.get('from') in state['entities'] and rel.get('to') in state['entities'] and rel.get('key'), 'initial_relation', '初始关系端点或键缺失')
+        require(rel['from'] != rel['to'] and ':' not in rel['key'] and '>' not in rel['key'], 'initial_relation', '关系键不能含 : 或 >，两端不能相同')
+        state['relations'][relation_key(rel['from'], rel['to'], rel['key'])] = rel.get('value')
     for item in contract.get('initial_resources', []):
         require(item.get('holder') in state['entities'] and item.get('asset') and item.get('unit'), 'resource', '初始资源缺少归属/资产/单位')
         key = resource_key(item['holder'], item['asset'], item['unit'])
@@ -50,6 +54,11 @@ def add_entity(state, entity):
 
 def resource_key(holder, asset, unit):
     return dump([holder, asset, unit])
+
+
+def relation_key(src, dst, key):
+    """Directed dyadic coordinate; impact lookups match either direction."""
+    return src + '>' + dst + ':' + key
 
 
 def _unique(prose, quote):
@@ -114,6 +123,17 @@ def apply(state, event, prose, chapter):
         if key == 'alive' and event['before'] is False and event['after'] is True:
             require(bool(event.get('exception_reason')), 'resurrection', '复活须有世界规则依据和正文因果')
         state['facts'][full] = event['after']
+    elif op == 'relation':
+        src, dst, key = event.get('from'), event.get('to'), event.get('key')
+        require(src in state['entities'] and dst in state['entities'], 'relation', '关系端点实体不存在')
+        require(src != dst, 'relation', '关系两端不能相同')
+        require('>' not in src and '>' not in dst, 'relation', '实体 ID 不能含 >')
+        require(isinstance(key, str) and key and ':' not in key and '>' not in key, 'relation', '关系键需为不含 : 或 > 的非空字符串')
+        require('after' in event, 'relation', '关系需要 after 值')
+        relations = state.setdefault('relations', {})
+        full = relation_key(src, dst, key)
+        require('before' in event and event['before'] == relations.get(full), 'precondition', '关系前值不匹配')
+        relations[full] = event['after']
     elif op == 'knowledge':
         eid, topic = event['entity'], event['topic']
         require(eid in state['entities'] and isinstance(topic, str) and topic, 'knowledge', '认知实体或话题无效')
