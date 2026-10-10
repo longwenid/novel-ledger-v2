@@ -948,11 +948,12 @@ def validated_fact_events(db,branch,n,draft,work,data):
         for e in events:
             require(anchor(e) not in carried_anchors,'event_accounting','该前序事件已由引擎自动续算,勿重复提交;要变更请用 prior_dispositions 声明 replaced/dropped')
         events=carried+events
-    for e in events:
+    for idx,e in enumerate(events):
         if e.get('op')=='clock':
             quote=(e.get('evidence') or {}).get('quote','')
             require(any(w in quote for w in TIME_TOKENS) or any(w in quote for w in TIME_CHARS),'time_evidence',
-                    'clock 事件的证据须引用本章真实时间语句(含 日/夜/晨/时 等时间词),让时钟推进有正文出处,不能凭空声明')
+                    'clock 事件的证据须引用本章真实时间语句(含 日/夜/晨/时 等时间词),让时钟推进有正文出处,不能凭空声明',
+                    {'event_index':idx,'quote':quote[:120]})
     from .ledger import apply
     state=replay(db,branch)
     for e in events:
@@ -981,7 +982,8 @@ def submit(db, result, brief=False):
         require(task,'task','任务不存在')
         require(task['stage'] not in ('facts','reader'),'unsupported_review','旧分阶段审稿任务不受支持；仅支持 chapter_review 新流程')
         if task['state']=='done':
-            require(task['result_hash']==hashed,'replay_conflict','同一任务不能提交不同结果')
+            require(task['result_hash']==hashed,'replay_conflict','同一任务不能提交不同结果',
+                    {'task_id':task['id'],'recover':'该任务回执已入库不可覆盖；停止修正重提，需要改动走返修任务，主控用 advance --after '+task['id']+' 核实接续'})
             return {'idempotent':True,'task_id':task['id']}
         require(task['state']=='pending' and get(db,'status')!='paused','stale_task','任务失效或运行已暂停')
         require(task['input_hash']==result.get('input_hash'),'input_version','输入版本不匹配')

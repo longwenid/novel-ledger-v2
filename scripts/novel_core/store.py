@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.32.0'
+VERSION = '1.32.1'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -40,9 +40,10 @@ def digest(value):
     return hashlib.sha256((value if isinstance(value, str) else dump(value)).encode()).hexdigest()
 
 
-def require(ok, code, message):
+# details may be a zero-arg callable: built only on failure, so success paths stay free.
+def require(ok, code, message, details=None):
     if not ok:
-        raise Error(code, message)
+        raise Error(code, message, details() if callable(details) else details)
 
 
 def write_json(path, value, compact=False):

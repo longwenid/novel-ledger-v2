@@ -42,13 +42,19 @@ def seed(contract):
 def add_entity(state, entity):
     require(isinstance(entity, dict) and all(isinstance(entity.get(k), str) and entity[k] for k in ('id', 'name', 'kind')), 'entity', '实体需要 id/name/kind')
     eid = entity['id']
-    require(':' not in eid and eid not in state['entities'], 'entity', '实体 ID 重复或包含冒号')
+    require(':' not in eid and eid not in state['entities'], 'entity', '实体 ID 重复或包含冒号',
+            lambda: {'existing': {k: state['entities'][eid].get(k) for k in ('id','name','kind')},
+                     'recover': '该实体已登记；新增称呼用 alias 事件，不要重建'})
     aliases = entity.get('aliases', [])
     require(isinstance(aliases, list) and all(isinstance(a, str) and a for a in aliases), 'alias', 'aliases 必须为字符串数组')
     names = [entity['name']] + aliases
     require(len(set(names)) == len(names), 'alias', '同一实体称呼重复')
     used = {s for e in state['entities'].values() for s in [e['name']] + e.get('aliases', [])}
-    require(not used.intersection(names), 'alias_conflict', '称呼已属于其他实体；不能按新名字重复创建同一人物')
+    clash = used.intersection(names)
+    require(not clash, 'alias_conflict', '称呼已属于其他实体；不能按新名字重复创建同一人物',
+            {'taken': sorted(clash),
+             'owners': [e['id'] for e in state['entities'].values() if clash & ({e['name']} | set(e.get('aliases', [])))],
+             'recover': '改为引用已有实体 ID；确需新别名用 alias 事件登记'})
     state['entities'][eid] = copy.deepcopy(entity)
 
 
@@ -119,7 +125,8 @@ def apply(state, event, prose, chapter):
         require(not (eid in state.get('places',{}) and key in ('floor','room_number','parent','address','facing')), 'protected_place','场所属性须用 anchor/place_change 管理，不能作为普通动态状态改写')
         require(full not in state.get('anchors',{}),'protected_anchor','已锁定属性不能用普通 state 覆盖，请检查是否写错或使用有因果依据的专用变更')
         require(not (eid in state.get('placements',{}) and key in ('location','location_id','holder')), 'protected_placement','已登记站位/持有者请使用 placement/move，不能另建矛盾位置')
-        require('before' in event and 'after' in event and state['facts'].get(full) == event['before'], 'precondition', '状态前值不匹配')
+        require('before' in event and 'after' in event and state['facts'].get(full) == event['before'], 'precondition', '状态前值不匹配',
+                {'key': full, 'current': state['facts'].get(full), 'submitted': event.get('before')})
         if key == 'alive' and event['before'] is False and event['after'] is True:
             require(bool(event.get('exception_reason')), 'resurrection', '复活须有世界规则依据和正文因果')
         state['facts'][full] = event['after']
@@ -132,7 +139,8 @@ def apply(state, event, prose, chapter):
         require('after' in event, 'relation', '关系需要 after 值')
         relations = state.setdefault('relations', {})
         full = relation_key(src, dst, key)
-        require('before' in event and event['before'] == relations.get(full), 'precondition', '关系前值不匹配')
+        require('before' in event and event['before'] == relations.get(full), 'precondition', '关系前值不匹配',
+                {'relation': full, 'current': relations.get(full), 'submitted': event.get('before')})
         relations[full] = event['after']
     elif op == 'knowledge':
         eid, topic = event['entity'], event['topic']
@@ -140,7 +148,8 @@ def apply(state, event, prose, chapter):
         require(event.get('stance') in ('knows', 'believes', 'suspects', 'disproved') and event.get('source') and event.get('claim'), 'knowledge', '认知缺少来源、立场或命题')
         key = eid + ':' + topic
         old = state['knowledge'].get(key)
-        require('before' in event and event['before'] == (old['claim'] if old else None), 'precondition', '认知前值不匹配')
+        require('before' in event and event['before'] == (old['claim'] if old else None), 'precondition', '认知前值不匹配',
+                {'entity': eid, 'topic': topic, 'current_claim': old['claim'] if old else None, 'submitted': event.get('before')})
         state['knowledge'][key] = {k: event[k] for k in ('claim', 'stance', 'source', 'evidence')}
     elif op == 'resource':
         asset, unit = event['asset'], event['unit']
@@ -171,7 +180,8 @@ def apply(state, event, prose, chapter):
         old = state['hooks'].get(hid)
         status = event.get('status')
         require(status in ('open', 'paid', 'closed'), 'hook', '承诺状态无效')
-        require(event.get('before') == (old['status'] if old else None), 'precondition', '承诺前态不匹配')
+        require(event.get('before') == (old['status'] if old else None), 'precondition', '承诺前态不匹配',
+                {'hook': hid, 'current_status': old['status'] if old else None, 'submitted': event.get('before')})
         require(old is not None or status == 'open', 'hook', '未埋设承诺不能直接兑现')
         require(old is None or old['status'] == 'open', 'hook', '已结算承诺不能重复结算或重新打开')
         if not old:

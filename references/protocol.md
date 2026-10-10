@@ -212,4 +212,6 @@ CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧�
 
 `stale_task/input_version/lease` 表示结果不再属于有效任务，不能把旧结果的 ID/哈希改成新任务后重交；重新读任务和材料。无权限改约、核心设定无法调和、修订次数耗尽时，报告具体阻碍与可选处理。
 
+`replay_conflict` 表示该任务已成功入库，修正稿不能覆盖：停止重提并交回主控核实。同一任务修正两轮仍被其他错误拒绝时同样停止，保留现场、返回最后已提交任务 ID 与错误原文，由主控 advance 接续。
+
 核心项 coverage/continuity/read_on/character/change/language/substance/causality/character_arcs/payoffs/pacing/ending/length/core_promises/stable_facts/spatial/character_consistency/voice_evolution 不能使用 not_applicable 绕过证据；其余项不适用也必须提供非空字符串理由。

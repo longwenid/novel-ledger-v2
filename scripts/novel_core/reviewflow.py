@@ -137,31 +137,35 @@ def validate(db, task, work, facts, reader, prose):
             'first_read_conflict', '正式回执必须保留冻结首读，不得用约定或旧评价重新解释首读')
     for category, receipt in (('facts', facts), ('reader', reader)):
         expected = [r for r in work['review_obligations'] if r['category'] == category]
+        rule_by_id = {r['id']: r.get('rule', '') for r in expected}
         rows = receipt.get('obligations')
+        ids = {r.get('id') for r in rows} if isinstance(rows, list) else None
         require(isinstance(rows, list) and all(isinstance(r, dict) and isinstance(r.get('id'),str) for r in rows)
-                and len(rows) == len(expected) and {r.get('id') for r in rows} == {r['id'] for r in expected},
-                'review_obligations', '须逐条核对本类别全部作者约定，不能用总评替代')
+                and len(rows) == len(expected) and ids == {r['id'] for r in expected},
+                'review_obligations', '须逐条核对本类别全部作者约定，不能用总评替代',
+                {'category': category, 'expected': [r['id'] for r in expected], 'received': sorted(ids) if ids else None})
         for row in rows:
+            oid = {'obligation_id': row.get('id'), 'rule': rule_by_id.get(row.get('id'), '')}
             require(row.get('result') in ('pass', 'fix') and isinstance(row.get('reason'), str)
-                    and row['reason'].strip(), 'review_obligations', '每条约定须有具体判断与理由')
+                    and row['reason'].strip(), 'review_obligations', '每条约定须有具体判断与理由', oid)
             refs = row.get('evidence')
-            require(isinstance(refs, list) and bool(refs), 'review_obligations', '每条约定须有正文证据')
+            require(isinstance(refs, list) and bool(refs), 'review_obligations', '每条约定须有正文证据', oid)
             for ref in refs:
                 evidence(prose, ref, task['chapter'])
             challenge = row.get('challenge')
             require(isinstance(challenge, dict) and challenge.get('disposition') in ('satisfied', 'violated')
                     and isinstance(challenge.get('reason'), str) and challenge['reason'].strip(),
-                    'review_challenge', '核对最可能违约的正文语段，说明为何保留或返修')
+                    'review_challenge', '核对最可能违约的正文语段，说明为何保留或返修', {'obligation_id': row.get('id')})
             evidence(prose, challenge.get('evidence'), task['chapter'])
             require((row['result'] == 'fix') == (challenge['disposition'] == 'violated'),
-                    'review_challenge', '违约证据与检查结论不一致')
+                    'review_challenge', '违约证据与检查结论不一致', {'obligation_id': row.get('id')})
             if row['result'] == 'fix':
                 check_id = 'world_rules' if row['id'].startswith('world:') else (
                     'voice_match' if row['id'].startswith('style:') and 'voice_match' in work['payload']['reader_checks'] else 'language')
                 require(any(c.get('id') == check_id and c.get('result') == 'fix' for c in receipt.get('checks',[]) if isinstance(c,dict)),
-                        'review_obligations', '违约须同步到对应 world_rules/voice_match/language 检查')
+                        'review_obligations', '违约须同步到对应 world_rules/voice_match/language 检查', {**oid, 'check_id': check_id})
                 require(any(f.get('obligation_id') == row['id'] and f.get('severity') in ('blocker','quality')
                             for f in receipt.get('findings',[]) if isinstance(f,dict)),
-                        'review_obligations', '违约须有标记 obligation_id 的实质返修发现')
+                        'review_obligations', '违约须有标记 obligation_id 的实质返修发现', {**oid, 'check_id': check_id})
         require(not any(r['result'] == 'fix' for r in rows) or receipt.get('verdict') == 'fix',
                 'review_obligations', '约定违约必须返修，不能总评通过')

@@ -158,6 +158,7 @@ def guide(stage, instruction=None):
     for key in stage_discipline(stage):
         lines.append('[纪律] ' + DISCIPLINE[key])
     lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的账本为准。')
+    lines.append('[纠错] 报错按字面修正后重提，message/details 自带账本答案与恢复指引；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
     lines.append('[观测] 协议字符仅观测，不是配额；缺项可用 recall/material 定向补读，未选入不表示不存在。')
     return '\n'.join(lines)
 

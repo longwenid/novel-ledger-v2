@@ -146,14 +146,22 @@ def place_entity(state,event):
                 target=after.get('place') or at(state,after.get('holder'))
                 chain=ancestors(state,target) if target else []
                 allowed={name for place in chain for name in [place,state['entities'][place]['name']]+state['entities'][place].get('aliases',[])}
-            require(isinstance(value,str) and value in allowed,'legacy_position_conflict','旧位置/持有者与新站位不同，先核对并修订，不能静默用地图覆盖')
+            require(isinstance(value,str) and value in allowed,'legacy_position_conflict','旧位置/持有者与新站位不同，先核对并修订，不能静默用地图覆盖',
+                    {'entity':eid,'legacy_key':key,'legacy_value':value if isinstance(value,str) else str(value),'allowed':sorted(a for a in allowed if isinstance(a,str))})
         for key in legacy:
             require(fact_key(eid,key) not in state.get('anchors',{}),'protected_anchor','旧位置被锁定为稳定事实，不能自动转成动态站位')
             state['facts'].pop(fact_key(eid,key))
     new_place=after.get('place') or at(state,after.get('holder'))
     if current and current['position']!=after:
-        require(old_place is not None and new_place is not None,'position_unknown','交接前须确定原位置与接收者位置；不能借未定位持有者清空已知位置')
-        require(old_place==new_place,'placement_teleport','跨地点变化须用 move 声明路径，不能借交接物品瞬移')
+        require(old_place is not None and new_place is not None,'position_unknown','交接前须确定原位置与接收者位置；不能借未定位持有者清空已知位置',
+                {'entity':eid,'attempt':copy.deepcopy(after),'receiver':after.get('holder'),'receiver_place':new_place})
+        require(old_place==new_place,'placement_teleport','跨地点变化须用 move 声明路径，不能借交接物品瞬移',
+                lambda: ({'entity':eid,'current_place':old_place,'target_place':new_place,
+                 'direct_path_links':[key for key,_ in matching_links(state,old_place,new_place,'path')],
+                 'expect':{'op':'move','entity':eid,'from':old_place,'to':new_place,
+                           'route':[old_place,new_place],
+                           'links':[key for key,_ in matching_links(state,old_place,new_place,'path')]},
+                 'verify':f'map --place "{old_place}" 查当前位置与连接；无直接 path 时经中间地点分段 move'}))
     bounds=[v for v in (arrival_bound(state,eid),arrival_bound(state,after.get('holder'))) if v is not None]
     records=state.setdefault('placements',{})
     records[eid]={'position':copy.deepcopy(after),'source':source(event),'last_arrival':max(bounds) if bounds else None}
