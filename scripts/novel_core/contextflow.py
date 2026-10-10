@@ -11,13 +11,15 @@ from . import sources
 
 SCAN_UNITS=16
 DIRECT_UNITS=48
+EXACT_UNITS=2*DIRECT_UNITS
 REDUCE_INPUTS=3
 FINAL_NODES=8
 MATERIAL_FIELDS=('state','continuity','character_context','design_context','selected',
                  'address_signals','volume_budget','synthesis_materials','plans')
 RECORD_MAPS={'entities','facts','knowledge','resources','hooks','clock_threads',
              'plans','profiles','developments','placements','anchors','places','links'}
-PREPARATION_RULES_VERSION='semantic-preparation/3'
+PREPARATION_RULES_VERSION='semantic-preparation/5'
+SESSION_PROTOCOL='same-bundle/1'
 
 
 def enabled(db):return get(db,'context_mode','bounded')=='bounded'
@@ -94,17 +96,20 @@ def semantic_units(text,field=None,value=None):
     return units
 
 
-def _slice_units(text,units,start=0):
+def _slice_units(text,units,start=0,limit=SCAN_UNITS):
     require(type(start) is int and 0<=start<len(text),'pagination','材料偏移必须指向已有来源')
     index=next(i for i,u in enumerate(units) if u['start']<=start<u['end'])
-    page=units[index:index+SCAN_UNITS]
+    page=units[index:index+limit]
     return page[0]['start'],page[-1]['end'],page
 
 
-def _unit_view(units):
+def _unit_view(units,offset=0):
     # Stable IDs live in the local source directory. Repeating three long
     # hashes for every record in every model page adds no reading evidence.
-    return [{k:u[k] for k in ('semantic_start','semantic_end','path','start','end')} for u in units]
+    return [{**{k:u[k] for k in ('semantic_start','semantic_end','path','start','end')},
+             'local_start':u['start']-offset,'local_end':u['end']-offset,
+             'local_semantic_start':u['semantic_start']-offset,
+             'local_semantic_end':u['semantic_end']-offset} for u in units]
 
 
 def _documents(base,db=None):
@@ -128,10 +133,13 @@ def _documents(base,db=None):
     return core,documents
 
 
-def needs_preparation(base):
+def needs_preparation(base,policy='adaptive'):
     """A grouping decision based on record count, never character count."""
     _,documents=_documents(base)
-    return sum(len(d['units']) for d in documents)>DIRECT_UNITS
+    counts=[len(d['units']) for d in documents]
+    if sum(counts)<=DIRECT_UNITS:return False
+    if policy=='semantic' or base.get('context_questions'):return True
+    return any(n>DIRECT_UNITS for n in counts) or sum(counts)>EXACT_UNITS
 
 
 def _frame(base,ident,core_document):
@@ -145,11 +153,15 @@ def _frame(base,ident,core_document):
         if key in plan:purpose[key]=copy.deepcopy(plan[key])
     return {'schema':'novel-ledger-v2.pack/1','branch':base['branch'],'chapter':base['chapter'],
         'target_stage':base['stage'],
+        **({'chapter_session':copy.deepcopy(base['chapter_session'])} if 'chapter_session' in base and
+           (base['chapter_session']['role']=='writer' or base.get('batch_first_read_sealed')) else {}),
         'target_purpose':purpose,
+        **({'review_session':copy.deepcopy(base['review_session'])} if base.get('review_session') else {}),
         'target_scope':{k:copy.deepcopy(payload[k]) for k in ('scope','first','through','checks','repair_scope') if k in payload},
         'target_materials':{'bundle':ident,'document':'core','document_hash':core_document['hash'],
             'retrieve':'material --task TASK_ID --bundle '+ident+' --document core:FIELD',
             'fields':['contract','plan','payload','style_anchor','writer_brief']+
+                [s['field'].split('.')[0] for s in base.get('context_delivery',{}).get('sources',[])]+
                 (['character_context'] if base.get('stage')=='character_index' else []),
             'instruction':'目标核心材料完整冻结。按疑点定向读取必要子节，同一材料在本次准备会话只加载一次；未理解目标约定/正文动作时先补读，不能猜测。正式任务仍携带完整约定，当前正文以包内 prose 文件交付；context_scan 页文本按 payload.prose_path 文件交付，evidence.start 为文档绝对字符位置，不是页内位置。'},
         'material_questions':copy.deepcopy(base.get('context_questions',[])),
@@ -158,6 +170,10 @@ def _frame(base,ident,core_document):
 
 def _task(db,bundle,stage,payload):
     work=copy.deepcopy(bundle['frame']);work.update(stage=stage,payload=payload)
+    from .memory import guide
+    work['guide']=guide(stage,work.pop('instruction',None))
+    if bundle.get('session_protocol')==SESSION_PROTOCOL:
+        work['preparation_session']={'protocol':SESSION_PROTOCOL,'bundle':bundle['id']}
     return work
 
 
@@ -182,19 +198,32 @@ def _upgrade_bundle(db,bundle):
     if changed:put(db,view_key(bundle['id']),bundle)
 
 
-def _page(db,bundle):
-    doc=bundle['documents'][bundle['doc_index']]
+def _scan_page(db,doc,offset,limit=SCAN_UNITS):
     require(digest(doc['text'])==doc['hash'],'context_integrity','材料快照损坏')
-    start,end,units=_slice_units(doc['text'],doc['units'],bundle['offset'])
+    start,end,units=_slice_units(doc['text'],doc['units'],offset,limit)
     # Page text travels as a content-addressed file like narrative prose; a
     # multi-kilobyte JSON string would be truncated by line-oriented readers.
     from .memory import prose_ref
-    return _task(db,bundle,'context_scan',{'bundle':bundle['id'],'document':doc['id'],
+    return {'document':doc['id'],
         'document_hash':doc['hash'],'field':doc['field'],'start':start,'end':end,
         'total_chars':len(doc['text']),**prose_ref(db,doc['text'][start:end]),
-        'units':_unit_view(units),'page_unit_count':len(units),'total_units':len(doc['units']),
+        'units':_unit_view(units,start),'page_unit_count':len(units),'total_units':len(doc['units']),
         **{k:doc[k] for k in ('source_id','version') if k in doc},
-        'notes_max_chars':None,'complete_semantic_units':True})
+        'notes_max_chars':None,'complete_semantic_units':True}
+
+
+def _page(db,bundle):
+    index,offset=bundle['doc_index'],bundle['offset'];pages=[];remaining=SCAN_UNITS
+    while remaining and index<len(bundle['documents']):
+        page=_scan_page(db,bundle['documents'][index],offset,remaining)
+        pages.append(page);remaining-=page['page_unit_count']
+        if page['end']==page['total_chars']:index+=1;offset=0
+        else:offset=page['end']
+        if bundle.get('scan_layout')!='multi-document/1':break
+    if len(pages)==1:payload={'bundle':bundle['id'],**pages[0]}
+    else:payload={'bundle':bundle['id'],'pages':pages,'page_unit_count':sum(p['page_unit_count'] for p in pages),
+                  'complete_semantic_units':True,'notes_max_chars':None}
+    return _task(db,bundle,'context_scan',payload)
 
 
 def _preparation_basis(core,documents):
@@ -284,10 +313,42 @@ def _prepared(db,bundle,ident):
     return work
 
 
+def _direct_records(core,documents):
+    """Keep ready source blocks exact; only large histories need extraction.
+
+    This reuses immutable records, never an earlier worker's interpretation.
+    Every source remains delivered; document boundaries are already semantic.
+    """
+    scanned=[];direct=[]
+    # Many individually small blocks can still require a long-history worker.
+    # This chooses a route, never truncates or rejects required material.
+    if sum(len(d['units']) for d in documents if len(d['units'])<=DIRECT_UNITS)>EXACT_UNITS:
+        return core,documents
+    for doc in documents:
+        if len(doc['units'])>DIRECT_UNITS:
+            scanned.append(doc);continue
+        path=doc['field'].split('.');container=core
+        for key in path[:-1]:container=container.setdefault(key,{})
+        container[path[-1]]=json.loads(doc['text'])
+        direct.append({'field':doc['field'],'hash':doc['hash'],'units':len(doc['units']),
+                       'source_id':doc['source_id'],'version':doc['version']})
+    if direct:
+        core['context_delivery']={'mode':'exact-records/1','sources':direct,
+            'instruction':'这些字段是完整冻结的原始记录，直接阅读核对，无须另派摘录；来源复用不代表理解或审稿通过。'}
+    return core,scanned
+
+
 def fit(db,base):
-    core,documents=_documents(base,db)
-    if sum(len(d['units']) for d in documents)<=DIRECT_UNITS:return copy.deepcopy(base)
+    # A live bundle is a frozen preparation plan, even after a policy upgrade.
     ident=digest(base);bundle=get(db,view_key(ident))
+    if bundle is None:
+        core,documents=_documents(base,db)
+        if sum(len(d['units']) for d in documents)<=DIRECT_UNITS:return copy.deepcopy(base)
+        if get(db,'preparation_policy','adaptive')=='adaptive' and not base.get('context_questions'):
+            core,documents=_direct_records(core,documents)
+            if not documents:return core
+    else:
+        core,documents=bundle['core'],bundle['documents']
     if bundle is None:
         core.pop('chars',None)
         basis=_preparation_basis(core,documents)
@@ -304,7 +365,7 @@ def fit(db,base):
         bundle={'id':ident,'core':core,'core_document':core_document,'frame':_frame(core,ident,core_document),'documents':documents,
             'doc_index':0,'offset':0,'nodes':[],'node_archive':{},'level':0,
             'group':0,'next_nodes':[],'scans':0,'reductions':0,'status':'preparing',
-            'cache_basis':basis}
+            'cache_basis':basis,'scan_layout':'multi-document/1','session_protocol':SESSION_PROTOCOL}
         cached=sources.cache_get(db,basis['key'],basis['purpose_hash'],basis['dependency_signature'])
         if cached and _cached_reads_unchanged(db,cached):
             require(cached.get('source_manifest')==basis['source_manifest'],'context_integrity','准备缓存来源版本不匹配')
@@ -325,6 +386,18 @@ def fit(db,base):
 def accept(db,work,data,task_id):
     payload=work['payload'];ident=payload['bundle'];bundle=get(db,view_key(ident))
     require(bundle and bundle['status']=='preparing','context_stale','材料准备版本已失效')
+    pages=payload.get('pages',[payload]) if work['stage']=='context_scan' else []
+    covered=[{k:p[k] for k in ('document','document_hash','start','end')} for p in pages]
+    coverage=covered if 'pages' in payload else (covered[0] if covered else None)
+    cursor_index,cursor_offset=bundle['doc_index'],bundle['offset']
+    for page in pages:
+        require(cursor_index<len(bundle['documents']),'context_stale','扫描范围已结束')
+        doc=bundle['documents'][cursor_index]
+        require(doc['id']==page['document'] and doc['hash']==page['document_hash']
+                and cursor_offset==page['start'] and page['start']<page['end']<=len(doc['text']),
+                'context_stale','扫描页版本或游标已经变化')
+        if page['end']==len(doc['text']):cursor_index+=1;cursor_offset=0
+        else:cursor_offset=page['end']
     preserved=data.get('cannot_compact') is True
     if preserved:
         reason=data.get('reason')
@@ -334,12 +407,14 @@ def accept(db,work,data,task_id):
                 'accounting':[{'input_id':n['id'],'disposition':'kept','reason':reason} for n in payload['inputs']],
                 'omission_reason':reason}
         else:
-            fragment=payload.get('fragment')
-            if fragment is None:fragment=get(db,'candidate_text:'+payload.get('prose_hash',''))
-            require(isinstance(fragment,str) and fragment,'context_notes','补整页保留缺少本页文本')
-            data={'coverage':{k:payload[k] for k in ('document','document_hash','start','end')},
-                'notes':[{'text':'必要原页完整保留：'+reason,'evidence':[{
-                    'document':payload['document'],'start':payload['start'],'quote':fragment}]}]}
+            retained=[]
+            for page in pages:
+                fragment=page.get('fragment')
+                if fragment is None:fragment=get(db,'candidate_text:'+page.get('prose_hash',''))
+                require(isinstance(fragment,str) and fragment,'context_notes','补整页保留缺少本页文本')
+                retained.append({'text':'必要原页完整保留：'+reason,'evidence':[{
+                    'document':page['document'],'start':page['start'],'quote':fragment}]})
+            data={'coverage':coverage,'notes':retained}
     notes=data.get('notes');require(isinstance(notes,list),'context_notes','需要 notes 数组')
     documents={d['id']:d for d in bundle['documents']};inherited=set()
     if work['stage']=='context_reduce':
@@ -352,9 +427,7 @@ def accept(db,work,data,task_id):
         require(all(a.get('disposition') in ('kept','duplicate','irrelevant') and isinstance(a.get('reason'),str) and a['reason'].strip() for a in accounting),
             'context_coverage','每个输入需要去向与具体理由')
     else:
-        require(bundle['documents'][bundle['doc_index']]['id']==payload['document'] and bundle['offset']==payload['start'],
-            'context_stale','语义页游标已经变化')
-        require(data.get('coverage')=={k:payload[k] for k in ('document','document_hash','start','end')},
+        require(data.get('coverage')==coverage,
             'context_coverage','必须确认本页完整覆盖范围与版本')
     require(notes or (isinstance(data.get('omission_reason'),str) and data['omission_reason'].strip()),'context_notes','无相关结论时须记录具体不相关理由')
     for note in notes:
@@ -367,7 +440,7 @@ def accept(db,work,data,task_id):
             require(type(start) is int and start>=0 and isinstance(quote,str) and quote and doc['text'][start:start+len(quote)]==quote,
                 'context_evidence','材料引文或位置不匹配')
             if work['stage']=='context_scan':
-                require(doc['id']==payload['document'] and start>=payload['start'] and start+len(quote)<=payload['end'],
+                require(any(doc['id']==p['document'] and start>=p['start'] and start+len(quote)<=p['end'] for p in pages),
                     'context_evidence','扫描结论只能引用本页完整材料')
             else:require(dump(evidence) in inherited,'context_evidence','归并不得捏造未审读的新来源')
     if work['stage']=='context_reduce':
@@ -388,12 +461,12 @@ def accept(db,work,data,task_id):
     if preserved:
         node['cannot_compact_reason']=reason
         if work['stage']=='context_reduce':node['retained_node_ids']=[n['id'] for n in payload['inputs']]
-        else:node['retained_source']={k:payload[k] for k in ('document','document_hash','start','end')}
+        else:node['retained_source']=copy.deepcopy(coverage)
     if data.get('omission_reason'):node['omission_reason']=data['omission_reason']
     if work['stage']=='context_scan':
-        node['coverage']={k:payload[k] for k in ('document','document_hash','start','end')}
-        bundle['nodes'].append(node);bundle['scans']+=1;bundle['offset']=payload['end']
-        if payload['end']==payload['total_chars']:bundle['doc_index']+=1;bundle['offset']=0
+        node['coverage']=copy.deepcopy(coverage)
+        bundle['nodes'].append(node);bundle['scans']+=1
+        bundle['doc_index']=cursor_index;bundle['offset']=cursor_offset
     else:
         require(bundle['level']==payload['level'] and bundle['group']==payload['group'],'context_stale','归并游标已变化')
         node['accounting']=copy.deepcopy(data['accounting'])
@@ -441,7 +514,7 @@ def material(db,task_id,bundle_id,document,start=0):
     return {'bundle':bundle_id,'document':document,'document_hash':doc['hash'],'field':doc['field'],
         'text':doc['text'][begin:end],'start':begin,'end':end,'requested_start':start,
         'next_start':end if end<len(doc['text']) else None,'total_chars':len(doc['text']),
-        'units':_unit_view(page),'complete_semantic_units':True,
+        'units':_unit_view(page,begin),'complete_semantic_units':True,
         **{k:doc[k] for k in ('source_id','version') if k in doc},
         **{k:doc[k] for k in ('source_document_hash','source_start') if k in doc}}
 

@@ -20,7 +20,7 @@ class CharacterTests(unittest.TestCase):
         c=contract();c['character_mode']='profiled';initialize(self.path,c);self.db=connect(self.path)
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def task(self):return engine.next_task(self.db,self.path)
-    def submit(self,t,data):return engine.submit(self.db,result(t,copy.deepcopy(data)))
+    def submit(self,t,data):return submit_review(self.db,t,copy.deepcopy(data))
     def plan(self,n=1):
         p=copy.deepcopy(PLAN);p['number']=n;return p
     def prepare(self,profiles=PROFILES):
@@ -28,9 +28,8 @@ class CharacterTests(unittest.TestCase):
         self.submit(t,profiles)
     def write(self,prose='周行问：“最后一个签收的人是谁？”宋禾把表格推过去：“先写清你要拿什么。”',events=None):
         t=self.task();self.assertEqual(t['stage'],'draft');self.submit(t,{'prose':prose})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['checks'],prose,t['chapter'])
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['facts_checks'],prose,t['chapter'])
         data.update(events=events or [],summary='核对交接，双方承担不同风险。');self.submit(t,data)
-        t=self.task();respond(self.db,self.path,t)
     def test_profile_task_idempotent_and_not_canon(self):
         self.submit(self.task(),{'chapters':[self.plan()]});t=self.task();before=digest(replay(self.db,'main'))
         self.assertEqual(self.task(),t);r=result(t,copy.deepcopy(PROFILES));engine.submit(self.db,r)
@@ -61,12 +60,12 @@ class CharacterTests(unittest.TestCase):
         again=pack(self.db,'main',1,'draft',{})
         self.assertEqual(again['character_context']['profiles'],w['character_context']['profiles'])
         self.submit(t,{'prose':'周行问：“最后谁签收？”宋禾说：“把范围写清楚。”'})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['checks'])
-        data=review(w['payload']['checks'],pack_prose(self.path, w));data.update(events=[],summary='核对责任');self.submit(t,data)
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        self.assertIn('dialogue_identity',w['payload']['checks'])
-        for k in ('character_context','writer_brief','state','design_context','plan','contract'):self.assertNotIn(k,w)
-        self.assertNotIn(detail,dump(w))
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['facts_checks'])
+        self.assertIn('dialogue_identity',w['payload']['reader_checks'])
+        first=rpath(t,'first_read_path').read_text()
+        self.assertNotIn(detail,first)
+        self.assertEqual(first,pack_prose(self.path,w))
+        self.assertNotIn('writer_brief',w)
     def test_speaker_intentions_must_be_separate(self):
         p=self.plan();p['scenes'][0]['dialogue_intents'].pop()
         with self.assertRaises(Error):self.submit(self.task(),{'chapters':[p]})
@@ -95,11 +94,10 @@ class CharacterTests(unittest.TestCase):
         self.assertIn('1',history['current']['sources']);self.assertTrue(history['valid']);self.assertEqual(self.task()['stage'],'draft')
     def test_dialogue_quality_can_trigger_repair(self):
         self.prepare();t=self.task();text='周行说：“此事必有蹊跷。”宋禾说：“此事必有蹊跷。”';self.submit(t,{'prose':text})
-        t=self.task();respond(self.db,self.path,t)
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['checks'],text)
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['reader_checks'],text)
         data['checks'][-1]['result']='fix';data['verdict']='fix'
         data['findings']=[{'severity':'quality','impact':'两人对白可互换，责任立场在正文中消失','goal':'让宋禾提出交接条件，周行核对经过','evidence':ev(text)}]
-        data['first_read']={'desire':'查证','obstacle':'不信','change':'无','read_on_reason':'人物难区分'}
+        data['first_read']=fixture_first_read()
         self.submit(t,data);self.assertEqual(self.task()['stage'],'repair');self.assertEqual(head(self.db,'main'),0)
     def test_growth_packet_keeps_unabsorbed_events_and_diagnoses_omissions(self):
         self.prepare();state=replay(self.db,'main')

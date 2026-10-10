@@ -23,11 +23,39 @@ class DisciplineTests(unittest.TestCase):
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertIn('[提交契约]',work['guide'])
         self.assertIn('ending_shape',work['guide'])  # plan 阶段只挂 plan 纪律
-        facts=pack(self.db,'main',1,'facts',{})
+        facts=pack(self.db,'main',1,'chapter_review',{})
         self.assertIn('pass/fix',facts['guide'])
         self.assertIn('links ID',facts['guide'])
         self.assertIn('上限 2 次',facts['guide'])
         self.assertIn('时间词',facts['guide'])
+
+    def test_shared_review_example_can_complete_both_receipts(self):
+        respond(self.db,self.path,self.task())
+        respond(self.db,self.path,self.task())
+        task=self.task()
+        work=json.loads(rpath(task).read_text(encoding='utf-8'))
+        example,_=json.JSONDecoder().raw_decode(work['guide'].split('data 示例=',1)[1])
+        prose=pack_prose(self.path,work)
+        data={}
+        for category in ('facts','reader'):
+            receipt=json.loads(json.dumps(example))
+            receipt['checks']=[]
+            for check in work['payload'][category+'_checks']:
+                row=json.loads(json.dumps(example['checks'][0]))
+                row.update(id=check,evidence=[ev(prose,task['chapter'])])
+                receipt['checks'].append(row)
+            data[category]=receipt
+        data['facts'].update(events=[],summary='周行交出收据，宋禾按下指印。')
+        data['reader']['first_read']=fixture_first_read()
+        incomplete=json.loads(json.dumps(data))
+        incomplete['reader']['checks'].pop()
+        with self.assertRaises(Error):
+            engine.submit(self.db,result(task,incomplete))
+        self.assertEqual(head(self.db,'main'),0)
+        self.assertEqual(self.task()['task_id'],task['task_id'])
+        engine.submit(self.db,result(task,data))
+        self.assertEqual(head(self.db,'main'),1)
+        self.assertTrue(engine.audit(self.db)['ok'])
 
     def test_resource_error_names_holder_and_holdings(self):
         s=seed(get(self.db,'contract'))
@@ -95,7 +123,7 @@ class DependencyInjectionTests(unittest.TestCase):
     def test_facts_gets_summaries_draft_gets_full_text(self):
         from novel_core.memory import pack
         self._commit_sources()
-        facts=pack(self.db,'main',4,'facts',{})
+        facts=pack(self.db,'main',4,'chapter_review',{})
         kinds={s['chapter']:s for s in facts['selected'] if s['kind'] in ('required_chapter','dependent_chapter')}
         self.assertEqual(set(kinds),{1,2,3})
         self.assertTrue(all(k['kind']=='dependent_chapter' for k in kinds.values()))
@@ -108,10 +136,10 @@ class DependencyInjectionTests(unittest.TestCase):
     def test_reader_discipline_trimmed_to_review(self):
         from novel_core.memory import pack
         self._commit_sources()
-        reader=pack(self.db,'main',4,'reader',{'prose':'第4章正文。'})
-        self.assertEqual(reader['guide'].count('[纪律]'),1)
+        reader=pack(self.db,'main',4,'chapter_review',{'prose':'第4章正文。'})
+        self.assertGreater(reader['guide'].count('[纪律]'),1)
         self.assertIn('pass/fix',reader['guide'])
-        facts=pack(self.db,'main',4,'facts',{})
+        facts=pack(self.db,'main',4,'chapter_review',{})
         self.assertGreater(facts['guide'].count('[纪律]'),1)
 
 

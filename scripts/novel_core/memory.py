@@ -34,8 +34,8 @@ DISCIPLINE = {
 # it actually submits; everything else is noise diluting the real contract.
 STAGE_DISCIPLINE = {
     'draft': (), 'repair': ('patches',), 'redesign': ('plan',),
-    'facts': ('events', 'hooks', 'clock', 'review'), 'reader': ('review',),
-    'plan': ('plan',), 'world_plan': (), 'volume_plan': ('plan',),
+    'chapter_review': ('events', 'hooks', 'clock', 'review'),
+    'plan': ('plan',), 'world_plan': (), 'volume_plan': (),
     'character_plan': (), 'character_index': (),
 }
 
@@ -55,24 +55,60 @@ def stage_discipline(stage):
 
 # Self-contained per-stage submit contracts so workers skip reference reads.
 STAGE_PRIMERS = {
+    'context_scan': 'data={coverage,notes:[{text,evidence:[{document,start,quote}]}],omission_reason?:无相关结论的具体理由}。'
+                    'payload.pages 存在时完整阅读各页，coverage 为每页 document/document_hash/start/end 对象数组；单页时 coverage 为该对象。'
+                     '页文件等于文档[start:end]，units.local_start/local_end/local_semantic_start/local_semantic_end 是页内坐标，evidence.start 是文档绝对坐标。'
+                    '片段含 JSON 分隔符，未必是独立 JSON；不要对整页盲目 json.loads，证据用 commands.evidence 定位。'
+                    '无法安全提炼交 cannot_compact:true+reason，保留全部原页，不查库、不借旧回执套结论。',
+    'context_reduce': 'data={notes:[{text,evidence:[{document,start,quote}]}],accounting:[{input_id,disposition:kept|duplicate|irrelevant,reason,duplicate_of?:输出note下标}]}。'
+                      '逐项登记全部 payload.inputs；kept/duplicate 的完整因果证据须整体继承到对应输出。'
+                      'cannot_compact:true+reason 保留全部节点；不得新增未读来源。',
     'draft': 'data={prose:完整正文非空字符串可含章标题,summary:本章摘要覆盖选择/后果/未决压力}。执笔不替自己签发审稿,不提交 events 或 findings。短章目标见包内 chapter_length,目标不能擅改。',
-    'repair': '局部返修交 data={base_hash,patches:[{start,old,new}],repair_note};old 须与基稿该处精确一致且 start 按完整基稿定位。整章重写才交 prose+repair_note,必须实际改文。reuse_original 仅限 redesign 条件。',
-    'redesign': 'data 同 draft 的 prose/summary,须产生实际变化的正文;可附 plan_update 仅调当章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm,不可改卷序、终局标记或篇幅目标。',
-    'facts': 'data={verdict:pass|fix,findings:[{chapter,start,quote,reason}](fix 时),events:[{op,evidence:{chapter,start,quote},...}],summary:覆盖本章选择/后果/未决压力且非空}。op 见包内 auto_carry/prior_events_note;evidence 须在本章正文唯一命中;事件前态照抄包内 state,不重报 auto_carry 中续算事件。',
-    'reader': '先只读 prose_path 指向的正文文件完成 first_read(如实记录首读体验),再 recall --contract 核对约定;逐项 checks 给 verdict,pass 则 findings=[],fix 则每条 {chapter,start,quote,reason};不读执笔自评,档案不能替正文辩护。',
+    'repair': '局部返修交 data={base_hash,patches:[{start,old,new}],repair_note};old 须与基稿该处精确一致且 start 按完整基稿定位。整章重写才交 prose+repair_note,必须实际改文。reuse_original 仅限历史修订 draft，不用于 repair/redesign。',
+    'redesign': 'data 同 draft 的 prose/summary，另必交 design_change 说明设计改变，须产生实际变化的正文;可附 plan_update 仅调当章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm,不可改卷序、终局标记或篇幅目标。',
+    'facts': '另必交 events:[{op,evidence:{chapter,start,quote},...}] 和非空 summary（覆盖选择/后果/未决压力）。事件类型和字段按 references/protocol.md，返修去向按 prior_events_note；前态照抄 state，不重报 auto_carry 续算事件。',
+    'reader': '另必交 first_read={desire,obstacle,change,read_on_reason}（四项均非空），保留读取 input 前记录的首读体验；档案不能替正文辩护。',
     'world_plan': 'data 只含引擎允许字段(报错会列出收到键与允许键);不能提交正文事件或覆盖作者约定;event_spine 四层 main/subplot/timeline/tension,触点 id 用 sp: 前缀。',
     'volume_plan': 'data 必含 volume/purpose/carries_in/climax/handoff/sequence/action_constraints/ending_setup/choice_log;choice_log 每条 kind=direction|beat、mode、candidates≥2 且含 wild:true、chosen、reason。',
     'plan': 'data={chapters:[...]} 每批 1~10 章,章号连续;每章必含 number/goal/conflict/change/volume/entities/ending_shape(类别:说明,类别见 guide 纪律),sequence_refs 对齐卷纲节拍,历史依赖只能引用已提交章。',
-    'character_plan': 'data={profiles:[{entity,biography:{experiences:[{text,...}]}},voice:{relationship_modes:[{audience,approach}],avoid:[字符串数组]}}];经历用 text 键;引擎自管字段不要提交。',
+    'character_plan': 'data={profiles:[{entity,tier,biography:{public_role,desire,experiences:[{text,status:design|established}]},voice:{register,tactics:[非空字符串],relationship_modes:[{audience,approach}],avoid:[字符串]}}]}。tier=major|supporting|walk_on；major 还需 biography.fear/values（非空数组）/boundary/contradiction、voice.rhythm/stress_shift、arc={direction,not_yet_earned:[字符串]}；已确立经历须 evidence={chapter,start,quote}，设计经历不附 evidence；更新须 change_reason，引擎自管字段不要提交。',
     'character_index': '按 instruction 对每条档案建立适用范围与因果依赖索引;relevance 只是提案,穷尽且可解释才写 scoped,不确定写 unknown;sources 原章用 recall --chapter 完整补读。',
 }
 
 
+def review_contract(checks_path='payload.checks'):
+    """The shared receipt schema, applied separately to each set of checks."""
+    ref={'chapter':1,'start':0,'quote':'原文'}
+    example={'verdict':'pass','checks':[{'id':'CHECK_ID','result':'pass',
+              'reason':'具体核验理由','evidence':[ref]}],'findings':[]}
+    finding={'impact':'具体阅读影响','goal':'可执行修订目标','severity':'quality','evidence':ref}
+    return ('data 示例='+dump(example)+'。CHECK_ID 替换为 '+checks_path+' 中的 ID，逐项提交完整 checks，'
+            'chapter/start/quote 按本次库存正文实测替换；每项 result=pass|fix，reason 非空。'
+            '可选项确不适用时 evidence=[] 并给非空 not_applicable，核心项仍须证据。'
+            '需返工时 verdict=fix，相关检查 result=fix，findings 至少一项：'+dump(finding)+'；'
+            'severity=blocker|quality|note，整体结论须与检查及发现一致。')
+
+
 def stage_primer(stage):
+    if stage == 'chapter_review':
+        return ('data={facts:{...},reader:{...}}，以下共同契约分别用于两个子回执，不能只给总 verdict。'
+                'facts.checks 对应 payload.facts_checks，reader.checks 对应 payload.reader_checks。'
+                '先读 task.json 的 first_read_path 正文，记录 reader.first_read，再读 input.json 核对事实、约定和人物；'
+                '不读执笔自评，不把同一审稿者的两类检查称为两名独立盲审。'
+                +review_contract('对应的 payload.facts_checks 或 payload.reader_checks')+
+                'facts 子回执：'+STAGE_PRIMERS['facts']+
+                'reader 子回执：'+STAGE_PRIMERS['reader']+
+                '两类都通过且事件验证成功才入库；任一 fix 先返修；审稿者不执笔下一章，候选连写仅由绑定 writer 角色的任务推进。')
+    if stage in ('facts','reader') or stage.endswith('_review'):
+        primer=review_contract()
+        if stage in STAGE_PRIMERS:return primer+STAGE_PRIMERS[stage]
+        return primer+('正文按 payload.prose_files 每章一个文件交付，证据坐标以对应章文件为准。'
+                      'payload.scope 不以 _chunk 结尾的整体复核，pass 时另必交 '
+                      'memory={text:非空提炼记忆,sources:[{chapter,start,quote}]}，来源须在审稿范围内；'
+                      '也可交非空字符串 memory，来源由分段回执绑定。整体复核按 coverage_receipts 和 selected 核对，'
+                      '没有 prose_files 时按疑点 recall --chapter 补读。')
     if stage in STAGE_PRIMERS:
         return STAGE_PRIMERS[stage]
-    if stage.endswith('_review'):
-        return 'data={verdict:pass|fix,findings:[{chapter,start,quote,reason}]}。正文按 prose_files 每章一个文件交付,坐标以对应章文件内容为准;对照逐项 checks 实测,quote 在对应章正文唯一命中;跨章问题逐章给出证据,不按章末类别轮换验收。'
     return None
 
 
@@ -154,6 +190,7 @@ def slim_review(review):
 
 
 def pack(db, branch, chapter, stage, payload):
+    require(stage not in ('facts','reader'),'unsupported_review','只支持 chapter_review 综合审稿任务')
     contract = get(db, 'contract')
     from . import contextflow
     bounded = contextflow.enabled(db)
@@ -163,7 +200,13 @@ def pack(db, branch, chapter, stage, payload):
             'contract': contract, 'plan': plan, 'payload': payload,
             'retrieval': {'command': 'recall', 'branch': branch, 'absence_is_not_proof': True},
             'selected': [], 'omitted': []}
-    if stage.endswith('_review'):
+    from .recovery import revision_context
+    revision = revision_context(db, branch)
+    if revision:base['revision_context'] = revision
+    from .reviewrun import session
+    review_session = session(db, branch, stage)
+    if review_session:base['review_session'] = review_session
+    if stage.endswith('_review') and stage != 'chapter_review':
         # The anchor-chapter plan names the range end, not the chapters under
         # review, and misleads reviewers; chunk reviewers instead get every
         # reviewed chapter's own plan, whole-range reviewers work from chunk
@@ -178,7 +221,7 @@ def pack(db, branch, chapter, stage, payload):
         chars = db.execute('SELECT COALESCE(SUM(LENGTH(prose)),0) FROM chapters WHERE branch=? AND number BETWEEN ? AND ?',
                            (branch, payload['first'], payload['through'])).fetchone()[0]
         base['review_prose_chars'] = int(chars)
-    elif stage in ('facts','reader') and isinstance(payload.get('prose'),str):
+    elif stage == 'chapter_review' and isinstance(payload.get('prose'),str):
         # reader 首读后再核对约定；长度只用于观测，必要补读不受额度限制。
         base['review_prose_chars'] = len(payload['prose'])
     if bounded and stage.endswith('_review') and not payload.get('scope','').endswith('_chunk'):
@@ -187,16 +230,18 @@ def pack(db, branch, chapter, stage, payload):
             base['synthesis_materials']=[{'chapter':r['through'],'input_hash':r['input_hash'],'review':slim_review(json.loads(r['data']))}
                 for r in db.execute('SELECT through,input_hash,data FROM reviews WHERE branch=? AND scope=? AND through BETWEEN ? AND ? ORDER BY through',
                                     (branch,scope+'_chunk',payload['first'],payload['through']))]
-    # Reader first pass deliberately has no plans, contract or writer explanation.
+    # The combined reviewer reads envelope first_read_path before this pack.
     if stage in ('world_plan','volume_plan','plan','batch_review','volume_review','book_review','revision_review'):
         from .budget import overview
         base['volume_budget'] = overview(db, branch)
-    if stage == 'reader':
-        base.pop('contract')
-        base.pop('plan')
-        base['instruction'] = '若检查项含 dialogue_identity，首读完成后才可用 character 查询人物档案与来源。'
-    elif not stage.endswith('_review'):
-        state = replay(db, branch)
+    from . import batchflow
+    chapter_session=batchflow.session(db,branch,stage)
+    if chapter_session:base['chapter_session']=chapter_session
+    if chapter_session and chapter_session['role']=='reviewer':
+        from .reviewflow import batch_key
+        base['batch_first_read_sealed']=bool(get(db,batch_key(chapter_session['batch'])))
+    if stage == 'chapter_review' or not stage.endswith('_review'):
+        state = batchflow.candidate_state(db,branch,chapter-1) if chapter_session and chapter_session['role']=='writer' else replay(db, branch)
         refs = set(plan.get('entities', []))
         from . import characters
         if stage in ('character_plan','character_index'):refs.update(payload['entities'])
@@ -213,7 +258,7 @@ def pack(db, branch, chapter, stage, payload):
                 if eid in state.get('places',{}):scene_places.add(eid)
         if state.get('anchors') or state.get('places'):
             base['continuity']=spatial_view(state,scene_places,refs)
-        if stage=='facts':base['address_signals']=address_signals(state,payload.get('prose',''))
+        if stage == 'chapter_review':base['address_signals']=address_signals(state,payload.get('prose',''))
         topics = set(plan.get('topics', []))
         for scene in plan.get('scenes', []):
             for intent in scene.get('dialogue_intents', []):
@@ -235,7 +280,7 @@ def pack(db, branch, chapter, stage, payload):
                 base['omitted'].append({'kind':'knowledge_topics','count':omitted,
                     'selected_topics':sorted(topics),'retrieve':'recall --state --entity ID --topic TOPIC',
                     'boundary':'其他认知仍在账本；写作或审稿涉及新话题时先核对，不能据本包缺项判定人物未知。'})
-        if characters.enabled(db) and stage in ('character_plan','character_index','draft','repair','redesign','facts'):
+        if characters.enabled(db) and stage in ('character_plan','character_index','draft','repair','redesign','chapter_review'):
             ids=sorted(e for e in refs if characters.person(state,e))
             base['character_context']=characters.context(db,branch,ids,state,plan=plan,stage=stage)
         for n in plan.get('dependencies', []):
@@ -265,13 +310,15 @@ def pack(db, branch, chapter, stage, payload):
             base['design_context']=design.context(db,branch,volume)
             required_sources=set()
             for record in base['design_context'].values():
-                if isinstance(record,dict):required_sources.update(int(n) for n in record.get('sources',{}))
-            present={v['chapter'] for v in base['selected'] if v['kind']=='required_chapter'}
-            for n in sorted(required_sources-present):
-                row=db.execute('SELECT prose,hash FROM chapters WHERE branch=? AND number=?',(branch,n)).fetchone()
+                if isinstance(record,dict):
+                    required_sources.update((record.get('source_branch',branch),int(n)) for n in record.get('sources',{}))
+            present={(v.get('branch',branch),v['chapter']) for v in base['selected'] if v['kind']=='required_chapter'}
+            for origin,n in sorted(required_sources-present):
+                row=db.execute('SELECT prose,hash FROM chapters WHERE branch=? AND number=?',(origin,n)).fetchone()
                 # Invalidated designs can cite chapters removed by a candidate revision.
-                if row:base['selected'].append({'kind':'required_chapter','chapter':n,'hash':row['hash'],'text':row['prose']})
-                else:base['omitted'].append({'kind':'invalidated_design_source','chapter':n,'reason':'not present in current branch; re-evaluate proposal'})
+                if row:base['selected'].append({'kind':'required_chapter','chapter':n,'hash':row['hash'],'text':row['prose'],
+                                               **({'branch':origin,'source_note':'设计证据原文；当前事实按任务分支 recall 核验'} if origin!=branch else {})})
+                else:base['omitted'].append({'kind':'invalidated_design_source','branch':origin,'chapter':n,'reason':'not present in source branch; re-evaluate proposal'})
     if stage=='volume_plan' and design.enabled(db):
         # 开新卷时把前卷设计的交接面交给设计者;并明示设计是意图,carries_in
         # 要按账本里实际写成的前卷对齐,不能照抄原计划。
@@ -287,10 +334,14 @@ def pack(db, branch, chapter, stage, payload):
     if stage in ('draft','repair','redesign') and plan:
         base['writer_brief']=design.writer_brief(plan)
     anchor = get(db,'style_anchor')
-    if anchor and stage in ('draft','repair','redesign','reader'):
+    if anchor and stage in ('draft','repair','redesign','chapter_review'):
         base['style_anchor']={'voice':anchor.get('voice',''),'traits':anchor.get('traits',[]),
                               'sample':anchor.get('sample',''),'sample_close':anchor.get('sample_close',''),
                               'usage':'声线参照：按 traits 保持叙事口吻、句式节奏与用词域的连续性；voice_match 审稿依此核对，不逐句模仿样例内容。'}
+    if chapter_session and chapter_session['role']=='writer':
+        base['candidate_ledger']={'status':'unreviewed','canonical_through':head(db,branch),
+            'prefix':batchflow.prefix_material(db,branch,chapter),
+            'instruction':'state/continuity 已叠加本批前章候选事件；只作承接前态，不是正式事实。逐章提交候选事件与具体自查，不能自审入库。'}
     candidates = []
     if stage in ('plan','draft','repair','redesign'):
         # Adjacent outline intentions help vary rhythm without loading a book's
@@ -304,7 +355,7 @@ def pack(db, branch, chapter, stage, payload):
                 'written':row['prose_hash'] is not None,
                 'outline':{k:previous[k] for k in ('goal','conflict','change','ending_shape','rhythm') if k in previous},
                 'boundary':'这是邻章设计意图；已写章的实际效果用 recall --chapter N 核对，不能据章末类别推断节奏质量。'})
-    if stage!='reader' and not stage.endswith('_review'):
+    if stage == 'chapter_review' or not stage.endswith('_review'):
         for row in db.execute('SELECT number,data FROM chapters WHERE branch=? AND number<? ORDER BY number DESC LIMIT 3', (branch,chapter)):
             data = json.loads(row['data'])
             candidates.append({'kind':'recent_summary','chapter':row['number'],'text':data['summary'], 'source_chapters':[row['number']], 'derived_view':True})
@@ -330,7 +381,20 @@ def pack(db, branch, chapter, stage, payload):
     base['guide'] = guide(stage, base.pop('instruction', None))
     if 'writer_brief' in base:
         base['plan'] = {k: v for k, v in base['plan'].items() if k not in WRITER_BRIEF_FIELDS}
+    if chapter_session and chapter_session['role']=='writer':
+        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
     attach_prose(db, base)
+    if stage == 'chapter_review':
+        from .reviewflow import PROTOCOL, obligations
+        base['review_protocol'] = PROTOCOL
+        base['review_obligations'] = obligations(contract, base.get('style_anchor'))
+        base['guide'] += ('\n[审稿门禁] 首读由 first-read 持久冻结，正式 reader.first_read 原样保留。'
+                          'facts/reader.obligations 按 review_obligations 本类别 ID 穷尽回应；'
+                          '每条含 result/reason/evidence 和 challenge={disposition:satisfied|violated,reason,evidence}。'
+                          'challenge 选最可能违反该约定的原文并解释为何可保留或必须返修；violated 必须 fix，'
+                          '对应 world_rules/voice_match/language 检查同步 fix，并给标有 obligation_id 的 quality/blocker findings。'
+                          '技术名词、字数、格式通过不证明语义质量；不读旧审稿判词来补写首读或替自己判断。'
+                          '事件字段见 task.json 的 event_contract_path，证据位置用 commands.evidence。')
     if bounded:
         identity=digest({'branch':branch,'chapter':chapter,'stage':stage,'payload':payload,'plan':plan})
         base['context_identity']=identity

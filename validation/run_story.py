@@ -215,10 +215,11 @@ def main():
             if task.get('stage')=='await_author':engine.approve(db);continue
             if not task.get('task_id'):
                 if task.get('status')!='completed':raise RuntimeError(task)
-                report={'kind':'real-authored-prose-with-recorded-model-reviews','review_mode':'serial pipeline; separate fresh-context reader reviewed all twelve chapters once','pilot_approval':'test commissioning, not real author approval','source_hashes':{str(n):digest(s) for n,s in PROSE.items()},'result':task,'tasks':trace,'limitations':['compressed sample, not million-character validation','not cross-provider verification','chapter 4 original draft and actual independent finding exercise repair; other editorial changes preceded replay','long-range review supplied by implementing editor, not a second blind reader']}
-                write_json(STORY/'execution-report.json',report)
+                report={'kind':'real-authored-prose-with-recorded-model-reviews','review_mode':'combined protocol replay using archived independent reader receipts; no new model review','pilot_approval':'test commissioning, not real author approval','source_hashes':{str(n):digest(s) for n,s in PROSE.items()},'result':task,'tasks':trace,'limitations':['compressed sample, not million-character validation','not cross-provider verification','chapter 4 original draft and actual independent finding exercise repair; other editorial changes preceded replay','long-range review supplied by implementing editor, not a second blind reader']}
+                write_json(Path(args.project)/'execution-report.json',report)
                 return
-            stage,n=task['stage'],task['chapter'];info=json.loads(Path(task['input_path']).read_text(encoding='utf-8'))['payload']
+            stage,n=task['stage'],task['chapter'];info=json.loads((Path(args.project)/task['input_path']).read_text(encoding='utf-8'))['payload']
+            if 'prose_path' in info:info['prose']=(Path(args.project)/info['prose_path']).read_text(encoding='utf-8')
             if stage=='plan':data={'chapters':[planned(i) for i in range(n,min(n+5,12)+1)]}
             elif stage=='draft':
                 text=PROSE[n]
@@ -226,13 +227,12 @@ def main():
                     text=(STORY/'initial/04.md').read_text(encoding='utf-8').rstrip()
                 data={'prose':text}
             elif stage in ('repair','redesign'):data={'prose':PROSE[n],'repair_note':'按独立读者发现改正水位与桥洞净空关系，保持水尺只是线索。','design_change':'调查基于运输路径，刀痕不再被当作未经核实的暗号。'}
-            elif stage=='facts':data=fact_review(n,info['prose'])
-            elif stage=='reader':
-                if n==4 and info['prose']!=PROSE[4]:data=reader_result(n,initial_review,info['prose'])
-                else:data=reader_result(n,review)
+            elif stage=='chapter_review':
+                reader=reader_result(n,initial_review,info['prose']) if n==4 and info['prose']!=PROSE[4] else reader_result(n,review)
+                data={'facts':fact_review(n,info['prose']),'reader':reader}
             else:data=long_review(info,review)
             result={'schema':'novel-ledger-v2.result/1','task_id':task['task_id'],'input_hash':task['input_hash'],'data':data}
-            write_json(task['output_path'],result)
+            write_json(Path(args.project)/task['output_path'],result)
             response=engine.submit(db,result)
             trace.append({'task':task['task_id'],'chapter':n,'stage':stage,'accepted':response.get('accepted')})
         raise RuntimeError('too many tasks')

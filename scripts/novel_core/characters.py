@@ -404,7 +404,7 @@ def context(db,branch,ids,state,plan=None,stage=None):
         selected[eid]=events[start:]
         if start:omitted[eid]={'count':start,'retrieve':'character --entity '+eid+' --history (or recall --entity '+eid+')'}
         if record:
-            can_scope=plan is not None and stage not in ('character_plan','character_index','facts','reader') and get(db,'contract').get('character_views','full')=='scoped' and valid_index(db,branch,eid,state)
+            can_scope=plan is not None and stage not in ('character_plan','character_index','chapter_review') and get(db,'contract').get('character_views','full')=='scoped' and valid_index(db,branch,eid,state)
             if can_scope:
                 profiles[eid],profile_refs,omission=scoped_profile(db,branch,eid,record,plan,state)
                 refs.extend(profile_refs)

@@ -24,25 +24,32 @@ class RevisionContextTests(unittest.TestCase):
     def start_draft(self,prose,events=None,ending=False):
         respond(self.db,self.path,self.task(),ending=ending)
         respond(self.db,self.path,self.task(),prose=prose)
-        respond(self.db,self.path,self.task(),events=events or [])
+        self.draft_events=events or []
 
     def commit(self,prose,events=None,ending=False):
         self.start_draft(prose,events,ending)
-        respond(self.db,self.path,self.task());engine.approve(self.db)
+        respond(self.db,self.path,self.task(),events=self.draft_events);engine.approve(self.db)
 
     def reader_fix(self):
-        task=self.task();self.assertEqual(task['stage'],'reader')
+        task=self.task();self.assertEqual(task['stage'],'chapter_review')
         work=self.work(task);prose=pack_prose(self.path, work)
-        data=review(work['payload']['checks'],prose,task['chapter'])
+        data=review(work['payload']['reader_checks'],prose,task['chapter'])
         data['verdict']='fix';data['checks'][0]['result']='fix'
-        data['first_read']={'desire':'交付证据','obstacle':'犹豫','change':'决定','read_on_reason':'后果'}
+        data['first_read']=fixture_first_read()
         data['findings']=[{'severity':'quality','impact':'动作交代不足','goal':'补一个动作','evidence':ev(prose,task['chapter'])}]
-        engine.submit(self.db,result(task,data))
+        receipt=combined_review(work,prose,task['chapter'],events=self.draft_events)
+        receipt['reader']=data
+        engine.submit(self.db,result(task,receipt))
 
-    def facts_result(self,task,events=None,**extra):
-        work=self.work(task);data=review(work['payload']['checks'],pack_prose(self.path, work),task['chapter'])
+    def facts_result(self,task,events=None,reader_fix=False,**extra):
+        work=self.work(task);data=review(work['payload']['facts_checks'],pack_prose(self.path, work),task['chapter'])
         data.update(events=events or [],summary='经正文核验后重新登记。',**extra)
-        return engine.submit(self.db,result(task,data))
+        receipt=combined_review(work,pack_prose(self.path,work),task['chapter'])
+        receipt['facts']=data
+        if reader_fix:
+            reader=receipt['reader'];reader['verdict']='fix';reader['checks'][0]['result']='fix'
+            reader['findings']=[{'severity':'quality','impact':'动作交代不足','goal':'补一个动作','evidence':ev(pack_prose(self.path,work),task['chapter'])}]
+        return engine.submit(self.db,result(task,receipt))
 
     def unsigned_pending(self,task):
         """Simulate a persisted pre-signature task without rewriting it on next."""
@@ -68,7 +75,6 @@ class RevisionContextTests(unittest.TestCase):
         self.assertEqual(exc.exception.code,'event_accounting')
         replacement={**events[0],'after':False,'evidence':ev(changed,1,'没有得到玉佩')}
         self.facts_result(task,[replacement],prior_dispositions=[{'index':0,'disposition':'replaced','reason':'正文改为没有取得玉佩。'}])
-        respond(self.db,self.path,self.task())
         state=replay(self.db,get(self.db,'work_branch'))
         self.assertFalse(state['facts']['hero:has_token']);self.assertTrue(state['facts']['ally:door_closed'])
 
@@ -78,7 +84,7 @@ class RevisionContextTests(unittest.TestCase):
         self.commit(original,[event]);engine.begin_revision(self.db,1,'修订未登记的收束动作')
         respond(self.db,self.path,self.task(),prose='周行得到玉佩。宋禾打开门。')
         task=self.task();self.assertEqual(self.work(task)['payload']['auto_carry'],[0])
-        self.facts_result(task);respond(self.db,self.path,self.task())
+        self.facts_result(task)
         self.assertTrue(replay(self.db,get(self.db,'work_branch'))['facts']['hero:has_token'])
 
     def test_changed_secondary_evidence_context_prevents_automatic_carry(self):
@@ -104,7 +110,7 @@ class RevisionContextTests(unittest.TestCase):
         engine.save_draft(self.db,'main',2,draft)
         task=self.task();self.assertEqual(self.work(task)['payload']['auto_carry'],[])
         self.facts_result(task,[prior],prior_dispositions=[{'index':0,'disposition':'kept'}])
-        stored=engine.load_draft(self.db,'main',2)['events'][0]['cause_evidence']
+        stored=json.loads(self.db.execute("SELECT data FROM chapters WHERE branch='main' AND number=2").fetchone()[0])['events'][0]['cause_evidence']
         self.assertEqual(stored,ev(prose,1,'得到玉佩'))
 
     def test_second_repair_keeps_materialized_events_including_carried_delta(self):
@@ -116,11 +122,11 @@ class RevisionContextTests(unittest.TestCase):
         respond(self.db,self.path,self.task(),prose=first)
         task=self.task();self.assertEqual(self.work(task)['payload']['auto_carry'],[0,1])
         extra={'op':'state','entity':'hero','key':'has_key','before':None,'after':True,'evidence':ev(first,1,'收起了钥匙')}
-        self.facts_result(task,[extra]);self.reader_fix()
+        self.facts_result(task,[extra],reader_fix=True)
         respond(self.db,self.path,self.task(),prose=first+'宋禾抬头看他。')
         task=self.task();payload=self.work(task)['payload']
         self.assertEqual(len(payload['prior_events']),3);self.assertEqual(payload['auto_carry'],[0,1,2])
-        self.facts_result(task);respond(self.db,self.path,self.task())
+        self.facts_result(task)
         self.assertEqual(set(replay(self.db,'main')['facts']),{'hero:has_token','ally:door_closed','hero:has_key'})
 
     def test_dropped_events_are_not_resurrected_by_another_repair(self):
@@ -129,11 +135,11 @@ class RevisionContextTests(unittest.TestCase):
         self.start_draft(prose,[event]);self.reader_fix()
         revised='周行没有得到玉佩。'
         respond(self.db,self.path,self.task(),prose=revised)
-        self.facts_result(self.task(),prior_dispositions=[{'index':0,'disposition':'dropped','reason':'取得玉佩不再发生。'}])
-        self.reader_fix();respond(self.db,self.path,self.task(),prose=revised+'宋禾握住门把手。')
+        self.facts_result(self.task(),reader_fix=True,prior_dispositions=[{'index':0,'disposition':'dropped','reason':'取得玉佩不再发生。'}])
+        respond(self.db,self.path,self.task(),prose=revised+'宋禾握住门把手。')
         task=self.task();payload=self.work(task)['payload']
         self.assertEqual(payload['prior_events'],[]);self.assertEqual(payload['auto_carry'],[])
-        self.facts_result(task);respond(self.db,self.path,self.task())
+        self.facts_result(task)
         self.assertNotIn('hero:has_token',replay(self.db,'main')['facts'])
 
     def test_range_hash_binds_relevant_metadata_but_excludes_future_scope(self):
@@ -168,23 +174,16 @@ class RevisionContextTests(unittest.TestCase):
         self.assertNotEqual(self.work(fresh)['review_context_hash'],frozen)
         self.assertEqual(self.db.execute('SELECT state FROM tasks WHERE id=?',(task['task_id'],)).fetchone()[0],'cancelled')
 
-    def test_legacy_facts_pending_is_preserved_and_accepted_before_fresh_review(self):
-        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
-        task=self.unsigned_pending(self.task())
-        outcome=self.facts_result(task)
-        self.assertTrue(outcome['accepted']);self.assertTrue(outcome['review_recheck_required'])
-        fresh=self.task();self.assertEqual(fresh['stage'],'facts');self.assertNotEqual(fresh['task_id'],task['task_id'])
-        self.assertIn('review_context_hash',self.work(fresh));self.assertEqual(head(self.db,'main'),0)
-        self.facts_result(fresh);respond(self.db,self.path,self.task())
-        self.assertEqual(head(self.db,'main'),1)
-
-    def test_legacy_reader_pending_cannot_commit_under_a_new_signature(self):
-        self.start_draft('周行把收据交给宋禾。')
-        task=self.unsigned_pending(self.task())
-        outcome=respond(self.db,self.path,task)
-        self.assertTrue(outcome['accepted']);self.assertTrue(outcome['review_recheck_required'])
-        self.assertEqual(head(self.db,'main'),0)
-        fresh=self.task();self.assertEqual(fresh['stage'],'facts');self.assertIn('review_context_hash',self.work(fresh))
+    def test_old_review_task_stages_are_rejected(self):
+        for old_stage in ('facts','reader'):
+            with self.subTest(stage=old_stage):
+                self.db.execute("DELETE FROM tasks WHERE state='pending'")
+                respond(self.db,self.path,self.task()) if not self.db.execute('SELECT 1 FROM plans').fetchone() else None
+                if engine.load_draft(self.db,'main',1) is None:respond(self.db,self.path,self.task())
+                task=self.task()
+                self.db.execute('UPDATE tasks SET stage=? WHERE id=?',(old_stage,task['task_id']))
+                with self.assertRaises(Error):respond(self.db,self.path,task)
+                self.assertEqual(head(self.db,'main'),0)
 
     def test_legacy_aggregate_review_does_not_promote_unverified_memory(self):
         self.commit('周行把收据交给宋禾。',ending=True)
@@ -207,7 +206,7 @@ class RevisionContextTests(unittest.TestCase):
         engine.begin_revision(self.db,1,'复核旧版本章节')
         task=self.task();payload=self.work(task)['payload']
         outcome=engine.submit(self.db,result(task,{'base_hash':payload['base_hash'],'reuse_original':True}))
-        self.assertNotIn('fast_committed',outcome);self.assertEqual(self.task()['stage'],'facts')
+        self.assertNotIn('fast_committed',outcome);self.assertEqual(self.task()['stage'],'chapter_review')
 
 
 if __name__=='__main__':unittest.main()

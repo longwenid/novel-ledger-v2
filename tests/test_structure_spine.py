@@ -17,7 +17,7 @@ class SpineTests(unittest.TestCase):
         initialize(self.path,c);self.db=connect(self.path)
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def task(self):return engine.next_task(self.db,self.path)
-    def submit(self,task,data):return engine.submit(self.db,result(task,copy.deepcopy(data)))
+    def submit(self,task,data):return submit_review(self.db,task,copy.deepcopy(data))
     def prepare(self):
         self.submit(self.task(),EXAMPLE['world_plan']);self.submit(self.task(),EXAMPLE['volume_plan'])
     def plan(self,n=1,major=False,refs=None):
@@ -56,8 +56,7 @@ class SpineTests(unittest.TestCase):
     def finish_chapter(self,n=1):
         respond(self.db,self.path,self.task())                        # draft
         t=self.task();w=json.loads(rpath(t,'input_path').read_text(encoding='utf-8'));text=pack_prose(self.path, w)
-        data=review(w['payload']['checks'],text,n);data.update(events=[],summary='s');self.submit(t,data)
-        respond(self.db,self.path,self.task())                        # reader
+        data=review(w['payload']['facts_checks'],text,n);data.update(events=[],summary='s');self.submit(t,data)
         return head(self.db,'main')
 
     def test_major_turn_requires_and_validates_spine_refs(self):

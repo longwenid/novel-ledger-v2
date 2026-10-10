@@ -33,8 +33,8 @@ class LayoutPathTests(unittest.TestCase):
         t=self.task();self.assertEqual(t['stage'],'draft')
         self.assertTrue(str(t['input_path']).startswith('work/ch0001/draft-'))
         respond(self.db,self.path,t)
-        t=self.task();self.assertEqual(t['stage'],'facts')
-        self.assertTrue(str(t['input_path']).startswith('work/ch0001/facts-'))
+        t=self.task();self.assertEqual(t['stage'],'chapter_review')
+        self.assertTrue(str(t['input_path']).startswith('work/ch0001/chapter_review-'))
 
     def test_finished_directories_are_pruned(self):
         drive(self.db,self.path,count=1)

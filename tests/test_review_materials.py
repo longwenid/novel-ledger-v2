@@ -136,7 +136,7 @@ class ReviewPackMaterialTests(unittest.TestCase):
 
     def test_facts_and_reader_observe_complete_prose_without_a_quota(self):
         prose = '周行在档案室核对记录，宋禾在门房登记来访。'*3000
-        for stage in ('facts', 'reader'):
+        for stage in ('chapter_review',):
             with self.subTest(stage=stage):
                 work = pack(self.db, 'main', 3, stage, {'prose': prose, 'checks': ('coverage',)})
                 self.assertEqual(work['review_prose_chars'],len(prose))
@@ -146,16 +146,16 @@ class ReviewPackMaterialTests(unittest.TestCase):
                 self.assertEqual(delivered,prose)
                 self.assertEqual(work['payload']['prose_hash'],digest(prose))
                 self.assertNotIn('retrieval_allowance',work)
-                if stage=='reader':
-                    for field in ('plan','contract','state','writer_brief'):self.assertNotIn(field,work)
-        leftover = pack(self.db, 'main', 3, 'facts', {'checks': ('coverage',)})
+                self.assertNotIn('writer_brief',work)
+        leftover = pack(self.db, 'main', 3, 'chapter_review', {'checks': ('coverage',)})
         self.assertNotIn('review_prose_chars',leftover)
         self.assertNotIn('retrieval_allowance',leftover)
 
     def test_review_discipline_names_branch_coordinate(self):
         task, work = self._work()
-        self.assertIn('branch 字段所指分支', work['guide'])
-        self.assertNotIn('【第', work['guide'])
+        guide=work.get('guide') or json.loads((self.path/work['shared_materials']['guide']['path']).read_text())
+        self.assertIn('branch 字段所指分支', guide)
+        self.assertNotIn('【第', guide)
 
     def test_chunk_plans_track_reviewed_range_not_anchor(self):
         with transaction(self.db): put(self.db, 'review_chunk', 5)

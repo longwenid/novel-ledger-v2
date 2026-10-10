@@ -9,7 +9,7 @@ import unittest
 
 from support import (
     contract, drive, engine, ev, initialize, connect, get, pack_prose, plan, respond,
-    result, review, rpath, transaction,
+    result, review, rpath, transaction, submit_review,
 )
 from novel import dispatch, parser
 from novel_core.ledger import replay, resource_key
@@ -48,7 +48,7 @@ class IndependentRegressions(unittest.TestCase):
         }])
         before = replay(db, 'main')
         with self.assertRaises(Error) as rejected:
-            engine.submit(db, result(task, data))
+            submit_review(db, task, data)
         self.assertEqual(rejected.exception.code, 'amount')
         self.assertEqual(replay(db, 'main'), before)
         self.assertEqual(head(db, 'main'), 0)
@@ -58,8 +58,7 @@ class IndependentRegressions(unittest.TestCase):
             'quantity': '1e120', 'from': 'hero', 'to': None,
             'from_before': '1e120', 'reason': '交出原有银钱', 'evidence': ev(prose),
         }]
-        engine.submit(db, result(task, data))
-        respond(db, project, engine.next_task(db, project))
+        submit_review(db, task, data)
         self.assertEqual(head(db, 'main'), 1)
         from decimal import Decimal
         self.assertEqual(Decimal(replay(db, 'main')['resources'][
@@ -120,7 +119,7 @@ class IndependentRegressions(unittest.TestCase):
                     'severity': 'quality', 'impact': '本批人物选择尚不清晰',
                     'goal': '补上人物主动选择', 'evidence': ev(prose, first),
                 }]
-                engine.submit(db, result(task, data))
+                submit_review(db, task, data)
             else:
                 respond(db, project, task, ending=task['chapter'] == 30)
         else:

@@ -25,19 +25,16 @@ class StyleAnchorTests(unittest.TestCase):
         self.assertEqual(work['style_anchor']['traits'],anchor['traits'])
         self.assertEqual(work['style_anchor']['sample'],anchor['sample'])
         respond(self.db,self.path,t)
-        t=self.task();self.assertEqual(t['stage'],'facts')
-        self.assertNotIn('style_anchor',json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
-        respond(self.db,self.path,t)
-        t=self.task();self.assertEqual(t['stage'],'reader')
+        t=self.task();self.assertEqual(t['stage'],'chapter_review')
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        self.assertIn('voice_match',work['payload']['checks'])
+        self.assertIn('voice_match',work['payload']['reader_checks'])
         self.assertIn('style_anchor',work)
 
     def test_no_anchor_no_voice_check(self):
-        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
-        t=self.task();self.assertEqual(t['stage'],'reader')
+        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
+        t=self.task();self.assertEqual(t['stage'],'chapter_review')
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        self.assertNotIn('voice_match',work['payload']['checks'])
+        self.assertNotIn('voice_match',work['payload']['reader_checks'])
 
     def test_approve_snapshots_pilot_as_anchor(self):
         while head(self.db,'main')==0:
@@ -51,22 +48,22 @@ class StyleAnchorTests(unittest.TestCase):
         self.assertTrue(anchor['sample'].strip())
         while True:
             t=self.task()
-            if t.get('stage')=='reader':break
+            if t.get('stage')=='chapter_review':break
             self.assertTrue(t.get('task_id'))
             respond(self.db,self.path,t)
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        self.assertIn('voice_match',work['payload']['checks'])
+        self.assertIn('voice_match',work['payload']['reader_checks'])
         self.assertEqual(work['style_anchor']['sample'],anchor['sample'])
 
     def test_voice_match_requires_evidence(self):
         with transaction(self.db):put(self.db,'style_anchor',{'traits':['短句'],'sample':'雨未停。','source':'author'})
-        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
+        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
         t=self.task();work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        data=review(work['payload']['checks'],pack_prose(self.path, work))
+        data=review(work['payload']['reader_checks'],pack_prose(self.path, work))
         row=next(r for r in data['checks'] if r['id']=='voice_match');row['evidence']=[]
         row['not_applicable']='跳过'
-        data['first_read']={'desire':'d','obstacle':'o','change':'c','read_on_reason':'r'}
-        with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))
+        data['first_read']=fixture_first_read()
+        with self.assertRaises(Error) as exc: submit_review(self.db,t,data)
         self.assertEqual(exc.exception.code,'review')
 
     def test_invalid_style_shape_rejected(self):

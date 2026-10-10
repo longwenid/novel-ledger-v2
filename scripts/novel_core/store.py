@@ -8,8 +8,8 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.25.2'
-SCHEMA = 'novel-ledger-v2/1'
+VERSION = '1.32.0'
+SCHEMA = 'novel-ledger-v2/2'
 
 
 def validate_style(style):
@@ -61,11 +61,15 @@ def connect(project):
     require(path.exists(), 'not_initialized', f'项目尚未初始化：{path}')
     db = sqlite3.connect(path, timeout=30, isolation_level=None)
     db.row_factory = sqlite3.Row
-    db.execute('PRAGMA foreign_keys=ON')
-    db.execute('PRAGMA journal_mode=WAL')
-    db.execute('PRAGMA synchronous=FULL')
-    require(get(db, 'schema') == SCHEMA, 'schema', '不支持此数据库版本')
-    ensure_derived_schema(db)
+    try:
+        require(get(db, 'schema') == SCHEMA, 'schema', '本版本仅支持新项目数据库 novel-ledger-v2/2，不兼容旧项目')
+        db.execute('PRAGMA foreign_keys=ON')
+        db.execute('PRAGMA journal_mode=WAL')
+        db.execute('PRAGMA synchronous=FULL')
+        ensure_derived_schema(db)
+    except BaseException:
+        db.close()
+        raise
     return db
 
 
@@ -113,6 +117,9 @@ def initialize(project, contract):
     require(contract.get('character_mode','legacy') in ('legacy','profiled'),'contract','character_mode 为 profiled 或 legacy')
     require(contract.get('character_views','full') in ('full','scoped'),'contract','character_views 为 full/scoped')
     require(contract.get('context_mode','bounded') in ('bounded','legacy'),'contract','context_mode 为 bounded/legacy')
+    require(type(contract.get('chapter_batch_size',5)) is int and 1<=contract.get('chapter_batch_size',5)<=5,'contract','chapter_batch_size 为 1~5')
+    require(type(contract.get('writer_batch',10)) is int and 1<=contract.get('writer_batch',10)<=10,'contract','writer_batch 为 1~10 章的执笔会话上限')
+    require(type(contract.get('review_chunk',3)) is int and 1<=contract.get('review_chunk',3)<=5,'contract','review_chunk 为 1~5 章的跨章复审粒度')
     style_anchor = validate_style(contract['style']) | {'source': 'author'} if isinstance(contract.get('style'), dict) else None
     seed(contract)
     project = Path(project).resolve()
@@ -143,10 +150,13 @@ def initialize(project, contract):
         CREATE TABLE logs(id INTEGER PRIMARY KEY, created REAL, action TEXT, data TEXT);
         ''')
         with transaction(db):
-            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), 'seq': 0}.items():
+            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), 'writer_batch': contract.get('writer_batch',10), 'chapter_batch_size':contract.get('chapter_batch_size',5), 'review_chunk': contract.get('review_chunk',3), 'seq': 0}.items():
                 put(db, k, v)
             if style_anchor is not None:
                 put(db, 'style_anchor', style_anchor)
+            policy=contract.get('preparation_policy','adaptive')
+            require(policy in ('adaptive','semantic'),'config','preparation_policy 为 adaptive/semantic')
+            put(db,'preparation_policy',policy)
             db.execute('INSERT INTO branches VALUES (?,?,?,?,?,?,?)', ('main', None, 1, None, None, 'initial', 'active'))
             ensure_derived_schema(db)
         return {'project': str(project), 'schema': SCHEMA, 'status': 'ready'}

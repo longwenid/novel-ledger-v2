@@ -25,12 +25,11 @@ class FastCommitTests(unittest.TestCase):
                 if t.get('stage')=='plan':respond(self.db,self.path,t)
             t=self.task();self.assertEqual(t['stage'],'draft')
             respond(self.db,self.path,t,prose=f'第{n}天，周行把收据交给宋禾，两人核对每一行。')
-            t=self.task();self.assertEqual(t['stage'],'facts')
+            t=self.task();self.assertEqual(t['stage'],'chapter_review')
             work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
-            data=review(work['payload']['checks'],prose,n)
+            data=review(work['payload']['facts_checks'],prose,n)
             data.update(events=[{'op':'clock','before':n-1,'after':n,'evidence':ev(prose,n)}],summary=f'第{n}章。')
-            engine.submit(self.db,result(t,data))
-            respond(self.db,self.path,self.task())                 # reader
+            submit_review(self.db,t,data)
             if n==1 and self.task().get('stage')=='await_author':engine.approve(self.db)
         self.assertEqual(head(self.db,'main'),2)
 
@@ -44,7 +43,7 @@ class FastCommitTests(unittest.TestCase):
             self.assertTrue(outcome['fast_committed'])
             self.assertEqual(head(self.db,get(self.db,'work_branch')),n)
             nxt=self.task()
-            self.assertNotEqual(nxt.get('stage'),'facts')          # no re-review dispatched
+            self.assertNotEqual(nxt.get('stage'),'chapter_review')          # no re-review dispatched
             if nxt.get('stage')=='revision_review':
                 break
         self.assertEqual(head(self.db,'main'),2)                    # main untouched
@@ -63,12 +62,12 @@ class FastCommitTests(unittest.TestCase):
         old='两人核对每一行。';new='两人在灯下把最后一行核完才歇。'
         data={'base_hash':payload['base_hash'],'repair_note':'收束段去同质化',
               'patches':[{'start':base.index(old),'old':old,'new':new}]}
-        engine.submit(self.db,result(t,data))
-        t=self.task();self.assertEqual(t['stage'],'facts')          # changed chapter re-registers
+        submit_review(self.db,t,data)
+        t=self.task();self.assertEqual(t['stage'],'chapter_review')          # changed chapter re-registers
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         prior=work['payload']['prior_events']
         self.assertEqual(work['payload']['prior_events_source'],'revision')
-        data=review(work['payload']['checks'],pack_prose(self.path, work),2)
+        data=review(work['payload']['facts_checks'],pack_prose(self.path, work),2)
         dispositions=[{'index':i,'disposition':'kept'} for i in range(len(prior))]
         for d in dispositions:d['disposition']='kept'
         data.update(events=[],summary='仅收束段措辞变化。',prior_dispositions=dispositions)
@@ -77,8 +76,8 @@ class FastCommitTests(unittest.TestCase):
         data['events']=[dict(e) for e in prior]
         for e in data['events']:
             e['evidence']={'chapter':2,'start':0,'quote':pack_prose(self.path, work)}
-        engine.submit(self.db,result(t,data))
-        self.assertEqual(self.task()['stage'],'reader')
+        submit_review(self.db,t,data)
+        self.assertEqual(head(self.db,get(self.db,'work_branch')),2)
 
     def test_fast_path_falls_back_when_upstream_breaks_precondition(self):
         respond(self.db,self.path,self.task())                     # plan ch1
@@ -91,13 +90,12 @@ class FastCommitTests(unittest.TestCase):
             respond(self.db,self.path,t,prose=f'第{n}天，周行付了{spend}文买纸墨。')
             t=self.task()
             work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
-            data=review(work['payload']['checks'],prose,n)
+            data=review(work['payload']['facts_checks'],prose,n)
             before=100 if n==1 else 70
             data.update(events=[{'op':'resource','asset':'cash','unit':'文','quantity':spend,
                                  'from':'hero','to':None,'from_before':str(before),
                                  'reason':'买纸墨','evidence':ev(prose,n)}],summary=f'第{n}天付{spend}文。')
-            engine.submit(self.db,result(t,data))
-            respond(self.db,self.path,self.task())
+            submit_review(self.db,t,data)
             if n==1:
                 t=self.task()
                 if t.get('stage')=='await_author':engine.approve(self.db)
@@ -110,21 +108,19 @@ class FastCommitTests(unittest.TestCase):
         old='周行付了30文买纸墨。'
         data={'base_hash':payload['base_hash'],'repair_note':'删去支出',
               'patches':[{'start':base.index(old),'old':old,'new':'周行把纸墨记在了赊账簿上。'}]}
-        engine.submit(self.db,result(t,data))
-        t=self.task();self.assertEqual(t['stage'],'facts')
+        submit_review(self.db,t,data)
+        t=self.task();self.assertEqual(t['stage'],'chapter_review')
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
-        data=review(work['payload']['checks'],prose,1)
+        data=review(work['payload']['facts_checks'],prose,1)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose,1)}],summary='记赊账,无支出。',
                     prior_dispositions=[{'index':0,'disposition':'dropped','reason':'支出句已删,资源流水不再发生'}])
-        engine.submit(self.db,result(t,data))
-        self.assertEqual(self.task()['stage'],'reader')
-        respond(self.db,self.path,self.task())
+        submit_review(self.db,t,data)
         self.assertEqual(head(self.db,get(self.db,'work_branch')),1)
         t=self.task();self.assertEqual(t['stage'],'draft')          # ch2 reuse → 前置(90)已断裂
         payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
         outcome=engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
         self.assertNotIn('fast_committed',outcome)
-        t=self.task();self.assertEqual(t['stage'],'facts')          # fell back to a real facts pass
+        t=self.task();self.assertEqual(t['stage'],'chapter_review')          # fell back to a real facts pass
 
     def _historical_read_without_write(self, dependency=False, token_fact=False):
         """The second chapter reads history but writes no ledger events."""
@@ -134,23 +130,22 @@ class FastCommitTests(unittest.TestCase):
         events=[{'op':'state','entity':'hero','key':'has_token','before':None,'after':True,
                  'evidence':ev(first,1,'得到玉佩')}] if token_fact else []
         respond(self.db,self.path,self.task(),events=events)
-        respond(self.db,self.path,self.task());engine.approve(self.db)
+        engine.approve(self.db)
         t=self.task();p=plan(2)
         if dependency:p['dependencies']=[1]
         engine.submit(self.db,result(t,{'chapters':[p]}))
         second='周行按住腰间的玉佩，松了一口气。' if token_fact else '宋禾按照昨日约定赴庭，等待周行。'
         respond(self.db,self.path,self.task(),prose=second)
         respond(self.db,self.path,self.task(),events=[])
-        respond(self.db,self.path,self.task())
 
     def _change_first_then_reuse_second(self, prose, events=None, dispositions=None):
         engine.begin_revision(self.db,1,'修正第一章历史内容')
         respond(self.db,self.path,self.task(),prose=prose)
         t=self.task();work=json.loads(rpath(t).read_text(encoding='utf-8'))
-        data=review(work['payload']['checks'],prose,1)
+        data=review(work['payload']['facts_checks'],prose,1)
         data.update(events=events or [],summary='第一章历史内容已修正。')
         if dispositions is not None:data['prior_dispositions']=dispositions
-        engine.submit(self.db,result(t,data));respond(self.db,self.path,self.task())
+        submit_review(self.db,t,data)
         t=self.task();payload=json.loads(rpath(t).read_text(encoding='utf-8'))['payload']
         return engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
 
@@ -162,19 +157,19 @@ class FastCommitTests(unittest.TestCase):
               'evidence':ev(prose,1,'没有取得玉佩')}],
             [{'index':0,'disposition':'replaced','reason':'原文取得玉佩错误，改为未取得。'}])
         self.assertNotIn('fast_committed',outcome)
-        self.assertEqual(self.task()['stage'],'facts')
+        self.assertEqual(self.task()['stage'],'chapter_review')
 
     def test_unregistered_historical_change_rechecks_implicit_read(self):
         self._historical_read_without_write()
         outcome=self._change_first_then_reuse_second('周行决定取消明日开庭，宋禾答应不再到场。')
         self.assertNotIn('fast_committed',outcome)
-        self.assertEqual(self.task()['stage'],'facts')
+        self.assertEqual(self.task()['stage'],'chapter_review')
 
     def test_changed_explicit_dependency_rechecks_even_with_equal_state(self):
         self._historical_read_without_write(dependency=True)
         outcome=self._change_first_then_reuse_second('周行决定取消明日开庭，宋禾答应不再到场。')
         self.assertNotIn('fast_committed',outcome)
-        self.assertEqual(self.task()['stage'],'facts')
+        self.assertEqual(self.task()['stage'],'chapter_review')
 
     def test_parent_reviews_must_actually_have_passed(self):
         self._two_chapters()
@@ -185,7 +180,7 @@ class FastCommitTests(unittest.TestCase):
         t=self.task();payload=json.loads(rpath(t).read_text(encoding='utf-8'))['payload']
         outcome=engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
         self.assertNotIn('fast_committed',outcome)
-        self.assertEqual(self.task()['stage'],'facts')
+        self.assertEqual(self.task()['stage'],'chapter_review')
 
 
 if __name__=='__main__':unittest.main()

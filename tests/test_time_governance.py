@@ -22,9 +22,9 @@ class TimeGovernanceTests(unittest.TestCase):
         t=self.task();respond(self.db,self.path,t,prose='周行在档案室核对记录，逐页写下批注。')
         t=self.task()                                              # facts
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
-        data=review(work['payload']['checks'],prose)
+        data=review(work['payload']['facts_checks'],prose)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose)}],summary='核对档案。')
-        with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))
+        with self.assertRaises(Error) as exc: submit_review(self.db,t,data)
         self.assertEqual(exc.exception.code,'time_evidence')
         self.assertEqual(self.task()['task_id'],t['task_id'])
 
@@ -33,10 +33,10 @@ class TimeGovernanceTests(unittest.TestCase):
         t=self.task();respond(self.db,self.path,t,prose='次日清晨，周行在档案室核对记录。')
         t=self.task()
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
-        data=review(work['payload']['checks'],prose)
+        data=review(work['payload']['facts_checks'],prose)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose)}],summary='次日核对档案。')
-        engine.submit(self.db,result(t,data))
-        self.assertEqual(self.task()['stage'],'reader')
+        submit_review(self.db,t,data)
+        self.assertEqual(head(self.db,'main'),1)
 
     def test_thread_clocks_are_independent_and_monotone(self):
         s=seed(get(self.db,'contract'))
@@ -53,10 +53,9 @@ class TimeGovernanceTests(unittest.TestCase):
         t=self.task();respond(self.db,self.path,t,prose='次日清晨，周行在档案室核对记录。')
         t=self.task()
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
-        data=review(work['payload']['checks'],prose)
+        data=review(work['payload']['facts_checks'],prose)
         data.update(events=[{'op':'clock','before':0,'after':1,'evidence':ev(prose)}],summary='次日核对。')
-        engine.submit(self.db,result(t,data))
-        respond(self.db,self.path,self.task())                     # reader
+        submit_review(self.db,t,data)
         if self.task().get('stage')=='await_author':engine.approve(self.db)
         p=plan(2);p['scenes']=[{'label':'货栈','present':['hero'],'time_hint':'D+2 黄昏，先清点再碰头'}]
         self.assertEqual(self.task()['stage'],'plan')
@@ -66,13 +65,13 @@ class TimeGovernanceTests(unittest.TestCase):
         t=self.task();respond(self.db,self.path,t,prose='两天后，周行走进货栈清点货物。')
         t=self.task()
         work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, work)
-        data=review(work['payload']['checks'],prose,2)
+        data=review(work['payload']['facts_checks'],prose,2)
         data.update(events=[{'op':'clock','before':1,'after':2,'evidence':ev(prose,2)}],summary='进货栈。')
-        with self.assertRaises(Error) as exc: engine.submit(self.db,result(t,data))
+        with self.assertRaises(Error) as exc: submit_review(self.db,t,data)
         self.assertEqual(exc.exception.code,'time_schedule')
         data['events']=[{'op':'clock','before':1,'after':3,'evidence':ev(prose,2)}]
-        engine.submit(self.db,result(t,data))
-        self.assertEqual(self.task()['stage'],'reader')
+        submit_review(self.db,t,data)
+        self.assertEqual(head(self.db,'main'),2)
 
 
 if __name__=='__main__':unittest.main()

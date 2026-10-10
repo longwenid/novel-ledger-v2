@@ -19,7 +19,7 @@ class DesignTests(unittest.TestCase):
         initialize(self.path,c);self.db=connect(self.path)
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def task(self):return engine.next_task(self.db,self.path)
-    def submit(self,task,data):return engine.submit(self.db,result(task,copy.deepcopy(data)))
+    def submit(self,task,data):return submit_review(self.db,task,copy.deepcopy(data))
     def prepare(self):
         self.submit(self.task(),EXAMPLE['world_plan']);self.submit(self.task(),EXAMPLE['volume_plan'])
     def plan(self,n=1,volume='v1',end=False):
@@ -32,8 +32,8 @@ class DesignTests(unittest.TestCase):
         self.submit(self.task(),{'chapters':[self.plan(n,volume,end)]})
         respond(self.db,self.path,self.task())
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));text=pack_prose(self.path, w)
-        data=review(w['payload']['checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
-        self.submit(t,data);respond(self.db,self.path,self.task())
+        data=review(w['payload']['facts_checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
+        self.submit(t,data)
     def test_world_is_reserved_design_scope(self):
         c=contract();c['planning_mode']='layered';c['volumes']=[{'id':'world','purpose':'冲突的卷名'}]
         path=self.path/'invalid'
@@ -53,9 +53,9 @@ class DesignTests(unittest.TestCase):
         self.assertEqual(self.task()['input_hash'],t['input_hash']);self.assertIn('场景任务书',rpath(t, 'brief_path').read_text(encoding='utf-8'))
         respond(self.db,self.path,t);f=self.task();fw=json.loads(rpath(f, 'input_path').read_text(encoding='utf-8'))
         self.assertNotIn('writer_brief',fw);self.assertNotIn('design_context',fw)
-        text=pack_prose(self.path, fw);data=review(fw['payload']['checks'],text);data.update(events=[],summary='交付凭证')
-        self.submit(f,data);reader=self.task();rw=json.loads(rpath(reader, 'input_path').read_text(encoding='utf-8'))
-        for key in ('writer_brief','design_context','plan','contract','state','continuity'):self.assertNotIn(key,rw)
+        text=pack_prose(self.path, fw);data=review(fw['payload']['facts_checks'],text);data.update(events=[],summary='交付凭证')
+        self.assertEqual(rpath(f,'first_read_path').read_text(),text)
+        self.submit(f,data)
     def test_volume_outline_requires_adjudication_log(self):
         a=self.task();self.submit(a,EXAMPLE['world_plan']);t=self.task()
         bad=copy.deepcopy(EXAMPLE['volume_plan']);bad.pop('choice_log',None)
@@ -149,9 +149,9 @@ class DesignTests(unittest.TestCase):
             elif stage=='plan':
                 n=task['chapter'];p=self.plan(n,'v'+str(n),True);p['book_end']=n==2
                 self.submit(task,{'chapters':[p]})
-            elif stage=='facts':
+            elif stage=='chapter_review':
                 w=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'));text=pack_prose(self.path, w)
-                data=review(w['payload']['checks'],text,task['chapter']);data.update(events=[],summary='有代价的证据交付。');self.submit(task,data)
+                data=review(w['payload']['facts_checks'],text,task['chapter']);data.update(events=[],summary='有代价的证据交付。');self.submit(task,data)
             else:respond(self.db,self.path,task)
         self.assertEqual(task['status'],'completed');self.assertEqual(stages.count('world_plan'),1);self.assertEqual(stages.count('volume_plan'),2)
         self.assertTrue(engine.audit(self.db)['ok'])

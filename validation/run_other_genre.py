@@ -27,29 +27,34 @@ def main():
             if task.get('stage')=='await_author':engine.approve(db);continue
             if not task.get('task_id'):
                 assert task['status']=='completed'
-                write_json(root/'execution-report.json',{'result':task,'tasks':trace,'source_hash':digest(prose),'review_mode':'serial core, independent reader artifact','industry_claims':'fictional internal consistency only'})
+                write_json(Path(args.project)/'execution-report.json',{'result':task,'tasks':trace,'source_hash':digest(prose),'review_mode':'combined protocol replay using archived independent reader artifact; no new model review','industry_claims':'fictional internal consistency only'})
                 return
-            stage=task['stage'];pack=json.loads(Path(task['input_path']).read_text(encoding='utf-8'));info=pack['payload']
+            stage=task['stage'];pack=json.loads((Path(args.project)/task['input_path']).read_text(encoding='utf-8'));info=pack['payload']
             if stage=='plan':data={'chapters':[{'number':1,'volume':'night','goal':'核实可疑读数','conflict':'出厂倒计时和签字责任','change':'暂缓装车并启动重测','entities':['zhou','lead','repair'],'volume_end':True,'book_end':True}]}
             elif stage=='draft':data={'prose':prose}
             else:
-                if stage=='facts':
-                    mapping={'coverage':'causality','continuity':'causality','resources':'emotion_cost','knowledge':'professional_context','time':'change','world_rules':'professional_context'}
-                elif stage=='reader':mapping={'read_on':'causality','character':'character','change':'change','emotion_cost':'emotion_cost','language':'language','repetition':'repetition'}
-                else:mapping={'causality':'causality','character_arcs':'character','payoffs':'change','pacing':'repetition','world_rules':'professional_context','ending':'ending','length':'language','core_promises':'change'}
-                checks=[]
-                for k in info['checks']:
-                    src=sources[mapping[k]]
-                    checks.append({'id':k,'result':'pass','reason':src['reason'],'evidence':[ev(src['quote'])]})
-                data={'verdict':'pass','checks':checks,'findings':[]}
-                if stage=='facts':
-                    data.update(summary='周蔓只签已接到的检修信息，拒绝不明依据放行；货停下并重测，津贴与产品结论待定。',events=[
+                fact_mapping={'coverage':'causality','continuity':'causality','resources':'emotion_cost','knowledge':'professional_context','time':'change','world_rules':'professional_context','spatial':'professional_context'}
+                reader_mapping={'read_on':'causality','character':'character','change':'change','emotion_cost':'emotion_cost','language':'language','repetition':'repetition','pacing':'repetition','voice_match':'language'}
+                range_mapping={'causality':'causality','character_arcs':'character','payoffs':'change','pacing':'repetition','world_rules':'professional_context','ending':'ending','length':'language','core_promises':'change','repetition':'repetition','development':'change','voice_evolution':'character'}
+                def receipt(check_ids,mapping):
+                    checks=[]
+                    for key in check_ids:
+                        src=sources[mapping[key]]
+                        checks.append({'id':key,'result':'pass','reason':src['reason'],'evidence':[ev(src['quote'])]})
+                    return {'verdict':'pass','checks':checks,'findings':[]}
+                if stage=='chapter_review':
+                    facts=receipt(info['facts_checks'],fact_mapping)
+                    facts.update(summary='周蔓只签已接到的检修信息，拒绝不明依据放行；货停下并重测，津贴与产品结论待定。',events=[
                         {'op':'knowledge','entity':'zhou','topic':'calibration','before':None,'claim':'维修人员称探头未标定','stance':'knows','source':'电话听到维修说明','evidence':ev('那台下午换了探头，还没做标定。')},
                         {'op':'state','entity':'lead','key':'shipping','before':None,'after':'halted','evidence':ev('领班站了一会儿，叫装车口停。')}])
-                elif stage=='reader':data['first_read']=reader['first_read']
-                else:data['memory']={'text':reader['reason'],'sources':[ev(sources['change']['quote'])]}
+                    reading=receipt(info['reader_checks'],reader_mapping)
+                    reading['first_read']=reader['first_read']
+                    data={'facts':facts,'reader':reading}
+                else:
+                    data=receipt(info['checks'],range_mapping)
+                    data['memory']={'text':reader['reason'],'sources':[ev(sources['change']['quote'])]}
             envelope={'schema':'novel-ledger-v2.result/1','task_id':task['task_id'],'input_hash':task['input_hash'],'data':data}
-            write_json(task['output_path'],envelope);engine.submit(db,envelope)
+            write_json(Path(args.project)/task['output_path'],envelope);engine.submit(db,envelope)
             trace.append({'task':task['task_id'],'stage':stage})
     finally:db.close()
 

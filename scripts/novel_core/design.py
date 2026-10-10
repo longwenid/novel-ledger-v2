@@ -21,8 +21,12 @@ def current(db,branch,scope):
 def usable(db,branch,scope):
     record=current(db,branch,scope)
     if not record or not record['active']:return False
+    # A style revision inherits the original design and its original evidence.
+    # Keep that provenance after promotion instead of claiming rewritten bytes
+    # were the source of a design produced before the revision.
+    source_branch=record.get('source_branch',branch)
     for number,expected in record['sources'].items():
-        row=db.execute('SELECT hash FROM chapters WHERE branch=? AND number=?',(branch,int(number))).fetchone()
+        row=db.execute('SELECT hash FROM chapters WHERE branch=? AND number=?',(source_branch,int(number))).fetchone()
         if not row or row[0]!=expected:return False
     if scope!='world':
         world=current(db,branch,'world')
@@ -30,9 +34,13 @@ def usable(db,branch,scope):
     refs=record['data'].get('canon_refs',[])
     if refs:
         state=replay(db,branch)
+        original=None
         for ref in refs:
             name=ref['entity']+':'+ref['key']
-            if name not in state['facts'] or state['facts'][name]!=ref['value']:return False
+            if name not in state['facts'] and get(db,'style_only_branch')==branch and source_branch!=branch:
+                if original is None:original=replay(db,source_branch)
+                if name not in original['facts'] or original['facts'][name]!=ref['value']:return False
+            elif name not in state['facts'] or state['facts'][name]!=ref['value']:return False
     return True
 
 
@@ -218,6 +226,7 @@ def copy_for_revision(db,parent,branch,start,style_only=False):
     for scope in ['world']+ids:
         record=current(db,parent,scope)
         if not record:continue
+        if style_only:record.setdefault('source_branch',parent)
         if not style_only and (any(int(n)>=start for n in record['sources']) or (scope!='world' and ids.index(scope)>=affected)):
             record['active']=False;record['invalidation_reason']='正文候选修订，需要重审受影响设计'
         put(db,key(branch,scope),record)

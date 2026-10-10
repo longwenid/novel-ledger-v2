@@ -1,0 +1,2 @@
+# Keep reproducible validation exports out of git archive releases.
+validation/story-v2/export export-ignore

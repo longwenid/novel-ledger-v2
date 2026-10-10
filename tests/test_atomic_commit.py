@@ -12,9 +12,9 @@ class AtomicCommitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             project=Path(temp);initialize(project,contract());db=connect(project)
             try:
-                for _ in range(3):respond(db,project,engine.next_task(db,project))
+                for _ in range(2):respond(db,project,engine.next_task(db,project))
                 task=engine.next_task(db,project)
-                self.assertEqual(task['stage'],'reader')
+                self.assertEqual(task['stage'],'chapter_review')
                 taskfile=project/'pending-task.json';taskfile.write_text(json.dumps(task), encoding='utf-8')
                 code='''import os,sys,json
 sys.path.insert(0,sys.argv[1])

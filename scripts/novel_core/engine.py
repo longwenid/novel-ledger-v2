@@ -96,19 +96,26 @@ def develop_short_draft(db,branch,n,draft,observation,prior_prose=None):
                                  'candidate_hash':digest(draft['prose'])})
 
 
-def status(db):
+def status(db, brief=False):
     from .budget import overview
     from .store import VERSION
     from .contextflow import usage
     active, work = get(db,'active_branch'), get(db,'work_branch')
-    task = db.execute("SELECT id,stage,chapter,branch,lease_until FROM tasks WHERE state='pending'").fetchone()
-    return {'schema':'novel-ledger-v2.status/1', 'status':get(db,'status'), 'active_branch':active,
+    task = db.execute("SELECT id,stage,chapter,branch,input_hash,lease_until FROM tasks WHERE state='pending'").fetchone()
+    from .recovery import snapshot
+    result = {'schema':'novel-ledger-v2.status/1', 'status':get(db,'status'), 'active_branch':active,
             'work_branch':work,'committed':head(db,active), 'work_committed':head(db,work),
             'pilot_approved':get(db,'pilot_approved'), 'task':dict(task) if task else None,
             'reason':get(db,'pause_reason'),
+            'review_mode':'combined','writer_batch':get(db,'writer_batch',10),
+            'chapter_batch_size':get(db,'chapter_batch_size',5),'batch_through':get(db,'batch_through',0),
+            'chapter_batch':get(db,'chapter_batch:'+work),
+            'recovery':snapshot(db,task),
             'context_chars':get(db,'context_chars'),
             'skill_version':VERSION, 'db_version':get(db,'version'),
-            'volume_budget':overview(db,work), 'usage':usage(db)}
+            'review_verification':'protocol_and_evidence_only; semantic judgment belongs to the reviewer'}
+    if not brief: result.update(volume_budget=overview(db,work), usage=usage(db))
+    return result
 
 
 def approve(db):
@@ -132,64 +139,76 @@ def approve(db):
     return status(db)
 
 
+def chapter_reader_checks(db,branch,n,observation=None):
+    from .characters import enabled
+    checks=READER_CHECKS+(('dialogue_identity',) if enabled(db) else ())+(('voice_match',) if get(db,'style_anchor') else ())
+    if observation:checks+=('substance',)
+    planrow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
+    if planrow and 'rhythm' in json.loads(planrow[0]):checks+=('pacing',)
+    return checks
+
+
 def choose(db):
+    from .batchflow import choose as batch_choose
+    return batch_choose(db,_choose_single)
+
+
+def draft_job(db,branch,n,draft):
+    require(draft['stage'] not in ('facts','reader'),'unsupported_review','旧分阶段审稿草稿不受支持；仅支持 chapter_review 新流程')
+    observation=chapter_length(db,branch,n,draft['prose'])
+    changed_length_cycle=observation and draft.get('length_cycle_target_han')!=observation['target_han'] and any(f.get('kind')=='chapter_development' for f in draft.get('findings',[]))
+    if observation and observation['status']=='needs_development' and (draft['stage']=='chapter_review' or changed_length_cycle):
+        develop_short_draft(db,branch,n,draft,observation)
+    stage = draft['stage']
+    payload = {k:draft[k] for k in ('prose','findings','attempts','repair_scope','prior_repair_scope') if k in draft}
+    if stage=='draft' and draft.get('candidate_invalidated'):
+        payload.update(candidate_rebase=draft['candidate_invalidated'],instruction='前态或约定已变，重核全文承接与候选事件；保留仍成立的正文，不自动沿用旧判断。')
+    if stage == 'chapter_review':
+        state=replay(db,branch)
+        extra=()
+        if state.get('anchors'):extra+=('stable_facts',)
+        planrow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
+        if state.get('places') or (planrow and json.loads(planrow[0]).get('scenes')):extra+=('spatial',)
+        from .characters import enabled
+        if enabled(db):extra+=('character_consistency',)
+        payload['facts_checks'] = FACT_CHECKS+extra
+        payload['reader_checks']=chapter_reader_checks(db,branch,n,observation)
+        prior=prior_events(db,branch,n)
+        if prior:
+            prose=draft['prose']
+            def resolvable(ev):
+                # A surviving short quote is not enough: its complete
+                # sentence context must also match the previous source.
+                if not isinstance(ev,dict):return False
+                old_prose=prior.get('prose')
+                if not isinstance(old_prose,str) or prior.get('verified') is False:return False
+                for key in EVENT_EVIDENCE_FIELDS:
+                    ref=ev.get(key)
+                    if isinstance(ref,dict):
+                        # Historical evidence belongs to its own chapter.
+                        # Without replaying that source here, require an
+                        # explicit disposition rather than guessing context.
+                        if ref.get('chapter')!=n:return False
+                        old=event_sentence_context(old_prose,ref)
+                        if old is None or old!=event_sentence_context(prose,ref):return False
+                    elif key=='evidence':return False
+                return True
+            payload['prior_events']=prior['events']
+            payload['prior_events_source']=prior['source']
+            payload['auto_carry']=[i for i,ev in enumerate(prior['events']) if resolvable(ev)]
+            payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件须在 prior_dispositions 中明确 kept/dropped/replaced,kept须原样重报事件并核对新语境,dropped/replaced须说明正文如何变化。也可覆盖自动续算。完整语义仍需facts核验。'
+    if observation:payload['chapter_length']=observation
+    return stage,n,payload
+
+
+def _choose_single(db):
     branch = get(db,'work_branch')
     n = head(db,branch)
     from . import design
     if design.enabled(db) and not design.usable(db,branch,'world'):
         return design.job(db,branch,'world',n+1)
     draft = load_draft(db,branch,n+1)
-    if draft:
-        observation=chapter_length(db,branch,n+1,draft['prose'])
-        changed_length_cycle=observation and draft.get('length_cycle_target_han')!=observation['target_han'] and any(f.get('kind')=='chapter_development' for f in draft.get('findings',[]))
-        if observation and observation['status']=='needs_development' and (draft['stage'] in ('facts','reader') or changed_length_cycle):
-            develop_short_draft(db,branch,n+1,draft,observation)
-        if draft['stage']=='reader' and draft.get('facts_context_hash')!=chapter_review_context_hash(db,branch,n+1):
-            draft['stage']='facts';save_draft(db,branch,n+1,draft)
-        stage = draft['stage']
-        payload = {k:draft[k] for k in ('prose','findings','attempts','repair_scope','prior_repair_scope') if k in draft}
-        if stage == 'reader':
-            from .characters import enabled
-            checks = READER_CHECKS+(('dialogue_identity',) if enabled(db) else ())+(('voice_match',) if get(db,'style_anchor') else ())
-            if observation:checks+=('substance',)
-            planrow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n+1)).fetchone()
-            if planrow and 'rhythm' in json.loads(planrow[0]):checks+=('pacing',)
-            payload = {'prose':draft['prose'], 'checks':checks}
-        elif stage == 'facts':
-            state=replay(db,branch)
-            extra=()
-            if state.get('anchors'):extra+=('stable_facts',)
-            planrow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n+1)).fetchone()
-            if state.get('places') or (planrow and json.loads(planrow[0]).get('scenes')):extra+=('spatial',)
-            from .characters import enabled
-            if enabled(db):extra+=('character_consistency',)
-            payload['checks'] = FACT_CHECKS+extra
-            prior=prior_events(db,branch,n+1)
-            if prior:
-                prose=draft['prose']
-                def resolvable(ev):
-                    # A surviving short quote is not enough: its complete
-                    # sentence context must also match the previous source.
-                    if not isinstance(ev,dict):return False
-                    old_prose=prior.get('prose')
-                    if not isinstance(old_prose,str) or prior.get('verified') is False:return False
-                    for key in EVENT_EVIDENCE_FIELDS:
-                        ref=ev.get(key)
-                        if isinstance(ref,dict):
-                            # Historical evidence belongs to its own chapter.
-                            # Without replaying that source here, require an
-                            # explicit disposition rather than guessing context.
-                            if ref.get('chapter')!=n+1:return False
-                            old=event_sentence_context(old_prose,ref)
-                            if old is None or old!=event_sentence_context(prose,ref):return False
-                        elif key=='evidence':return False
-                    return True
-                payload['prior_events']=prior['events']
-                payload['prior_events_source']=prior['source']
-                payload['auto_carry']=[i for i,ev in enumerate(prior['events']) if resolvable(ev)]
-                payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件须在 prior_dispositions 中明确 kept/dropped/replaced,kept须原样重报事件并核对新语境,dropped/replaced须说明正文如何变化。也可覆盖自动续算。完整语义仍需facts核验。'
-        if observation:payload['chapter_length']=observation
-        return stage,n+1,payload
+    if draft:return draft_job(db,branch,n+1,draft)
     if n:
         if n==1 and not get(db,'pilot_approved') and get(db,'work_branch')==get(db,'active_branch'):
             return 'await_author',n,{'reason':'第一章已通过内部审稿，等待作者定调；认可后执行 approve。'}
@@ -297,7 +316,10 @@ def chapter_review_context_hash(db,branch,chapter):
 
 
 def task_review_context_hash(db,task,work):
-    if task['stage'] in ('facts','reader'):
+    if work.get('chapter_session'):
+        from .batchflow import signature
+        return signature(db,task,work)
+    if task['stage']=='chapter_review':
         return chapter_review_context_hash(db,task['branch'],task['chapter'])
     if task['stage'].endswith('_review'):
         return review_hash(db,task['branch'],work['payload']['first'],work['payload']['through'])
@@ -373,6 +395,9 @@ def review_job(db,branch,scope,first,n):
         payload['checks']+=('volume_development',)
         payload['volume_development']=volume_development_context(db,branch,n)
         payload['instruction']+=' volume_development 必须用正文证据判断本卷职责和重要过程、选择代价及余波是否充分演出；sequence_refs 出现不等于节拍完成。design 是 proposal_not_canon，须与实际正文对照。结合实际篇幅、参考预算偏离和全书剩余区间说明收卷是否合理，以及后卷职责与承载路径是否成立；未配置参考预算仍须审查展开充分性。预算仅供解释，不因字数差额、固定比例或章数自动判失败，也不能用后卷自动重分配代替展开判断。'
+    if scope=='revision':
+        payload['checks']+=('revision_intent',)
+        payload['instruction']+=' revision_intent 须对照 revision_context.chain 中每个修订目标核对已写范围，不能仅核验最后一次文风修改。超出 through 的长期展开目标须在有效设计和后续计划中继续保留，不要求本次历史修订写完未来全卷。旧稿传播范围结束和沿用的 volume_end 不证明父级结构目标完成；过早收卷或已写内容违背目标须 fix 并举证。原因有歧义须报告，不能自行视为已撤销。'
     return scope+'_review',n,payload
 
 
@@ -472,9 +497,11 @@ def materialize_prose(db, project, work):
     refs = set()
     def visit(node):
         if isinstance(node, dict):
-            path = node.get('prose_path')
-            if isinstance(path, str) and isinstance(node.get('prose_hash'), str):
-                refs.add((path, node['prose_hash']))
+            for prefix in ('prose', 'original_prose'):
+                path = node.get(prefix+'_path')
+                hashed = node.get(prefix+'_hash')
+                if isinstance(path, str) and isinstance(hashed, str):
+                    refs.add((path, hashed))
             for value in node.values():
                 visit(value)
         elif isinstance(node, list):
@@ -501,8 +528,23 @@ def task_files(db, project, task):
     work = json.loads(task['input'])
     # Pretty-printed delivery view: workers read it with line-oriented tools
     # that truncate long lines; the DB-stored input stays the hashed truth.
-    write_json(root/'input.json',work)
-    prose_files = materialize_prose(db, project, work)
+    from . import reviewflow
+    if reviewflow.enabled(work):reviewflow.prime_batch_record(db,task,work)
+    gated = reviewflow.enabled(work) and reviewflow.record(db, task['id']) is None
+    if gated:
+        # Neither history files nor the contract are delivered before the seal.
+        (root/'input.json').unlink(missing_ok=True)
+        delivered = {k: work[k] for k in ('branch','stage','chapter')}
+        delivered['payload'] = {k:work['payload'][k] for k in ('prose_path','prose_hash')}
+        if work.get('chapter_session',{}).get('role')=='reviewer':
+            from .batchflow import review_sources
+            delivered['payload']['prose_files']=review_sources(db,work)
+        prose_files = materialize_prose(db, project, delivered)
+    else:
+        delivered = work
+        from .taskio import shared_delivery
+        write_json(root/'input.json',shared_delivery(project,work))
+        prose_files = materialize_prose(db, project, work)
     base = work_rel(task)
     result = {'schema':'novel-ledger-v2.task/1','task_id':task['id'],'stage':task['stage'],
               'chapter':task['chapter'],'branch':task['branch'],'input_hash':task['input_hash'],
@@ -512,25 +554,67 @@ def task_files(db, project, task):
               'state':'pending'}
     if prose_files:
         result['prose_files'] = prose_files
+    if task['stage']=='chapter_review':
+        if gated and work.get('chapter_session',{}).get('role')=='reviewer':
+            result['first_read_files']=delivered['payload']['prose_files']
+        result['first_read_path']=work['payload']['prose_path']
+        result['first_read_hash']=work['payload']['prose_hash']
     if 'writer_brief' in work:
         from .design import render_brief
         brief=root/'brief.md'
         brief.write_text(render_brief(work),encoding='utf-8')
         result['brief_path']=base+'/brief.md'
+    from .taskio import delivery, checkpoint
+    delivery(db, project, task, work, result)
+    from .dependencies import record_initial
+    record_initial(db,task['id'],delivered)
     write_json(root/'task.json',result)
+    checkpoint(db, project)
     return result
 
 
-def next_task(db,project):
+def next_task(db,project,after=None,brief=False,preparation_bundle=None,chapter_session=None,review_session=None):
     created=False
     with transaction(db):
+        if after is not None:
+            previous=db.execute('SELECT id,state,branch FROM tasks WHERE id=?',(after,)).fetchone()
+            require(previous,'handoff_task','交接任务不存在，不能凭 Worker 的口头完成继续派工')
+            if previous['branch']!=get(db,'work_branch'):
+                return {'stage':'resync','after_task':after,'handoff_reason':'branch_changed',**status(db,brief=True)}
+            if previous['state']!='done':
+                return {'stage':'wait_for_submit' if previous['state']=='pending' else 'resync',
+                        'after_task':after,'after_state':previous['state'],**status(db,brief=True)}
+            latest=db.execute("SELECT id FROM tasks WHERE branch=? AND state='done' ORDER BY rowid DESC LIMIT 1",(previous['branch'],)).fetchone()
+            if latest['id']!=after:
+                return {'stage':'resync','after_task':after,'latest_completed_task':latest['id'],**status(db,brief=True)}
         if get(db,'status') in ('paused','completed'):
-            return status(db)
+            return status(db,brief=brief)
+        if review_session is not None:
+            from .reviewrun import matches, allowed
+            if not matches(db,review_session):
+                return {'stage':'review_done','reason':'正式正文、约定、资料、目标或分支已改变，主控取得最新任务。'}
+        if chapter_session is not None:
+            from .batchflow import active
+            batch=active(db)
+            if not batch or batch['id']!=chapter_session['batch']:
+                return {'stage':'chapter_batch_done','reason':'批次已结束或依赖失效，主控接手；不启动下一批。'}
         pending = db.execute("SELECT * FROM tasks WHERE state='pending'").fetchone()
         if pending:
+            if review_session is not None and not allowed(json.loads(pending['input']),review_session):
+                return {'stage':'review_done','reason':'下一任务不属于本次独立复审，交回主控。'}
+            if chapter_session is not None and json.loads(pending['input']).get('chapter_session')!=chapter_session:
+                return {'stage':'chapter_batch_done','reason':'批次或角色边界由主控接手。'}
+            if preparation_bundle is not None:
+                pending_work=json.loads(pending['input'])
+                if pending['stage'] not in ('context_scan','context_reduce') or pending_work.get('payload',{}).get('bundle')!=preparation_bundle:
+                    return {'stage':'preparation_done','reason':'下一任务由主控接手；材料 Worker 不跨批次或进入写作、审稿。'}
+            require(pending['stage'] not in ('facts','reader'),'unsupported_review','旧分阶段审稿任务不受支持；仅支持 chapter_review 新流程')
             old_work=json.loads(pending['input'])
+            from .reviewrun import matches as review_matches
+            review_changed=bool(old_work.get('review_session')) and not review_matches(db,old_work['review_session'])
+            require(pending['stage']!='chapter_review' or 'review_context_hash' in old_work,'unsupported_review','综合审稿任务必须含冻结的审稿上下文签名')
             signature=task_review_context_hash(db,pending,old_work)
-            if signature is not None and 'review_context_hash' in old_work and old_work['review_context_hash']!=signature:
+            if review_changed or (signature is not None and 'review_context_hash' in old_work and old_work['review_context_hash']!=signature):
                 require(not pending['lease_owner'] or (pending['lease_until'] or 0)<=time.time(),'lease','审稿依赖已变化，但旧任务仍有活动租约；先等待原worker退出')
                 db.execute("UPDATE tasks SET state='cancelled' WHERE id=?",(pending['id'],))
                 log(db,'review_context_refresh',{'old_task':pending['id'],'reason':'作者约定、声线、计划或事实/人物/设计版本已变化'})
@@ -539,12 +623,23 @@ def next_task(db,project):
             task = dict(pending)
             work=json.loads(task['input'])
         else:
-            stage,n,payload = choose(db)
-            if stage=='await_author':
+            if review_session is not None:
+                from .batchflow import choose as batch_choose
+                stage,n,payload = batch_choose(db,_choose_single,allow_new_batch=False)
+            else:stage,n,payload = choose(db)
+            if review_session is not None:
+                from .reviewrun import STAGES
+                if stage not in STAGES:
+                    return {'stage':'review_done','reason':'复审已结束；执笔、规划、合并、完本和作者边界由主控处理。'}
+            if chapter_session is not None and stage in ('await_author','promote','complete','target_reached'):
+                return {'stage':'chapter_batch_done','reason':'达到主控或作者边界。'}
+            if preparation_bundle is not None and stage in ('await_author','promote','complete'):
+                return {'stage':'preparation_done','reason':'到达主控或作者边界，材料 Worker 结束。'}
+            if stage in ('await_author','target_reached'):
                 return {'stage':stage, **payload}
             if stage=='promote':
                 promote(db)
-                return {'stage':'revision_promoted', **status(db)}
+                return {'stage':'revision_promoted', **status(db,brief=brief)}
             if stage=='complete':
                 return complete_inner(db)
             branch = get(db,'work_branch')
@@ -552,6 +647,12 @@ def next_task(db,project):
             payload=prepare(db,stage,payload)
             work = pack(db,branch,n,stage,payload)
             stage=work['stage']
+            if review_session is not None and not allowed(work,review_session):
+                return {'stage':'review_done','reason':'下一任务的复审绑定已改变，主控接手。'}
+            if preparation_bundle is not None and (stage not in ('context_scan','context_reduce') or work['payload'].get('bundle')!=preparation_bundle):
+                return {'stage':'preparation_done','reason':'本批材料已完成或依赖变化，主控取得最新正式任务。'}
+            if chapter_session is not None and work.get('chapter_session')!=chapter_session:
+                return {'stage':'chapter_batch_done','reason':'写作与独立审稿必须换会话；不跨批次、角色或作者边界。'}
             signature=task_review_context_hash(db,{'branch':branch,'chapter':n,'stage':stage},work)
             if signature is not None:
                 work['review_context_hash']=signature
@@ -561,8 +662,6 @@ def next_task(db,project):
             db.execute('INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES (?,?,?,?,?,?,?)',(tid,branch,stage,n,fingerprint,dump(work),'pending'))
             created=True
             log(db,'dispatch',{'task':tid,'stage':stage,'chapter':n,'branch':branch})
-        from .dependencies import record_initial
-        record_initial(db,task['id'],work)
     if created:
         # Consolidate output: finished task directories are derived views; keep the
         # newest few for debugging and let `tidy` remove the rest on demand.
@@ -665,6 +764,7 @@ def validate_review(data,checks,sources):
         refs = row.get('evidence',[])
         require(isinstance(refs,list) and all(isinstance(ref,dict) for ref in refs),'review','evidence 必须为对象数组')
         mandatory={'coverage','continuity','read_on','character','change','language','substance','causality','character_arcs','payoffs','pacing','ending','length','core_promises','spatial','stable_facts','character_consistency','voice_evolution','voice_match','volume_development'}
+        mandatory.add('revision_intent')
         exception=row.get('not_applicable')
         require(bool(refs) or (row['id'] not in mandatory and isinstance(exception,str) and exception.strip()), 'review','核心审稿项必须有正文证据；可选项确不适用须说明具体原因')
         for item in refs:
@@ -737,12 +837,13 @@ def prior_events(db, branch, n):
     snapshot=draft.get('prior_event_snapshot') if draft else None
     if isinstance(snapshot,dict) and isinstance(snapshot.get('events'),list):
         return {**copy.deepcopy(snapshot),'source':'repair'}
-    for row in db.execute("SELECT receipt,input FROM tasks WHERE branch=? AND chapter=? AND stage='facts' AND receipt IS NOT NULL ORDER BY rowid DESC", (branch, n)):
-        events = json.loads(row['receipt']).get('data', {}).get('events')
+    for row in db.execute("SELECT stage,receipt,input FROM tasks WHERE branch=? AND chapter=? AND stage='chapter_review' AND receipt IS NOT NULL ORDER BY rowid DESC", (branch, n)):
+        receipt_data=json.loads(row['receipt']).get('data', {})
+        events = receipt_data.get('facts',{}).get('events')
         if isinstance(events, list) and events:
             old_work=json.loads(row['input'])
             return {'events':events,'source':'repair','prose':old_work.get('payload',{}).get('prose'),
-                    'verified':'review_context_hash' in old_work}
+                    'verified':False}
     ancestor = db.execute('SELECT parent FROM branches WHERE id=?', (branch,)).fetchone()
     while ancestor and ancestor[0]:
         rows = db.execute('SELECT data FROM events WHERE branch=? AND chapter=? ORDER BY idx', (ancestor[0], n)).fetchall()
@@ -802,7 +903,72 @@ def normalize_receipt(db, result):
     return normalized
 
 
-def submit(db, result):
+def validated_fact_events(db,branch,n,draft,work,data):
+    events=data.get('events')
+    require(isinstance(events,list) and isinstance(data.get('summary'),str) and data['summary'].strip(),'facts','需 events 和非空摘要')
+    prior=work['payload'].get('prior_events')
+    if isinstance(prior,list) and prior:
+        def anchor(ev):
+            clone=dict(ev)
+            for key in EVENT_EVIDENCE_FIELDS:
+                ref=clone.get(key)
+                if isinstance(ref,dict):clone[key]={k:v for k,v in ref.items() if k!='start'}
+            return dump(clone)
+        auto_idx=work['payload'].get('auto_carry')
+        require(isinstance(auto_idx,list),'event_accounting','综合审稿前序事件必须含 auto_carry')
+        # v1.9: the engine carries prior events whose evidence still
+        # uniquely resolves; the receipt only declares the delta.
+        auto={i for i in auto_idx if type(i) is int and 0<=i<len(prior)}
+        entries={}
+        for d in (data.get('prior_dispositions') or []):
+            require(isinstance(d,dict),'event_accounting','prior_dispositions 须为对象数组')
+            idx,disposition=d.get('index'),d.get('disposition')
+            require(type(idx) is int and 0<=idx<len(prior) and idx not in entries,'event_accounting','index 须落在前序事件范围内且不重复')
+            require(disposition in ('kept','dropped','replaced'),'event_accounting','disposition 只能 kept/dropped/replaced')
+            require(disposition=='kept' or (isinstance(d.get('reason'),str) and d['reason'].strip()),'event_accounting','dropped/replaced 须说明正文如何变化')
+            entries[idx]=d
+        def reanchor(ev):
+            clone=copy.deepcopy(ev)
+            for key in EVENT_EVIDENCE_FIELDS:
+                ref=clone.get(key)
+                if isinstance(ref,dict) and ref.get('chapter')==n and isinstance(ref.get('quote'),str):
+                    clone[key]['start']=draft['prose'].find(ref['quote'])
+            return clone
+        carried=[]
+        for i,ev in enumerate(prior):
+            d=entries.get(i)
+            if d and d['disposition'] in ('dropped','replaced'):continue
+            if i in auto:carried.append(reanchor(ev))
+            else:
+                require(d is not None,'event_accounting',f'第 {i} 条前序事件的证据或完整句语境已变，须在 prior_dispositions 中明确 kept/dropped/replaced；kept须原样重报事件')
+        for i,d in entries.items():
+            if d['disposition']=='kept' and i not in auto:
+                require(anchor(prior[i]) in {anchor(e) for e in events},'event_accounting',f'第 {i} 条声明 kept 但未出现在新 events 中;内容有变应标 replaced 并说明')
+        carried_anchors={anchor(c) for c in carried}
+        for e in events:
+            require(anchor(e) not in carried_anchors,'event_accounting','该前序事件已由引擎自动续算,勿重复提交;要变更请用 prior_dispositions 声明 replaced/dropped')
+        events=carried+events
+    for e in events:
+        if e.get('op')=='clock':
+            quote=(e.get('evidence') or {}).get('quote','')
+            require(any(w in quote for w in TIME_TOKENS) or any(w in quote for w in TIME_CHARS),'time_evidence',
+                    'clock 事件的证据须引用本章真实时间语句(含 日/夜/晨/时 等时间词),让时钟推进有正文出处,不能凭空声明')
+    from .ledger import apply
+    state=replay(db,branch)
+    for e in events:
+        apply(state,e,draft['prose'],n)
+    validate_hook_deadlines(state,n)
+    prow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
+    if prow:
+        p=json.loads(prow[0])
+        if 'day_span' in p:
+            lo=p['day_anchor']+p['day_span'][0];hi=p['day_anchor']+p['day_span'][1]+1
+            require(lo<=state['clock']<=hi,'time_schedule',
+                    f'章末时钟 {state["clock"]} 不在计划日程 [{lo},{hi}] 内(锚 {p["day_anchor"]} + D{tuple(p["day_span"])});核对时间语句或修订计划 time_hint')
+    return events
+
+
+def submit(db, result, brief=False):
     result = normalize_receipt(db, result)
     require(isinstance(result,dict) and result.get('schema')=='novel-ledger-v2.result/1','schema','结果协议版本无效')
     hashed=digest(result)
@@ -813,6 +979,7 @@ def submit(db, result):
     with transaction(db):
         task=db.execute('SELECT * FROM tasks WHERE id=?',(result.get('task_id'),)).fetchone()
         require(task,'task','任务不存在')
+        require(task['stage'] not in ('facts','reader'),'unsupported_review','旧分阶段审稿任务不受支持；仅支持 chapter_review 新流程')
         if task['state']=='done':
             require(task['result_hash']==hashed,'replay_conflict','同一任务不能提交不同结果')
             return {'idempotent':True,'task_id':task['id']}
@@ -825,6 +992,10 @@ def submit(db, result):
         branch,n,stage=task['branch'],task['chapter'],task['stage']
         require(branch==get(db,'work_branch'),'stale_branch','任务不属于当前工作分支')
         work=json.loads(task['input'])
+        if work.get('review_session'):
+            from .reviewrun import matches
+            require(matches(db,work['review_session']),'review_session_stale','复审依赖已改变；主控恢复最新任务，不能提交旧会话判断')
+        require(stage!='chapter_review' or 'review_context_hash' in work,'unsupported_review','综合审稿任务必须含冻结的审稿上下文签名')
         current_signature=task_review_context_hash(db,task,work)
         require(current_signature is None or 'review_context_hash' not in work or work['review_context_hash']==current_signature,'review_context_stale','审稿依赖已变化；重新next取得冻结的新输入，不能沿用旧审稿回执')
         signature=work.get('review_context_hash') if current_signature is not None else None
@@ -852,7 +1023,7 @@ def submit(db, result):
                 draft['repair_scope']='chapter';draft['expansion_reason']=data['reason'];save_draft(db,branch,n,draft)
                 db.execute("UPDATE tasks SET state='done',result_hash=?,receipt=? WHERE id=?",(hashed,dump(result),task['id']))
                 put(db,'seq',get(db,'seq')+1);log(db,'repair_expand',{'task':task['id'],'reason':data['reason']})
-                return {'accepted':True,'expanded':True,'task_id':task['id'],**status(db)}
+                return {'accepted':True,'expanded':True,'task_id':task['id'],**status(db,brief=brief)}
             from .patches import compose
             prose=parse_prose({'prose':compose(db,stage,work,data,draft)})
             rev_row=db.execute('SELECT status,parent FROM branches WHERE id=?',(branch,)).fetchone()
@@ -887,7 +1058,7 @@ def submit(db, result):
                         log(db,'fast_commit',{'branch':branch,'chapter':n,'parent':rev_row['parent']})
                         db.execute("UPDATE tasks SET state='done',result_hash=?,receipt=? WHERE id=?",(hashed,dump(result),task['id']))
                         put(db,'seq',get(db,'seq')+1)
-                        return {'accepted':True,'fast_committed':True,'chapter':n,**status(db)}
+                        return {'accepted':True,'fast_committed':True,'chapter':n,**status(db,brief=brief)}
             if stage=='redesign':
                 require(data.get('design_change'),'redesign','重写须说明设计改动，不能原样重试')
                 require(draft and prose!=draft['prose'],'redesign','重设计须产生实际变化的正文；说明设计改动不能替代原样重试')
@@ -910,113 +1081,46 @@ def submit(db, result):
                 draft={'attempts':0}
             prior_prose=draft.get('prose')
             for obsolete in ('events','summary','facts_review','reader_review'):draft.pop(obsolete,None)
-            draft.update(prose=prose,stage='facts')
+            draft.update(prose=prose,stage='chapter_review')
+            if work.get('chapter_session',{}).get('role')=='writer':
+                from .batchflow import accept_candidate
+                accept_candidate(db,branch,n,draft,data)
             observation=chapter_length(db,branch,n,prose)
             if observation and observation['shortfall_han']:
                 develop_short_draft(db,branch,n,draft,observation,prior_prose)
             else:
                 if observation:draft['chapter_length']=observation
                 save_draft(db,branch,n,draft)
-        elif stage=='facts':
-            validate_review(data,work['payload'].get('checks',FACT_CHECKS),{n:draft['prose']})
+        elif stage=='chapter_review':
+            facts,reader=data.get('facts'),data.get('reader')
+            require(isinstance(facts,dict) and isinstance(reader,dict),'review','综合审稿须分别提交 facts 和 reader 回执')
+            from .reviewflow import validate as validate_protocol
+            validate_protocol(db,task,work,facts,reader,draft['prose'])
+            validate_review(facts,work['payload']['facts_checks'],{n:draft['prose']})
+            validate_review(reader,work['payload']['reader_checks'],{n:draft['prose']})
+            first_read=reader.get('first_read')
+            require(isinstance(first_read,dict) and all(isinstance(first_read.get(k),str) and first_read[k].strip() for k in ('desire','obstacle','change','read_on_reason')),'first_read','须提交只读正文时的首读体验，四项均为非空文本')
             from .spatial import check_address_responses
-            check_address_responses(work.get('address_signals',[]),data,draft['prose'],n)
-            if data['verdict']=='fix':
-                repair(db,branch,n,draft,data['findings'],data.get('repair_scope','chapter'))
+            check_address_responses(work.get('address_signals',[]),facts,draft['prose'],n)
+            events=validated_fact_events(db,branch,n,draft,work,facts) if facts['verdict']=='pass' else None
+            proposed=copy.deepcopy(draft.get('candidate_events'))
+            passed=facts['verdict']=='pass' and reader['verdict']=='pass'
+            if not passed:
+                if events is not None:
+                    draft.update(events=events,summary=facts['summary'],facts_context_hash=signature)
+                    draft['prior_event_snapshot']={'events':copy.deepcopy(events),'prose':draft['prose'],'verified':signature is not None}
+                findings=[f for receipt in (facts,reader) for f in receipt.get('findings',[]) if f['severity'] in ('blocker','quality')]
+                # Only use a local patch when both reviewers explicitly agree.
+                scope='local' if all(r.get('repair_scope','chapter')=='local' for r in (facts,reader) if r['verdict']=='fix') else 'chapter'
+                repair(db,branch,n,draft,findings,scope)
             else:
-                events=data.get('events')
-                require(isinstance(events,list) and isinstance(data.get('summary'),str) and data['summary'].strip(),'facts','需 events 和非空摘要')
-                prior=work['payload'].get('prior_events')
-                if isinstance(prior,list) and prior:
-                    def anchor(ev):
-                        clone=dict(ev)
-                        for key in EVENT_EVIDENCE_FIELDS:
-                            ref=clone.get(key)
-                            if isinstance(ref,dict):clone[key]={k:v for k,v in ref.items() if k!='start'}
-                        return dump(clone)
-                    auto_idx=work['payload'].get('auto_carry')
-                    if isinstance(auto_idx,list):
-                        # v1.9: the engine carries prior events whose evidence still
-                        # uniquely resolves; the receipt only declares the delta.
-                        auto={i for i in auto_idx if type(i) is int and 0<=i<len(prior)}
-                        entries={}
-                        for d in (data.get('prior_dispositions') or []):
-                            require(isinstance(d,dict),'event_accounting','prior_dispositions 须为对象数组')
-                            idx,disposition=d.get('index'),d.get('disposition')
-                            require(type(idx) is int and 0<=idx<len(prior) and idx not in entries,'event_accounting','index 须落在前序事件范围内且不重复')
-                            require(disposition in ('kept','dropped','replaced'),'event_accounting','disposition 只能 kept/dropped/replaced')
-                            require(disposition=='kept' or (isinstance(d.get('reason'),str) and d['reason'].strip()),'event_accounting','dropped/replaced 须说明正文如何变化')
-                            entries[idx]=d
-                        def reanchor(ev):
-                            clone=copy.deepcopy(ev)
-                            for key in EVENT_EVIDENCE_FIELDS:
-                                ref=clone.get(key)
-                                if isinstance(ref,dict) and ref.get('chapter')==n and isinstance(ref.get('quote'),str):
-                                    clone[key]['start']=draft['prose'].find(ref['quote'])
-                            return clone
-                        carried=[]
-                        for i,ev in enumerate(prior):
-                            d=entries.get(i)
-                            if d and d['disposition'] in ('dropped','replaced'):continue
-                            if i in auto:carried.append(reanchor(ev))
-                            else:
-                                require(d is not None,'event_accounting',f'第 {i} 条前序事件的证据或完整句语境已变，须在 prior_dispositions 中明确 kept/dropped/replaced；kept须原样重报事件')
-                        for i,d in entries.items():
-                            if d['disposition']=='kept' and i not in auto:
-                                require(anchor(prior[i]) in {anchor(e) for e in events},'event_accounting',f'第 {i} 条声明 kept 但未出现在新 events 中;内容有变应标 replaced 并说明')
-                        carried_anchors={anchor(c) for c in carried}
-                        for e in events:
-                            require(anchor(e) not in carried_anchors,'event_accounting','该前序事件已由引擎自动续算,勿重复提交;要变更请用 prior_dispositions 声明 replaced/dropped')
-                        events=carried+events
-                    else:
-                        # Pre-v1.9 in-flight task: full per-item accounting required.
-                        dispositions=data.get('prior_dispositions')
-                        require(isinstance(dispositions,list) and all(isinstance(d,dict) for d in dispositions),
-                                'event_accounting','本章返修过；重报事件须附 prior_dispositions，对 prior_events 逐项交代去向')
-                        seen={}
-                        for d in dispositions:
-                            idx,disposition=d.get('index'),d.get('disposition')
-                            require(type(idx) is int and 0<=idx<len(prior) and idx not in seen,'event_accounting','index 须逐一覆盖 0..%d 且不重复'%(len(prior)-1))
-                            require(disposition in ('kept','dropped','replaced'),'event_accounting','disposition 只能 kept/dropped/replaced')
-                            require(disposition=='kept' or (isinstance(d.get('reason'),str) and d['reason'].strip()),'event_accounting','dropped/replaced 须说明正文如何变化')
-                            seen[idx]=d
-                        require(len(seen)==len(prior),'event_accounting','必须覆盖全部 %d 条前次事件，不能静默丢弃未受影响的事件'%len(prior))
-                        submitted={anchor(e) for e in events}
-                        for idx,d in seen.items():
-                            if d['disposition']=='kept':
-                                require(anchor(prior[idx]) in submitted,'event_accounting','第 %d 条声称 kept 但未出现在新 events 中；内容有变应标 replaced 并说明'%idx)
-                for e in events:
-                    if e.get('op')=='clock':
-                        quote=(e.get('evidence') or {}).get('quote','')
-                        require(any(w in quote for w in TIME_TOKENS) or any(w in quote for w in TIME_CHARS),'time_evidence',
-                                'clock 事件的证据须引用本章真实时间语句(含 日/夜/晨/时 等时间词),让时钟推进有正文出处,不能凭空声明')
-                from .ledger import apply
-                state=replay(db,branch)
-                for e in events:
-                    apply(state,e,draft['prose'],n)
-                validate_hook_deadlines(state,n)
-                prow=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
-                if prow:
-                    p=json.loads(prow[0])
-                    if 'day_span' in p:
-                        lo=p['day_anchor']+p['day_span'][0];hi=p['day_anchor']+p['day_span'][1]+1
-                        require(lo<=state['clock']<=hi,'time_schedule',
-                                f'章末时钟 {state["clock"]} 不在计划日程 [{lo},{hi}] 内(锚 {p["day_anchor"]} + D{tuple(p["day_span"])});核对时间语句或修订计划 time_hint')
-                draft.update(events=events,summary=data['summary'],facts_review=data,facts_context_hash=signature,
-                             stage='reader' if signature is not None else 'facts')
+                draft.update(events=events,summary=facts['summary'],facts_review=facts,reader_review=reader,
+                             facts_context_hash=signature,reader_context_hash=signature)
                 draft['prior_event_snapshot']={'events':copy.deepcopy(events),'prose':draft['prose'],'verified':signature is not None}
-                save_draft(db,branch,n,draft)
-        elif stage=='reader':
-            validate_review(data,work['payload'].get('checks',READER_CHECKS),{n:draft['prose']})
-            require(all(data.get('first_read',{}).get(k) for k in ('desire','obstacle','change','read_on_reason')),'first_read','须提交只读正文时的首读体验')
-            if data['verdict']=='fix':
-                repair(db,branch,n,draft,data['findings'],data.get('repair_scope','chapter'))
-            else:
-                draft['reader_review']=data
-                draft['reader_context_hash']=signature
-                if signature is None:
-                    draft['stage']='facts';save_draft(db,branch,n,draft)
-                else:commit_draft(db,branch,n,draft)
+                commit_draft(db,branch,n,draft)
+            if work.get('chapter_session'):
+                from .batchflow import after_review
+                after_review(db,branch,n,proposed,events,passed)
         elif stage.endswith('_review'):
             info=work['payload']
             first,through,scope=info['first'],info['through'],info['scope']
@@ -1057,7 +1161,7 @@ def submit(db, result):
         if current_signature is not None and signature is None:
             log(db,'legacy_review_recheck',{'task':task['id'],'stage':stage,'reason':'旧任务未冻结审稿上下文签名，保留回执但重新核验'})
             extra['review_recheck_required']=True
-        return {'accepted':True,'task_id':task['id'],**extra,**status(db)}
+        return {'accepted':True,'task_id':task['id'],**extra,**status(db,brief=brief)}
 
 
 def begin_revision(db,start,reason,internal=False,style_only=False):

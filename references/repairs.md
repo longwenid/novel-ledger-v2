@@ -56,7 +56,7 @@ expand_context 保留草稿和次数，派完整正文 repair；只允许一次�
 
 ## 篇幅不足的定向补足
 
-短稿作为基稿，按 chapter_length.shortfall_han 与 execution.expansion_units 用补丁补实未演出的阻力、选择、关系和后果。先 measure 合成全文，再 submit；达标仍完整两审，不以重复解释充数。
+短稿作为基稿，按 chapter_length.shortfall_han 与 execution.expansion_units 用补丁补实未演出的阻力、选择、关系和后果。直接 submit，由程序合成全文并核验篇幅；需提前查看计数时可选 measure。达标仍完整核验事实与读者两类检查，不以重复解释充数。
 
 两轮仍不足转 redesign，可用 plan_update 调整展开与节奏，不降目标；再失败保留现场。作者变更目标可重评，但不抹去语义缺陷或返工次数。
 

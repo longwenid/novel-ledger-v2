@@ -28,7 +28,6 @@ class BudgetTests(unittest.TestCase):
         engine.submit(self.db,result(t,{'chapters':[p]}))
         respond(self.db,self.path,engine.next_task(self.db,self.path),prose=text)
         respond(self.db,self.path,engine.next_task(self.db,self.path))
-        respond(self.db,self.path,engine.next_task(self.db,self.path))
 
     def test_invalid_allocations_fail_before_project_creation(self):
         for i,values in enumerate(([20,None],[20,True],[20,0],[20,-1],[20,1.5],[1,1],[100,100])):
@@ -46,7 +45,7 @@ class BudgetTests(unittest.TestCase):
         self.assertEqual([v['suggested_remaining_han'] for v in budget['volumes']],[20,40])
         self.assertEqual(self.db.total_changes,before)
         self.assertIn('volume_budget',pack(self.db,'main',1,'plan',{}))
-        self.assertNotIn('volume_budget',pack(self.db,'main',1,'reader',{'prose':'正文'}))
+        self.assertNotIn('volume_budget',pack(self.db,'main',1,'chapter_review',{'prose':'正文'}))
 
     def test_short_closed_volume_reallocates_without_padding_or_contract_change(self):
         original=get(self.db,'contract');self.commit('周行交出凭证。123 ABC',end=True)

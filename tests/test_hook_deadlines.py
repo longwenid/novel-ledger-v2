@@ -23,7 +23,7 @@ class HookDeadlineTests(unittest.TestCase):
         prose=prose or '周行答应交出旧收据，宋禾守在桌边等候。'
         respond(self.db,self.path,self.task(),prose=prose)
         task=self.task();work=json.loads(rpath(task).read_text(encoding='utf-8'))
-        data=review(work['payload']['checks'],prose,number)
+        data=review(work['payload']['facts_checks'],prose,number)
         data.update(events=[],summary='周行承诺交出收据。')
         return task,prose,data
 
@@ -34,7 +34,7 @@ class HookDeadlineTests(unittest.TestCase):
     def test_current_deadline_rejects_unsettled_promise_and_keeps_task(self):
         task,prose,data=self.prepare_facts()
         data['events']=[self.opening(prose,1,1)]
-        with self.assertRaises(Error) as caught:engine.submit(self.db,result(task,data))
+        with self.assertRaises(Error) as caught:submit_review(self.db,task,data)
         self.assertEqual(caught.exception.code,'overdue_hook')
         self.assertEqual(self.task()['task_id'],task['task_id'])
         self.assertEqual(head(self.db,'main'),0)
@@ -45,18 +45,18 @@ class HookDeadlineTests(unittest.TestCase):
         data['events']=[self.opening(prose,1,1),
                         {'op':'hook','id':'receipt','before':'open','status':'paid',
                          'evidence':ev(prose,1,'将收据摊在桌上')}]
-        engine.submit(self.db,result(task,data));respond(self.db,self.path,self.task())
+        submit_review(self.db,task,data)
         self.assertEqual(head(self.db,'main'),1)
         self.assertEqual(replay(self.db,'main')['hooks']['receipt']['status'],'paid')
 
     def test_future_deadline_is_valid_until_boundary_chapter(self):
         task,prose,data=self.prepare_facts()
         data['events']=[self.opening(prose,1,2)]
-        engine.submit(self.db,result(task,data));respond(self.db,self.path,self.task())
+        submit_review(self.db,task,data)
         self.assertEqual(head(self.db,'main'),1)
         engine.approve(self.db)
         task,prose,data=self.prepare_facts(2)
-        with self.assertRaises(Error) as caught:engine.submit(self.db,result(task,data))
+        with self.assertRaises(Error) as caught:submit_review(self.db,task,data)
         self.assertEqual(caught.exception.code,'overdue_hook')
         self.assertEqual(head(self.db,'main'),1)
         self.assertEqual(self.task()['task_id'],task['task_id'])

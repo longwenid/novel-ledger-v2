@@ -32,7 +32,7 @@ class ReviewChunkTests(unittest.TestCase):
                 chapter_events=[{'op':'clock','before':i-1,'after':i,'evidence':{'chapter':i,'start':0,'quote':text}}]
                 append_events(self.db,'main',i,text,chapter_events,state)
 
-    def test_default_chunk_is_single_chapter(self):
+    def test_configured_single_chapter_chunk(self):
         self._commit_book()
         t=engine.next_task(self.path,self.db) if False else engine.next_task(self.db,self.path)
         self.assertEqual(t['stage'],'batch_review')

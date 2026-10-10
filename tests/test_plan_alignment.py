@@ -27,7 +27,7 @@ class PlanAlignmentTests(unittest.TestCase):
     def tearDown(self): self.db.close();self.temp.cleanup()
 
     def task(self):return engine.next_task(self.db,self.path)
-    def submit(self,task,data):return engine.submit(self.db,result(task,copy.deepcopy(data)))
+    def submit(self,task,data):return submit_review(self.db,task,copy.deepcopy(data))
     def plan(self,n=1,**over):
         p=copy.deepcopy(EXAMPLE['chapter_plan']);p.update(number=n)
         p['ending_shape']=over.pop('shape',SHAPES[n%len(SHAPES)]+f':测试收束{n}')
@@ -38,8 +38,8 @@ class PlanAlignmentTests(unittest.TestCase):
         self.submit(self.task(),{'chapters':[self.plan(n,**over)]})
         respond(self.db,self.path,self.task())
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));text=pack_prose(self.path, w)
-        data=review(w['payload']['checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
-        self.submit(t,data);respond(self.db,self.path,self.task())
+        data=review(w['payload']['facts_checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
+        self.submit(t,data)
 
     def test_ending_shape_is_required_with_controlled_category(self):
         p=self.plan(1);p.pop('ending_shape')
@@ -75,7 +75,7 @@ class PlanAlignmentTests(unittest.TestCase):
         self.assertTrue(all(r['written'] and r['prose_hash'] and r['plan_hash'] for r in rows))
         self.assertIn('rhythm',rows[0]['outline'])
         self.assertNotIn('scenes',rows[0]['outline'])
-        reader=pack(self.db,'main',2,'reader',{'prose':'正文','checks':[]})
+        reader=pack(self.db,'main',2,'chapter_review',{'prose':'正文','checks':[]})
         self.assertFalse(any(item['kind']=='recent_rhythm' for item in reader['selected']))
 
     def test_volume_plan_pack_carries_prior_volume_handoff(self):

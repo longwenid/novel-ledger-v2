@@ -51,7 +51,6 @@ class VolumeDevelopmentTests(unittest.TestCase):
             engine.submit(self.db,result(task,{'chapters':[p]}))
             respond(self.db,self.path,self.task(),prose=prose)
             respond(self.db,self.path,self.task())
-            respond(self.db,self.path,self.task())
             if number==1:engine.approve(self.db)
         for _ in range(3):
             task=self.task();work=self.work(task)
@@ -139,7 +138,8 @@ class VolumeDevelopmentTests(unittest.TestCase):
         self.assertEqual(self.work(self.task())['payload']['design_scope'],'v2')
 
     def test_old_frozen_pending_checks_and_input_remain_compatible(self):
-        task=self.closure_task();work=self.work(task)
+        task=self.closure_task();work=json.loads(self.db.execute('SELECT input FROM tasks WHERE id=?',(task['task_id'],)).fetchone()[0])
+        work.pop('review_session',None)
         # Persist the exact shape of a pre-feature, context-signed task.
         work['payload']['checks'].remove('volume_development')
         work['payload'].pop('volume_development')

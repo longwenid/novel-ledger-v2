@@ -172,23 +172,23 @@ class SpatialPipelineTests(unittest.TestCase):
     def test_omitted_events_do_not_silently_ignore_explicit_address_drift(self):
         text='周行来到局长办公室，办公室在3楼505。'
         task=self.to_facts(text);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
-        self.assertIn('spatial',work['payload']['checks']);self.assertIn('stable_facts',work['payload']['checks'])
-        data=review(work['payload']['checks'],text);data.update(summary='到达办公室',events=[])
-        with self.assertRaises(Error):engine.submit(self.db,result(task,data))
+        self.assertIn('spatial',work['payload']['facts_checks']);self.assertIn('stable_facts',work['payload']['facts_checks'])
+        data=review(work['payload']['facts_checks'],text);data.update(summary='到达办公室',events=[])
+        with self.assertRaises(Error):submit_review(self.db,task,data)
         data['verdict']='fix';data['checks'][0]['result']='fix'
         data['findings']=[{'severity':'blocker','impact':'办公室无故由四楼101变为三楼505','goal':'恢复既有地址或先演出合法搬迁','evidence':ev(text)}]
         data['address_responses']=[{'id':s['id'],'status':'error','reason':'没有搬迁记录','evidence':ev(text)} for s in work['address_signals']]
-        engine.submit(self.db,result(task,data))
+        submit_review(self.db,task,data)
         self.assertEqual(engine.next_task(self.db,self.path)['stage'],'repair')
         self.assertEqual(engine.head(self.db,'main'),0)
     def test_historical_map_replays_prior_address(self):
         text='全楼统一换门牌，四楼101室改编为401室。'
         task=self.to_facts(text);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
         e={'op':'place_change','entity':'r4','before':{'room_number':'101'},'after':{'room_number':'401'},'reason':'编号调整','change_evidence':ev(text),'evidence':ev(text)}
-        data=review(work['payload']['checks'],text);data.update(summary='统一重编门牌',events=[e])
+        data=review(work['payload']['facts_checks'],text);data.update(summary='统一重编门牌',events=[e])
         # A historical label in a renumbering sentence is not an unexplained new address.
         data['address_responses']=[{'id':s['id'],'status':'not_conflict','reason':'正文正在演出重编门牌','evidence':ev(text)} for s in work['address_signals']]
-        engine.submit(self.db,result(task,data));respond(self.db,self.path,engine.next_task(self.db,self.path))
+        submit_review(self.db,task,data)
         self.assertEqual(address(replay(self.db,'main',0),'r4')['room_number'],'101')
         self.assertEqual(address(replay(self.db,'main',1),'r4')['room_number'],'401')
         self.assertEqual(recall(self.db,'main',entity='市局四楼101室')['total'],1)
@@ -210,15 +210,15 @@ class FirstAppearanceTests(unittest.TestCase):
                                {'op':'anchor','entity':'office','key':'office_place','value':'r4','policy':'eventful'},
                                {'op':'placement','entity':'hero','before':None,'after':{'place':'r4'}}])
                 for e in events:e['evidence']=ev(text)
-                data=review(work['payload']['checks'],text);data.update(events=events,summary='四楼101明确为局长办公室。')
-                engine.submit(db,result(t,data));respond(db,path,engine.next_task(db,path));engine.approve(db)
+                data=review(work['payload']['facts_checks'],text);data.update(events=events,summary='四楼101明确为局长办公室。')
+                submit_review(db,t,data);engine.approve(db)
                 wrong='周行再次走进局长办公室，三楼505的门牌刚擦亮。'
                 respond(db,path,engine.next_task(db,path),prose=wrong)
                 t=engine.next_task(db,path);work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
                 self.assertEqual({x['key'] for x in work['address_signals']},{'floor','room_number'})
                 self.assertEqual(work['continuity']['anchors']['r4:floor']['source']['chapter'],1)
-                data=review(work['payload']['checks'],wrong,2);data.update(events=[],summary='回到办公室。')
-                with self.assertRaises(Error):engine.submit(db,result(t,data))
+                data=review(work['payload']['facts_checks'],wrong,2);data.update(events=[],summary='回到办公室。')
+                with self.assertRaises(Error):submit_review(db,t,data)
                 self.assertEqual(engine.head(db,'main'),1)
                 self.assertTrue(engine.audit(db)['ok'])
             finally:db.close()

@@ -110,6 +110,6 @@ topic/related-entity/place 可重复，返回完整命中条目、核心和依�
 
 ## 审稿检查项
 
-- **facts 阶段**：`character_consistency` 检查行为是否符合认知、经历与动机依据。
-- **reader 阶段**：`dialogue_identity` 核验对白是否有独立辨识度与立场（无对白场景注明 `not_applicable`）。
+- **facts 子回执**：`character_consistency` 检查行为是否符合认知、经历与动机依据。
+- **reader 子回执**：`dialogue_identity` 核验对白是否有独立辨识度与立场（无对白场景注明 `not_applicable`）。
 - **整体复核**：`voice_evolution` 检查成长弧光是否持续生效。

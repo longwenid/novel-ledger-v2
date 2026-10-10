@@ -41,7 +41,7 @@ class ChapterLengthTests(unittest.TestCase):
         self.assertIsNone(chapter_length(c,plan(1),'很短的正文。'))
         with transaction(self.db):put(self.db,'contract',c)
         t=self.planned(plan(1));engine.submit(self.db,result(t,{'prose':'周行交出了收据。'}))
-        self.assertEqual(self.task()['stage'],'facts')
+        self.assertEqual(self.task()['stage'],'chapter_review')
 
     def test_target_must_be_an_explicit_positive_integer_without_an_upper_cap(self):
         for invalid in (True,0,-2,3.5,'3000'):
@@ -58,8 +58,7 @@ class ChapterLengthTests(unittest.TestCase):
         text='周行逐项查验收据上的印记，发现纸角曾沾过水。宋禾不肯替别人承担那枚指印的风险，要求先问明证人会被带到哪里。周行没有替她答应，而是将自己的旧记录也放在桌上，说明其中可能牵连到他。她看完这两份凭证后才提出条件，要求当面对质。周行接受了这个条件，二人一同准备次日的问话。'
         self.assertGreaterEqual(han_count(text),90)
         engine.submit(self.db,result(t,{'prose':text}))
-        facts=self.task();respond(self.db,self.path,facts,events=[])
-        reader=self.task();self.assertIn('substance',self.work(reader)['payload']['checks'])
+        reader=self.task();self.assertIn('substance',self.work(reader)['payload']['reader_checks'])
         respond(self.db,self.path,reader)
         self.assertEqual(head(self.db,'main'),1)
         stored=json.loads(self.db.execute('SELECT data FROM chapters').fetchone()[0])
@@ -82,14 +81,14 @@ class ChapterLengthTests(unittest.TestCase):
         engine.submit(self.db,result(repair_task,{'base_hash':work['payload']['base_hash'],
             'patches':[{'start':0,'old':short,'new':expanded}],'repair_note':'保留原稿的犹豫，展开核验、条件和双方选择。'}))
         self.assertEqual(engine.load_draft(self.db,'main',1)['prose'],expanded)
-        self.assertEqual(self.task()['stage'],'facts')
+        self.assertEqual(self.task()['stage'],'chapter_review')
 
     def test_overshoot_is_preserved_and_does_not_trigger_an_upper_length_gate(self):
         t=self.planned()
         text='周行让宋禾自行选择是否作证。\n'+'这是为验证没有上限截断而保留的工程样本段落。'*1000
         engine.submit(self.db,result(t,{'prose':text}))
         self.assertEqual(engine.load_draft(self.db,'main',1)['prose'],text)
-        self.assertEqual(self.task()['stage'],'facts')
+        self.assertEqual(self.task()['stage'],'chapter_review')
 
     def test_deliberate_short_chapter_needs_an_advance_reason(self):
         p=developed_plan(20)
@@ -120,7 +119,7 @@ class ChapterLengthTests(unittest.TestCase):
         for text in texts:
             data={'prose':text}
             if t['stage']=='repair':data['repair_note']='演出当前人物的反应。'
-            engine.submit(self.db,result(t,data));t=self.task()
+            submit_review(self.db,t,data);t=self.task()
         self.assertEqual(t['stage'],'redesign')
         with self.assertRaises(Error) as raised:
             engine.submit(self.db,result(t,{'prose':texts[-1],'design_change':'重新考虑场景展开。'}))
@@ -140,7 +139,7 @@ class ChapterLengthTests(unittest.TestCase):
         for text in ('宋禾迟疑。','宋禾迟疑，周行等待。','宋禾迟疑，周行仍在等待回答。'):
             data={'prose':text}
             if t['stage']=='repair':data['repair_note']='补足实际反应。'
-            engine.submit(self.db,result(t,data));t=self.task()
+            submit_review(self.db,t,data);t=self.task()
         self.assertEqual(t['stage'],'redesign')
         c=get(self.db,'contract');c['chapter_target_han']=120
         with transaction(self.db):put(self.db,'contract',c)
@@ -158,7 +157,7 @@ class ChapterLengthTests(unittest.TestCase):
         for text in ('宋禾迟疑。','宋禾迟疑，周行等待。','宋禾迟疑，周行仍在等待回答。'):
             data={'prose':text}
             if t['stage']=='repair':data['repair_note']='补足反应。'
-            engine.submit(self.db,result(t,data));t=self.task()
+            submit_review(self.db,t,data);t=self.task()
         without_target=developed_plan()['execution']
         with self.assertRaises(Error) as raised:
             engine.submit(self.db,result(t,{'prose':'宋禾迟疑，继而主动询问凭证从何而来。',
@@ -172,7 +171,7 @@ class ChapterLengthTests(unittest.TestCase):
             data={'prose':text}
             if t['stage']=='repair':data['repair_note']='继续展开已有动作。'
             if t['stage']=='redesign':data['design_change']='改为先查验凭证来源。'
-            engine.submit(self.db,result(t,data))
+            submit_review(self.db,t,data)
             if get(self.db,'status')!='paused':t=self.task()
         self.assertEqual(get(self.db,'status'),'paused')
         c=get(self.db,'contract');c['chapter_target_han']=120
@@ -191,15 +190,15 @@ class ChapterLengthTests(unittest.TestCase):
             data={'prose':prose}
             if t['stage']=='repair':data['repair_note']='改写读者审稿指出的表达问题。'
             if t['stage']=='redesign':data['design_change']='改为围绕宋禾实际核验来组织场景。'
-            engine.submit(self.db,result(t,data));respond(self.db,self.path,self.task())
-            reader=self.task();work=self.work(reader);review_data=review(work['payload']['checks'],prose)
-            review_data['first_read']={'desire':'核验凭证','obstacle':'来源不明','change':'要求对质','read_on_reason':'追问疑点'}
+            submit_review(self.db,t,data)
+            reader=self.task();work=self.work(reader);review_data=review(work['payload']['reader_checks'],prose)
+            review_data['first_read']=fixture_first_read()
             review_data['verdict']='fix'
             for check in review_data['checks']:
                 if check['id']=='language':check['result']='fix';check['reason']='这个工程场景用持续的语义修订失败回执验证原有返工机制。'
             review_data['findings']=[{'severity':'quality','impact':'修订后表达问题仍未解决。',
                 'goal':'演出具体的人物反应以替代解释。','evidence':ev(prose)}]
-            engine.submit(self.db,result(reader,review_data))
+            submit_review(self.db,reader,review_data)
             if failure<3:t=self.task()
         self.assertEqual(get(self.db,'status'),'paused')
         self.assertEqual(get(self.db,'pause_reason')['code'],'quality_exhausted')
@@ -208,15 +207,15 @@ class ChapterLengthTests(unittest.TestCase):
 
     def test_deleting_padding_keeps_the_original_quality_feedback_during_development(self):
         t=self.planned();padding='周行反复解释收据有多重要，宋禾始终没有得到自己的选择。'*8
-        engine.submit(self.db,result(t,{'prose':padding}));respond(self.db,self.path,self.task())
-        reader=self.task();work=self.work(reader);data=review(work['payload']['checks'],padding)
-        data['verdict']='fix';data['first_read']={'desire':'核验收据','obstacle':'来源不明','change':'没有选择','read_on_reason':'解释重复，缺少推进'}
+        engine.submit(self.db,result(t,{'prose':padding}))
+        reader=self.task();work=self.work(reader);data=review(work['payload']['reader_checks'],padding)
+        data['verdict']='fix';data['first_read']=fixture_first_read()
         for check in data['checks']:
             if check['id']=='substance':check['result']='fix';check['reason']='重复解释代替了人物决定。'
         original={'severity':'quality','impact':'重复说明让宋禾的决定失去空间。',
                   'goal':'删掉重复解释，保留宋禾主动核验凭证的选择。','evidence':ev(padding)}
         data['findings']=[original]
-        engine.submit(self.db,result(reader,data))
+        submit_review(self.db,reader,data)
         repair_task=self.task();short='宋禾先问明凭证来源，再由自己决定是否作证。'
         engine.submit(self.db,result(repair_task,{'prose':short,'repair_note':'删除重复解释，改为宋禾主动选择。'}))
         saved=engine.load_draft(self.db,'main',1)
@@ -238,24 +237,26 @@ class ChapterLengthTests(unittest.TestCase):
                      'breathing_points':[]}
         t=self.planned(p)
         prose='宋禾逐项追问凭证的来处，周行不得不承认还有一名证人未能找到。她没有退却，反而要求立即去查那人的下落。'
-        engine.submit(self.db,result(t,{'prose':prose}));respond(self.db,self.path,self.task())
+        engine.submit(self.db,result(t,{'prose':prose}))
         reader=self.task();work=self.work(reader)
-        self.assertIn('pacing',work['payload']['checks'])
-        for hidden in ('plan','plans','writer_brief','contract'):self.assertNotIn(hidden,work)
+        self.assertIn('pacing',work['payload']['reader_checks'])
+        self.assertTrue(rpath(reader,'first_read_path').exists())
+        self.assertEqual(rpath(reader,'first_read_path').read_text(),prose)
+        self.assertNotIn('writer_brief',work)
         respond(self.db,self.path,reader)
         self.assertEqual(head(self.db,'main'),1)
 
     def test_meeting_target_still_requires_semantic_substance_review(self):
         t=self.planned();padding='周行反复说起收据的重要，却没有回应宋禾的顾虑。'*8
-        engine.submit(self.db,result(t,{'prose':padding}));respond(self.db,self.path,self.task())
-        reader=self.task();work=self.work(reader);checks=work['payload']['checks']
+        engine.submit(self.db,result(t,{'prose':padding}))
+        reader=self.task();work=self.work(reader);checks=work['payload']['reader_checks']
         data=review(checks,padding)
-        data['first_read']={'desire':'交付收据','obstacle':'顾虑未处理','change':'没有可感变化','read_on_reason':'缺少继续阅读动力'}
+        data['first_read']=fixture_first_read()
         data['verdict']='fix'
         for check in data['checks']:
             if check['id']=='substance':check['result']='fix';check['reason']='反复解释没有呈现试探、选择或关系后果，篇幅达标不能替代场景展开。'
         data['findings']=[{'severity':'quality','impact':'重复解释淹没人物选择。','goal':'演出双方的顾虑与选择，删除重复解释。','evidence':ev(padding)}]
-        engine.submit(self.db,result(reader,data))
+        submit_review(self.db,reader,data)
         self.assertEqual(head(self.db,'main'),0);self.assertEqual(self.task()['stage'],'repair')
 
     def test_substance_check_requires_actual_prose_evidence(self):
@@ -268,7 +269,7 @@ class ChapterLengthTests(unittest.TestCase):
         t=self.planned()
         prose='周行逐项说明凭证的来源。宋禾提出先核对记录中的日期，再决定是否作证。二人把各自记得的过程列出，并对其中无法确认的细节保留疑问。周行接受了当面对质的条件，没有替她许诺。宋禾听完双方必须承担的风险后选择继续追问，又将应当询问证人的事项写在纸边。'
         engine.submit(self.db,result(t,{'prose':prose}))
-        pending=self.task();self.assertEqual(pending['stage'],'facts')
+        pending=self.task();self.assertEqual(pending['stage'],'chapter_review')
         c=get(self.db,'contract');c['chapter_target_han']=han_count(prose)+100
         with transaction(self.db):put(self.db,'contract',c)
         new=self.task();self.assertEqual(new['stage'],'repair')

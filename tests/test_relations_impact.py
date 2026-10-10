@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from tests.support import contract, ev
+from support import contract, ev
 
 from novel_core import engine, ledger
 from novel_core.store import Error, connect, digest, dump, initialize, put
@@ -111,7 +111,7 @@ def test_work_pack_state_includes_relations_for_referenced_entities(tmp_path):
     _, db = setup_project(tmp_path)
     prose = '周行把后背交给了宋禾。'
     commit_events(db, 2, prose, [relation(2, prose, after='托付后背')])
-    work = pack(db, 'main', 3, 'facts', {'prose': '周行与宋禾继续同行。', 'summary': '两人继续同行。'})
+    work = pack(db, 'main', 3, 'chapter_review', {'prose': '周行与宋禾继续同行。', 'summary': '两人继续同行。'})
     assert work['state']['relations'] == {'hero>ally:trust': '托付后背'}
-    empty = pack(db, 'main', 4, 'facts', {'prose': '与两人无关的一段路程。', 'summary': '赶路。'})
+    empty = pack(db, 'main', 4, 'chapter_review', {'prose': '与两人无关的一段路程。', 'summary': '赶路。'})
     assert 'relations' not in empty['state']

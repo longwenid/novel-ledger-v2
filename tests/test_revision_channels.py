@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from tests.support import contract, ev
+from support import contract, ev
 
 from novel_core import design, engine, ledger
 from novel_core.memory import DISCIPLINE
@@ -156,10 +156,10 @@ def test_review_context_hash_is_version_stable(tmp_path):
 def test_pack_carries_stage_primer(tmp_path):
     from novel_core.memory import pack
     _, db = setup_project(tmp_path)
-    for stage, fragment in (('draft', 'prose'), ('facts', 'verdict'), ('reader', 'first_read'),
+    for stage, fragment in (('draft', 'prose'), ('chapter_review', 'first_read'),
                             ('plan', 'ending_shape'), ('volume_plan', 'choice_log'),
                             ('batch_review', 'findings')):
         work = pack(db, 'main', 1, stage, {'prose': 'x', 'summary': 's', 'entities': ['hero']} if stage.startswith('character') else {'prose': 'x', 'summary': 's'})
         assert fragment in work['guide'], stage
         assert work['guide'].startswith('[提交契约] '), stage
-        assert ('[任务]' in work['guide']) == (stage == 'reader'), stage  # 仅 reader 附带任务指令行
+        assert '[提交契约]' in work['guide'], stage

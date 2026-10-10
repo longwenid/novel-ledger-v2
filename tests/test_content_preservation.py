@@ -28,7 +28,7 @@ class ContentPreservationTests(unittest.TestCase):
         prose='第一章 雨夜\n\n'+opening+'\n\n'+closing
         respond(self.db,self.path,self.task())
         respond(self.db,self.path,self.task(),prose=prose)
-        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
+        respond(self.db,self.path,self.task())
         engine.approve(self.db)
         anchor=get(self.db,'style_anchor')
         self.assertEqual(anchor['sample'],opening)
@@ -41,9 +41,9 @@ class ContentPreservationTests(unittest.TestCase):
         respond(self.db,self.path,self.task(),prose=prose)
         task=self.task();work=json.loads(rpath(task).read_text(encoding='utf-8'))
         summary='必要的选择、代价、关系和因果依据。'*150
-        data=review(work['payload']['checks'],prose,1)
+        data=review(work['payload']['facts_checks'],prose,1)
         data.update(events=[],summary=summary)
-        engine.submit(self.db,result(task,data));respond(self.db,self.path,self.task())
+        submit_review(self.db,task,data)
         chapter=json.loads(self.db.execute("SELECT data FROM chapters WHERE branch='main' AND number=1").fetchone()[0])
         self.assertEqual(chapter['summary'],summary)
         engine.approve(self.db)

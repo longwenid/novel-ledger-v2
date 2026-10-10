@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="大模型长篇写作与 Coding 的区别：上下文爆炸、内容漂移与文风问题；展示 novel-ledger-v2 的 SQLite 表记录示例、按需取材与独立审稿。六页离线演示。">
-  <title>大模型写小说与 Coding 的区别</title>
+  <meta name="description" content="AI 长篇写作团队分享：起点、问题与 Coding 对比、解决思路、Skill 架构、数据结构、懒人写作和现场演示。8 页离线演示，含讲者备注。">
+  <title>AI 长篇写作尝试</title>
   <style>
     :root { --bg:#080d1b; --panel:#111a2b; --ink:#f1f5fc; --muted:#b0bdd3; --quiet:#8495b1; --line:#2b3851; --blue:#80aeff; --purple:#b5a0ff; --amber:#ffd080; --green:#7ee1c1; --rose:#ff9eae; --scale:1; }
     * { box-sizing:border-box; }
@@ -62,6 +62,7 @@
     th { color:var(--muted); font-weight:500; font-size:17px; padding:12px 16px; border-bottom:2px solid var(--line); }
     td { padding:20px 16px; border-bottom:1px solid var(--line); color:var(--muted); vertical-align:top; }
     td:first-child { color:var(--ink); font-weight:600; }
+    .compare-table td { padding:17px 16px; font-size:21px; }
     .layers { display:grid; gap:14px; }
     .layer { display:grid; grid-template-columns:240px 1fr; gap:26px; border-bottom:1px solid var(--line); padding:18px 0; }
     .layer h3 { font-size:25px; }
@@ -88,7 +89,18 @@
     .diagram-return svg { display:block; width:100%; height:30px; overflow:visible; }
     .diagram-return path { fill:none; stroke:var(--lane); stroke-width:1.5; vector-effect:non-scaling-stroke; }
     .diagram-return p { text-align:center; color:var(--muted); font-size:16px; line-height:1.5; }
+    .schema-slide .content { gap:18px; padding:18px 0; }
+    .schema-layout { display:grid; grid-template-columns:1fr 1.15fr; gap:36px; }
+    .schema-layout h3 { font-size:25px; margin-bottom:12px; }
+    .schema-table th { font-size:16px; padding:8px; }
+    .schema-table td { font-size:18px; padding:10px 8px; }
+    .schema-layout .small { font-size:16px; margin-top:14px; }
+    .schema-json pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .schema-json code { font-size:18px; line-height:1.65; }
+    .schema-slide .takeaway { font-size:22px; }
     .db-slide .content { gap:16px; padding:16px 0; }
+    .review-slide .content { gap:18px; padding:16px 0; }
+    .review-slide .repair { padding:18px 0; }
     .db-example th { padding:9px 10px; font-size:16px; }
     .db-example td { padding:8px 10px; font-size:17px; line-height:1.3; }
     .db-example code { font-size:15px; overflow-wrap:anywhere; }
@@ -167,6 +179,9 @@
       h1 { font-size:41px; } h2 { font-size:30px; } h3 { font-size:23px; }
       .kicker { font-size:13px; } .subtitle { font-size:18px; }
       .content { padding:25px 0; gap:26px; } .body,.list { font-size:19px; } .small { font-size:16px; }
+      .schema-layout { grid-template-columns:1fr; gap:28px; }
+      .schema-json code { font-size:15px; }
+      .schema-slide .takeaway { font-size:20px; }
       .cols,.cols.three,.units,.rhythm,.usage,.difficulty-grid { grid-template-columns:1fr; gap:24px; }
       .col { padding-top:16px; } .col h3 { margin-bottom:12px; }
       .layer { grid-template-columns:1fr; gap:8px; padding:16px 0; } .layer p { font-size:19px; }
@@ -197,6 +212,7 @@
       .sample-list { grid-template-columns:1fr 1fr; gap:8px 12px; font-size:19px; }
       .source { font-size:12px; margin-top:10px; padding-top:12px; gap:10px; }
       table { font-size:16px; } th { font-size:13px; padding:10px 6px; } td { padding:13px 6px; overflow-wrap:anywhere; }
+      .compare-table td { padding:13px 6px; font-size:15px; }
       .evidence-table th { font-size:13px; padding:9px 5px; } .evidence-table td { font-size:15px; padding:12px 5px; }
       .cover .kicker { font-size:14px; } .cover .subtitle { font-size:22px; margin-top:22px; } .cover .cover-principle { font-size:19px; margin-top:25px; }
       .cover .agenda { flex-wrap:wrap; gap:15px 24px; margin-top:32px; font-size:18px; }
@@ -216,7 +232,7 @@
 </head>
 <body>
   <header class="chrome">
-    <div class="brand">大模型写小说 × Coding<span class="version">novel-ledger-v2 · 1.20.0</span></div>
+    <div class="brand">AI 长篇写作实践<span class="version">novel-ledger-v2</span></div>
     <div class="tools">
       <span class="counter"><strong id="current-number">01</strong> / <span id="total-number">08</span></span>
       <button id="toc-btn" type="button" title="目录（G）">目录</button>
@@ -228,129 +244,186 @@
   <main id="viewport" aria-label="分享演示">
     <div id="stage-frame"><div id="stage">
 
-      <section class="slide cover active" data-title="大模型写小说与 Coding 的区别" aria-labelledby="title-1">
+      <section class="slide cover active" data-title="AI 长篇写作尝试" aria-labelledby="title-1">
         <div class="content">
-          <h1 id="title-1">大模型写小说与 Coding 的区别</h1>
-          <p class="subtitle">上下文爆炸、内容漂移、文风问题</p>
+          <p class="kicker">团队技术分享</p>
+          <h1 id="title-1">AI 长篇写作尝试</h1>
+          <p class="subtitle">爱看小说，也想用 AI 写出自己喜欢的小说</p>
+          <div class="agenda"><span>起点与问题</span><span>思路与架构</span><span>数据设计</span><span>懒人写作与演示</span></div>
         </div>
-        <aside class="note">用三类问题解释长篇续写为何需要额外的状态管理与验收，再对照 Coding 的工具反馈，展示 SQLite 的实际表结构节选与本 Skill 的应对流程。全稿八页。
-这里比较配合工具的 Coding 与缺少独立核验的小说续写流程；代码也可能漏测，小说也可以加入检查。重点是工作方式，不是模型能力排名。</aside>
+        <aside class="note">今天分享一次 AI 长篇写作尝试。因为爱看小说，希望用 AI 写出自己喜欢的故事，最初沿用 AI 辅助开发工作流编写 Skill。
+先聊起点、问题和与 Coding 的区别，再讲解决思路、Skill 架构与数据结构，最后介绍懒人写作体验并做现场演示。重点是长期创作如何获得依据和反馈，以及没有预设题材时怎样方便开书。</aside>
       </section>
 
-      <section class="slide" data-title="长篇连写，三个问题越来越突出" aria-labelledby="title-2">
-        <p class="kicker">01 · 长篇写作的难点</p><h2 id="title-2">长篇连写，三个问题越来越突出</h2>
-        <div class="content">
-          <div class="cols three">
-            <div class="col blue-line"><h3 class="blue">上下文爆炸</h3><p class="body">设定、正文、档案持续叠加<br>全书反复输入，成本上升<br>只留近期，又容易漏依据</p></div>
-            <div class="col amber-line"><h3 class="amber">内容漂移</h3><p class="body">认知、动机与事实前后冲突<br>伏笔丢失，成长缺少依据<br>错误继续被后章沿用</p></div>
-            <div class="col green-line"><h3 class="green">文风问题</h3><p class="body">叙述口吻前后变化<br>不同人物说话同腔<br>套话与重复解释逐渐增多</p></div>
-          </div>
-          <p class="takeaway">长篇需要持续管理历史、因果与声音。</p>
-        </div>
-        <div class="source"><span>风险归纳：context-runtime / characters / editorial</span><span class="page">02</span></div>
-        <aside class="note">上下文爆炸指材料与重复传递不断增长，不是声称算法或费用按指数增长。例如 100 章、每章 3000 字，正文已约 30 万字，再加入设定、人物档案和聊天历史，若每次无差别重读，准备与传递会持续增加。只按字数截断或只取近期，可能遗漏当前选择依赖的早期经历。实际 token 与费用需要宿主账单，不能以字符直接换算。
-内容漂移包括人物提前知情、动机突变、资源或时间矛盾、伏笔与成长未兑现；文风问题包括叙述声音变化、对白同腔、句式与解释反复。三类都是需检查的风险，不保证每次连写都会发生，也不给出未经测量的发生率。
-依据：references/context-runtime.md、characters.md、editorial.md。</aside>
-      </section>
-
-      <section class="slide" data-title="Coding 的优势：外部反馈能反复验证" aria-labelledby="title-3">
-        <p class="kicker">02 · 流程对比</p><h2 id="title-3">Coding 的优势：外部反馈能反复验证</h2>
-        <div class="content">
-          <div class="diagram-compare"><div class="diagram-lane code-lane"><h3>Coding<small>工具辅助</small></h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="Coding 工具辅助 流程"><li class="diagram-node"><b>定位代码</b><span>源码与依赖</span></li><li class="diagram-node"><b>生成改动</b><span>实现需求</span></li><li class="diagram-node"><b>运行检查</b><span>编译、测试、运行</span></li><li class="diagram-node"><b>审查结果</b><span>行为与体验</span></li></ol><div class="diagram-return"><svg viewBox="0 0 1000 32" preserveAspectRatio="none" aria-hidden="true"><path d="M880 2 V22 H380 V2 M370 12 L380 2 L390 12"/></svg><p>发现问题：修正后重新验证</p></div></div></div><div class="diagram-lane novel-lane"><h3>小说续写<small>缺少独立核验</small></h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="缺少独立核验的小说续写流程"><li class="diagram-node"><b>整理上下文</b><span>摘要、档案、按需加载</span></li><li class="diagram-node"><b>生成新章</b><span>依赖当前材料</span></li><li class="diagram-node"><b>缺少核验</b><span>因果与文风未验</span></li><li class="diagram-node"><b>继续沿用</b><span>后章据此展开</span></li></ol><div class="diagram-return"><svg viewBox="0 0 1000 32" preserveAspectRatio="none" aria-hidden="true"><path d="M880 2 V22 H380 V2 M370 12 L380 2 L390 12"/></svg><p>继续生成：漂移与文风问题可能累积</p></div></div></div></div>
-          <p class="takeaway">代码也会出错，编译与测试让部分错误更容易暴露。</p>
-        </div>
-        <div class="source"><span>依据：<a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener noreferrer">Anthropic · Coding agents</a> · 小说风险为流程示意</span><span class="page">03</span></div>
-        <aside class="note">上行是带工具反馈与审查的 Coding；下行示意只做提示、摘要、档案或按需加载，未加入历史核对和独立审稿的常规 Skill。这里按工作机制比较，不声称所有其他 Skill 都缺少核验。
-摘要与检索能缓解上下文膨胀，但整理材料本身不验证材料真假。摘要若记错人物所知或关系，新章仍可能沿用错误；生成后没有对照历史正文核验，就无法可靠发现内容漂移。反复生成不是验证。
-Coding 常能借助源码定位、编译、测试和运行获得部分外部证据，但复杂依赖、需求与体验仍需审查。小说中的人物因果与文风需要读正文、核对历史和风格来源，模型说“已检查”不能替代真实审稿。
-工程参考：https://www.anthropic.com/engineering/building-effective-agents
-长故事参考：https://aclanthology.org/2022.emnlp-main.296/
-比较的是工作条件，不推断内部训练原因，不外推百万字质量。</aside>
-      </section>
-
-      <section class="slide" data-title="常规 Skill：管住上下文，仍会漂移" aria-labelledby="title-4">
-        <p class="kicker">03 · 常规 Skill 的边界</p><h2 id="title-4">常规 Skill：管住上下文，仍会漂移</h2>
-        <div class="content">
-          <div class="diagram-lane code-lane"><h3>上下文管理</h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="常规 Skill 的上下文管理流程"><li class="diagram-node"><b>保存材料</b><span>正文、设定、档案</span></li><li class="diagram-node"><b>提炼摘要</b><span>减少历史复述</span></li><li class="diagram-node"><b>按需加载</b><span>选取当前相关材料</span></li><li class="diagram-node"><b>继续写作</b><span>使用整理后的上下文</span></li></ol></div></div>
-          <div class="cols">
-            <div class="col blue-line"><h3 class="blue">缓解上下文爆炸</h3><p class="body">减少全书反复输入<br>保留当前任务需要的材料</p></div>
-            <div class="col amber-line"><h3 class="amber">内容漂移仍需检查</h3><p class="body">摘要记错，错误也会被沿用<br>材料齐全，新章仍可能偏离</p></div>
-          </div>
-          <p class="takeaway">上下文变小 ≠ 内容正确。整理材料之后，还需要核验。</p>
-        </div>
-        <div class="source"><span>这里指以摘要与按需加载为主、尚未加入独立内容核验的 Skill</span><span class="page">04</span></div>
-        <aside class="note">这一页按机制区分上下文管理与内容一致性，不对所有 Skill 作一概判断。常规 Skill 在此特指以提示、摘要、档案和按需加载为主的流程；它们可以缓解上下文膨胀，但仅凭整理材料不能可靠解决内容漂移。若其他 Skill 已包含持久状态、证据核对与独立审稿，也具备相应治理能力。
-例如摘要把“怀疑”写成“知道”，即便材料变短，后章仍可能沿用错误；即使摘要准确，生成的新章也可能让人物突然无条件信任他人。因此检索既有材料与检查新章是否成立是两项工作。
-按需加载也不能为了缩短输入而删去必要因果依赖，疑点须回查历史正文。来源：references/context-runtime.md、continuity.md、editorial.md。</aside>
-      </section>
-
-      <section class="slide db-slide" data-title="SQLite：人物状态怎么记" aria-labelledby="title-5">
-        <p class="kicker">04 · 本 Skill 的核验</p><h2 id="title-5">SQLite：人物状态怎么记</h2>
-        <div class="content">
-          <p class="small"><code>events</code> 表 · <code>branch=main / chapter=18 / idx=0</code><br>示例：林舟对沈砚的关系变化 · 以下展开 <code>data</code> 内的 JSON 字段</p>
-          <table class="db-example" aria-label="人物关系状态事件的字段明细"><colgroup><col style="width:28%"><col style="width:40%"><col style="width:32%"></colgroup><thead><tr><th>明细字段</th><th>示例值</th><th>作用</th></tr></thead><tbody>
-            <tr><td><code>data.op</code></td><td><code>state</code></td><td>记录人物状态变化</td></tr>
-            <tr><td><code>data.entity</code></td><td><code>C01</code>（林舟）</td><td>稳定 ID，改名也能追踪</td></tr>
-            <tr><td><code>data.key</code></td><td><code>relation:C02</code>（沈砚）</td><td>标明对谁的关系</td></tr>
-            <tr><td><code>data.before</code></td><td>警惕</td><td>前值须与账本一致</td></tr>
-            <tr><td><code>data.after</code></td><td>有限信任</td><td>本章成立的新状态</td></tr>
-            <tr><td><code>data.evidence.start</code></td><td><code>128</code>（字符偏移）</td><td>定位第 18 章的证据</td></tr>
-            <tr><td><code>data.evidence.quote</code></td><td>林舟收起刀：“这一回，我信你。”</td><td>精确引用正文，便于复核</td></tr>
-          </tbody></table>
-          <p class="takeaway">按人物取材，核对“前值 → 后值”，用正文证明变化。</p>
-        </div>
-        <div class="source"><span>实际存储：events.data（JSON） · 演示值 · 当前状态由事件重放得到</span><span class="page">05</span></div>
-        <aside class="note">此页展示真实 events 表中一条 state 事件的 JSON 明细，不新增或声称存在独立的人物状态 SQL 表。events 的实际列为 branch/chapter/idx/data/prev_hash/hash；data.op、data.entity 等是 JSON 路径，不是独立 SQL 列。完整示例事件还需 data.evidence.chapter=18；本页省略哈希等字段。
-人物名、ID、关系值、引文及字符偏移均为演示数据，不是项目中的真实小说记录。假设 C01、C02 已登记，第 18 章提交前 C01:relation:C02 的状态为“警惕”；本章事件 after 为“有限信任”。关系属性采用 continuity.md 建议的 relation:对方ID。伤势、动机等也可用 state 事件记录，属性名须在项目内保持一致。
-程序验证 before 与此前重放得到的状态一致，并核对 evidence 的章号、字符位置和原文。事实审稿还需判断引文及上下文是否足以支持关系变化，匹配字段不能代替语义审稿。按人物与依赖检索当前状态及相关历史，减少每章重复加载全书。
-人物所知另用 knowledge 事件，区分知道、相信与怀疑；人物声线保存在 meta 的版本化人物档案中，属于设计和解读，不作为已发生事实。文风问题仍通过风格锚点、声线材料与读者审稿复核。
-来源：scripts/novel_core/store.py、ledger.py、characters.py；references/continuity.md、characters.md。</aside>
-      </section>
-
-      <section class="slide" data-title="内容漂移：保存状态之后，还要核验" aria-labelledby="title-6">
-        <p class="kicker">04 · 本 Skill 的核验</p><h2 id="title-6">内容漂移：保存状态之后，还要核验</h2>
+      <section class="slide " data-title="最初，沿用 AI 辅助开发工作流编写 Skill" aria-labelledby="title-2">
+        <p class="kicker">02 · 起点</p><h2 id="title-2">最初，沿用 AI 辅助开发工作流编写 Skill</h2>
         <div class="content">
           <div class="cols">
-            <div class="col blue-line"><h3 class="blue">第 18 章 · 已成立</h3><p class="body">林舟对沈砚：有限信任<br>“这一回，我信你。”</p></div>
-            <div class="col amber-line"><h3 class="amber">第 19 章 · 候选稿疑点</h3><p class="body">林舟向沈砚坦白全部秘密<br>是否有新的动机与事件支持？</p></div>
+            <div class="col blue-line"><h3 class="blue">开发 Skill 的方式</h3><p class="body">描述目标，让 AI 编写 Skill<br>试用后反馈，再继续迭代</p></div>
+            <div class="col amber-line"><h3 class="amber">试用 Skill 的发现</h3><p class="body">正文能生成，长篇问题逐渐显现<br>需要回查历史，核验实际结果</p></div>
           </div>
-          <div class="diagram-lane novel-lane"><h3>核验与返修</h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="人物关系漂移的核验流程"><li class="diagram-node"><b>读人物前态</b><span>状态与相关正文</span></li><li class="diagram-node"><b>事实审稿</b><span>核对变化与因果</span></li><li class="diagram-node"><b>返修疑点</b><span>补足或调整情节</span></li><li class="diagram-node"><b>重验再入库</b><span>通过后更新状态</span></li></ol></div></div>
-          <p class="takeaway">SQLite 留下核对依据；审稿判断新章变化是否成立。</p>
-        </div>
-        <div class="source"><span>演示情节 · 状态前值由程序核对，变化依据由事实审稿检查</span><span class="page">06</span></div>
-        <aside class="note">沿用上一页的演示人物与关系状态，并非真实小说数据。有限信任后坦白秘密不必然是错误，关键是新章是否通过具体事件、动机与场景给出足够支持；审稿要回查正文，不能只根据状态标签机械否决。
-state 事件的 before 即便正确，也不说明 after 的语义合理。程序核对前值、证据定位等结构条件；facts 独立读取人物所知、关系变化与历史因果，检查候选正文能否支持这次变化。若有疑点则返修、重新审稿，通过正式提交后才更新有效账本。历史修订还需重验受影响后文。
-认知、资源、时间与伏笔也需要相应核验。SQLite 是持久化依据，审稿是判断环节，二者结合仍不自动保证文学质量。来源：scripts/novel_core/ledger.py；references/continuity.md、editorial.md、repairs.md。</aside>
+          <p class="takeaway">最初的期待：把流程写成 Skill，让 AI 持续写出喜欢的小说。</p></div>
+        <div class="source"><span>novel-ledger-v2 · 设计分享</span><span class="page">02</span></div>
+        <aside class="note">最开始沿用 AI 辅助开发工作流：描述希望怎样写小说，让 AI 帮我把流程写成 Skill，然后用起来，遇到问题再迭代。
+当时的期待是，既然 AI 能帮忙写代码，也许把写作要求和流程说明清楚，就能持续写出自己喜欢的长篇。
+但实际用起来之后，发现 Skill 能执行、正文能生成，还不足以说明整本故事成立。下一页讲这些问题，再往后解释我为什么开始重新思考状态、取材和验收。</aside>
       </section>
 
-      <section class="slide" data-title="文风：叙述口吻与人物声音分别检查" aria-labelledby="title-7">
-        <p class="kicker">04 · 本 Skill 的核验</p><h2 id="title-7">文风：叙述口吻与人物声音分别检查</h2>
+      <section class="slide" data-title="写得出来，长篇仍会出问题" aria-labelledby="title-3">
+        <p class="kicker">03 · 发现问题，与 Coding 的区别</p><h2 id="title-3">写得出来，长篇仍会出问题</h2>
         <div class="content">
-          <div class="cols three">
-            <div class="col blue-line"><h3 class="blue">叙述口吻</h3><p class="body">保留作者确认的风格样例<br>对照句式、节奏与用词<br>检查前后文是否变调</p></div>
-            <div class="col amber-line"><h3 class="amber">人物声线</h3><p class="body">记录各人的表达习惯<br>区分对谁说、为何这样说<br>声音变化须有成长依据</p></div>
-            <div class="col green-line"><h3 class="green">读者审稿</h3><p class="body">核对实际正文与样例<br>检查对白同腔、套话重复<br>指出疑点，返修后再审</p></div>
-          </div>
-          <p class="takeaway">事实前后一致之后，还要检查声音是否符合人物与场景。</p>
-        </div>
-        <div class="source"><span>风格锚点与人物声线按配置启用 · 检查以实际正文为准</span><span class="page">07</span></div>
-        <aside class="note">叙述文风与人物对白分开准备依据。存在 style_anchor 时，reader 核对作者确认的 traits 与 sample，检查叙述口吻、句式节奏和用词；启用 profiled 人物模式时，以版本化人物 voice 及场景意图检查对白身份。人物档案是设计和解读，不当成已经发生的世界事实。
-检查不等于固定模板或机械重复口头禅。面对不同对象、处于不同压力或经历成长，声音可以合理变化；审稿要检查变化是否符合场景与历史依据。language/repetition 与跨章复核还用于发现重复解释、同款收束和文风漂移。
-这些流程支持发现和返修问题，不保证文学质量。来源：references/characters.md、editorial.md、voices.md。</aside>
+          <table class="compare-table" aria-label="长篇写作问题与 Coding 反馈对照"><colgroup><col style="width:24%"><col style="width:36%"><col style="width:40%"></colgroup>
+            <thead><tr><th>遇到的问题</th><th class="blue">AI Coding 的工作条件</th><th class="amber">长篇写作的难点</th></tr></thead>
+            <tbody>
+              <tr><td>历史越来越多</td><td>按源码结构定位相关依赖</td><td>人物经历与关系散落在正文中</td></tr>
+              <tr><td>事实与动机漂移</td><td>编译、测试暴露部分错误</td><td>文字流畅，也可能存在因果错误</td></tr>
+              <tr><td>文风与对白同质化</td><td>部分行为可重复验证</td><td>人物声音与阅读体验需要读正文</td></tr>
+            </tbody>
+          </table>
+          <p class="small">例如：“怀疑凶手”在摘要里变成“知道凶手”，后文开始沿用错误前提。</p>
+          <p class="takeaway">长篇写作需要跨章核对，生成流畅只是验收的一部分。</p></div>
+        <div class="source"><span>问题归纳：context-runtime / continuity / editorial</span><span class="page">03</span></div>
+        <aside class="note">这里合并问题现象与 Coding 的工作条件。代码与小说都可能出错，但反馈依据不同。
+历史增长后，全量重读增加成本，只保留近期又可能遗漏行动前提。代码有源码和调用结构辅助定位，小说的重要经历与认知散落在正文里，需要显式取材和核对。
+例如摘要将怀疑写成知道，会改变后续行动的前提。有限信任突然变成全部坦白，也需要新事件、动机或代价来支持。
+编译与测试能暴露部分代码问题，但仍会漏测。小说文字流畅时也可能有因果错误；人物声线、节奏与阅读体验则需要对实际正文作判断。
+长上下文不能单独保证取材正确，模型自称已检查也需要证据。下面讲怎么把状态与反馈纳入 Skill。</aside>
       </section>
 
-      <section class="slide" data-title="让长篇也形成反馈闭环" aria-labelledby="title-8">
-        <p class="kicker">05 · 创作流程</p><h2 id="title-8">让长篇也形成反馈闭环</h2>
+      <section class="slide" data-title="解决思路：让创作有依据、有反馈" aria-labelledby="title-4">
+        <p class="kicker">04 · 对应解决思路和设计</p><h2 id="title-4">解决思路：让创作有依据、有反馈</h2>
         <div class="content">
-          <div class="diagram-compare"><div class="diagram-lane novel-lane"><h3>小说流程</h3><div class="diagram-path"><ol class="diagram-track" style="--nodes:4" aria-label="本 Skill 的小说创作流程"><li class="diagram-node"><b>SQLite 账本</b><span>正文、状态、文风</span></li><li class="diagram-node"><b>按需取材</b><span>当前场景与依赖</span></li><li class="diagram-node"><b>执笔与双审</b><span>事实＋读者</span></li><li class="diagram-node"><b>正式入库</b><span>版本与进度</span></li></ol><div class="diagram-return"><svg viewBox="0 0 1000 32" preserveAspectRatio="none" aria-hidden="true"><path d="M880 2 V22 H125 V2 M115 12 L125 2 L135 12"/></svg><p>通过审稿：成果与依据写回账本；未通过则返修</p></div></div></div></div>
-          <div class="cols"><p class="body"><strong class="blue">中断可续</strong><br>任务与输入持久化<br>恢复当前任务继续执行</p><p class="body"><strong class="amber">修订可追溯</strong><br>保留旧稿、版本与审稿证据<br>重验相关后文</p></div>
-          <p class="takeaway">账本保留依据，审稿发现漂移，返修后再验收。</p>
+          <table class="compare-table" aria-label="问题到设计的推导"><colgroup><col style="width:23%"><col style="width:42%"><col style="width:35%"></colgroup>
+            <thead><tr><th>面对的问题</th><th>设计选择</th><th>要得到的效果</th></tr></thead>
+            <tbody>
+              <tr><td>历史太多</td><td>保留原文，按当前任务取材</td><td>减少无关重复，疑点可回查</td></tr>
+              <tr><td>事实漂移</td><td>显式记录变化，绑定正文来源</td><td>有前态、有后态、有依据</td></tr>
+              <tr><td>自检容易漏判</td><td>执笔与审稿分开，返修后重验</td><td>独立反馈，候选结果先验收</td></tr>
+            </tbody>
+          </table>
+          <p class="small">作者确定看点、终局和文风；计划给出方向，正式正文确立事实。</p>
+          <p class="takeaway">模型完成创作与语义判断，脚本和账本管理状态与提交。</p></div>
+        <div class="source"><span>设计依据：SKILL.md / context-runtime / editorial / continuity</span><span class="page">04</span></div>
+        <aside class="note">这一页讲为什么选这些机制，下一页讲职责如何落到具体组件。
+历史太多时，按人物、话题与必要历史依赖取材，保留完整语义单元和原文回查通路，减少无关重复而不是截掉必要因果。
+事实漂移时，区分未来计划、候选稿与正式正文，记录状态变化和来源。程序核对前态与引用，审稿判断变化的语义依据。
+自检缺少反馈时，将执笔、事实审稿和读者审稿分成独立会话。新稿先作为候选，发现缺陷就返修重验，通过后才更新正式状态。
+作者确定创作约定，分层规划安排全书、分卷与近期章节。跨章、卷末和全书复核检查成长、伏笔与终局，历史改变后复核受影响后文。
+脚本能核对结构和完整性，文学判断仍靠审稿与实际阅读；审稿者也可能漏判。</aside>
+      </section>
+
+      <section class="slide" data-title="Skill 架构：谁负责什么" aria-labelledby="title-5">
+        <p class="kicker">05 · Skill 的架构设计</p><h2 id="title-5">Skill 架构：谁负责什么</h2>
+        <div class="content">
+          <div class="layers">
+            <div class="layer"><h3 class="purple">Skill 文档</h3><p>规定创作流程、阶段职责与提交协议。</p></div>
+            <div class="layer"><h3 class="blue">AI 主控会话</h3><p>获取任务，委派独立会话执行，确认提交后继续推进。</p></div>
+            <div class="layer"><h3 class="amber">Python ＋ SQLite</h3><p>脚本准备材料、校验提交；账本保存正文、事件、任务与版本。</p></div>
+            <div class="layer"><h3 class="green">模型 Worker</h3><p>完成规划、执笔或审稿。执笔、事实审与读者审分别执行。</p></div>
+          </div>
+          <p class="takeaway">主控调度，脚本校验，账本留存，模型完成当前任务。</p></div>
+        <div class="source"><span>架构依据：SKILL.md / runtime.md · engine.py / store.py</span><span class="page">05</span></div>
+        <aside class="note">这一页把此前笼统的“系统”具体展开成四个职责。
+Skill 文档约定怎么做，包括创作规则、阶段指南与提交契约。作者约定另存账本，并持续带入任务。
+AI 主控会话调用脚本获取当前任务，再通过宿主工具委派新模型会话。它确认真实提交后再获取下一项任务，不把启动成功当完成。
+Python 脚本负责状态机、材料组织和形式校验，SQLite 保存正式正文、候选稿、事件、任务输入、回执与分支。next 本身不会启动模型，需要主控实际派工。
+Worker 只完成本次任务。写作、事实审稿和读者审稿使用不同空历史会话，事实审核对因果，读者审先读正文再核对约定。独立性依赖宿主历史隔离能力。
+一个项目同一时间只有一个有效 pending，连续章节串行推进。中断从持久状态恢复，历史修改走候选分支复核，持续执行需要宿主调度。
+下一页用 events 表说明账本如何保存变化与正文证据。</aside>
+      </section>
+
+      <section class="slide schema-slide" data-title="events 表：把状态变化与正文证据一起保存" aria-labelledby="title-6">
+        <p class="kicker">06 · 数据的结构设计</p><h2 id="title-6">events 表：把状态变化与正文证据一起保存</h2>
+        <div class="content">
+          <div class="schema-layout">
+            <div>
+              <h3 class="blue">SQL 表结构</h3>
+              <table class="schema-table" aria-label="events 表的完整 SQL 字段"><colgroup><col style="width:30%"><col style="width:27%"><col style="width:43%"></colgroup><thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead><tbody>
+                <tr><td><code>branch</code></td><td><code>TEXT</code></td><td>所属正文分支</td></tr>
+                <tr><td><code>chapter</code></td><td><code>INTEGER</code></td><td>发生在哪章</td></tr>
+                <tr><td><code>idx</code></td><td><code>INTEGER</code></td><td>章内事件顺序</td></tr>
+                <tr><td><code>data</code></td><td><code>TEXT</code></td><td>事件 JSON</td></tr>
+                <tr><td><code>prev_hash</code></td><td><code>TEXT</code></td><td>前一事件哈希</td></tr>
+                <tr><td><code>hash</code></td><td><code>TEXT</code></td><td>本事件链哈希</td></tr>
+              </tbody></table>
+              <p class="small">复合主键：<code>(branch, chapter, idx)</code></p>
+            </div>
+            <div class="schema-json">
+              <h3 class="amber">data：一条关系变化事件</h3>
+              <pre><code>{
+  "op": "relation",
+  "from": "C01", "to": "C02",
+  "key": "trust",
+  "before": "警惕",
+  "after": "有限信任",
+  "evidence": {
+    "chapter": 18, "start": 128,
+    "quote": "林舟收起刀：这一回，我信你。"
+  }
+}</code></pre>
+              <p class="small">关系有方向，变化有前态，结论有正文来源。</p>
+            </div>
+          </div>
+          <p class="takeaway">程序核对前值、引文和事件链，审稿判断变化是否有充分依据。</p>
         </div>
-        <div class="source"><span>novel-ledger-v2 · 持久状态、按需取材、独立审稿与修订复核</span><span class="page">08</span></div>
-        <aside class="note">图中的入库返回线表示已通过的正式成果写回账本。未通过的候选稿也会保留，但不能当成已发生事实；它走返修，再重新事实与读者审稿。首章口吻与重大约定由作者决定。
-SQLite 保存任务状态和输入，中断后从当前任务恢复。连续运行依赖宿主与调度，不承诺关闭聊天后后台自动续写。局部补丁与历史修订保留旧版本和证据，受影响后文继续复核。
-完成一章或通过形式检查不代表全书质量，跨章、卷末与完本仍核对因果、成长、承诺与文风。
-来源：SKILL.md、references/runtime.md、editorial.md、repairs.md。</aside>
+        <div class="source"><span>实际表结构：store.py / ledger.py · JSON 内容与字符位置为演示值</span><span class="page">06</span></div>
+        <aside class="note">用一张实际的数据表说明前面的设计思路。events 的六个 SQL 字段与项目初始化定义一致，复合主键是 branch/chapter/idx。
+branch 让候选修订分支与正式版本分开；chapter 和 idx 标明事件顺序；data 保存具体事件。关系、人物认知、资源与承诺使用不同的 op，但共享顺序和证据结构。
+右侧展开 data 里的 relation 事件。C01 为林舟，C02 为沈砚，表示林舟对沈砚的信任变化，不表示双方的信任必然对称。两端须已注册，before 须匹配此前重放得到的关系前态。
+evidence 的 chapter、start、quote 将变化绑定到正文。start 是 Python 字符位置，不是 UTF-8 字节位置。人物、引文与偏移为演示数据，例子不是可以直接提交的真实结果。
+prev_hash 与 hash 形成事件链，用于完整性核对，不能证明文学因果合理。程序核对前态和精确引用，事实审稿读取必要语境，判断引文是否充分支持变化。
+状态由事件重放得到，候选稿和计划分别存储。正式正文和事件只在两审通过、程序校验完成后更新。正文版本和引用需要保持一致，历史修订时受影响的事件和审稿也要重建。
+这里强调三个设计选择：状态变化显式记录，事实结论保留来源，程序校验与语义审稿分工。完整性校验不能代替阅读判断。</aside>
+      </section>
+
+      <section class="slide" data-title="懒人写作：没有设定也能开始" aria-labelledby="title-7">
+        <p class="kicker">07 · 懒人写作</p><h2 id="title-7">懒人写作：没有设定也能开始</h2>
+        <div class="content">
+          <p class="subtitle">发起开书即可开始，无需预先准备题材、大纲或人物设定。</p>
+          <ol class="diagram-track" style="--nodes:4;--lane:var(--blue)" aria-label="选择式开书流程">
+            <li class="diagram-node"><b>开始开书</b><span>还没想好写什么<br>也可以发起</span></li>
+            <li class="diagram-node"><b>挑选方向</b><span>每轮 2～3 个候选<br>包含可落地的脑洞</span></li>
+            <li class="diagram-node"><b>补全设定</b><span>逐步选人物与规则<br>形成创作约定</span></li>
+            <li class="diagram-node"><b>试章定调</b><span>先看实际正文<br>作者确认方向与口吻</span></li>
+          </ol>
+          <div class="cols">
+            <div class="col blue-line"><h3 class="blue">少写提示，多做选择</h3><p class="body">回复 A / B / C，或说“换一组”<br>Skill 引导问题，整理选择</p></div>
+            <div class="col amber-line"><h3 class="amber">脑洞有生成方法</h3><p class="body">混搭设定、反转规则、加入代价<br>换一组时切换构思方式</p></div>
+          </div>
+          <p class="takeaway">把开书前的准备，变成逐步选择和试写反馈。</p></div>
+        <div class="source"><span>功能依据：creation.md / hatch-ideas.md</span><span class="page">07</span></div>
+        <aside class="note">前半段讲长期创作怎样得到依据和反馈。第二个重点是开书体验：没有题材、主角或大纲，也能发起开书。
+这里的“无需输入”指无需预先提供一整套小说内容。发起开书后，Skill 先给候选并引导选择，作者仍参与方向选择和首章定调。
+缺方向时，每轮只推进一道选择，给 2～3 个因果不同的候选，含至少一个可落地的高概念脑洞。作者可以回复 A/B/C、换一组、自定义或返回。
+选择链从读者承诺和推进引擎开始，逐步确定主角、核心关系、世界对抗、机制、终局、体量文风。选择结果整理成创作约定，后续再进入全书、分卷和近期章节设计。
+首章通过两审后交作者确认，认可后才定调。试章不喜欢可以提出修改，模型不替作者批准。
+这一页讲的是现有 Skill 的交互设计，不声称无需发起请求或无需任何作者选择，也不承诺关闭聊天后自行运行。
+
+【脑洞方法，按需展开】
+这一页用分享用的示例构想说明脑洞方法，不把它冒充项目已有小说或实际生成结果。
+创意工具箱包含高概念混搭、倒置公理、不可逆代价、限制驱动、认知差、规则推演、对抗绑定和终局闭环等方法。
+以记忆作为货币为例，先让交易机制进入调查情节，再加入支付自身记忆的代价，继续推演到社会结构。这些选择让设定产生冲突与长期抉择，后续还需规划并用正文验证。
+候选要因果不同，说明收益、代价与风险。作者说换一组时切换方法，避免只改名字和数字。脑洞也用于卷纲方向与关键转折，选定方向保留理由。
+这次分享的两个重点到这里合在一起：没有预设题材也能由候选引导开书，形成方向后再靠账本、取材和独立审稿支撑长篇迭代。
+最终好不好看仍需读实际正文，审稿也可能漏判。作者保留方向与首章的决定权。</aside>
+      </section>
+
+      <section class="slide" data-title="现场演示：开书、换脑洞、看成果" aria-labelledby="title-8">
+        <p class="kicker">08 · 现场演示</p><h2 id="title-8">现场演示：开书、换脑洞、看成果</h2>
+        <div class="content">
+          <p class="subtitle">开场请求：“用 novel-ledger-v2 帮我开一本新书，还没想好题材。”</p>
+          <div class="cols">
+            <div class="col blue-line"><h3 class="blue">开书与脑洞</h3><div class="list"><p>查看 Skill 给出的候选方向</p><p>说“换一组”，比较新的构思</p><p>选择一个方向，继续补全设定</p></div></div>
+            <div class="col amber-line"><h3 class="amber">正文与账本</h3><div class="list"><p>打开已准备的小说项目</p><p>查看首章与全书阅读视图</p><p>对照一条事件与它的正文来源</p></div></div>
+          </div>
+          <p class="takeaway">看开书有多省准备，再看持续创作如何留下依据。</p></div>
+        <div class="source"><span>演示顺序 · 开书交互与已准备项目分段展示</span><span class="page">08</span></div>
+        <aside class="note">现场分两段：从没有题材的请求开始，展示候选与换组；再打开事先准备的项目，展示正文与可回查的事件。
+开场示例：“用 novel-ledger-v2 帮我开一本新书，还没想好题材。”不预填世界观或人物，让 Skill 按开书选择链给方向。展示 2～3 个因果不同的候选，接着说换一组，观察是否切换构思方法，而不只是改名字。
+选一个方向继续，让大家看到后续问题如何把看点、推进引擎、人物与规则逐步补全。首章试写需要完整创作约定，作者仍负责定调。
+正文部分使用预先准备的小说项目，打开 book.html 和首章，找一条带正文证据的事件，对照前态、后态与引文。明确这是已有项目，不把预先准备的成果说成刚刚生成。
+演示前检查 Skill 可用、项目路径正确、阅读视图可打开，并准备备用截图。未提前准备正文项目时先展示开书与候选，现场内容按实际结果说明。
+这一页是演示顺序，不代表已经执行了现场开书。最终回到两个重点：开书省准备，长篇过程有依据、有反馈。</aside>
       </section>
 
     </div></div>

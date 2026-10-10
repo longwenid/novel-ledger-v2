@@ -16,6 +16,10 @@ MARKER='她误信钥匙在东门'
 
 def preparation(project,task,work,verbose=False):
     p=work['payload']
+    if task['stage']=='context_scan' and 'pages' in p:
+        receipts=[preparation(project,task,{'payload':page},verbose) for page in p['pages']]
+        return {'coverage':[r['coverage'] for r in receipts], 'notes':[n for r in receipts for n in r['notes']],
+                'omission_reason':'合成工程夹具已覆盖所有交付页。'}
     if task['stage']=='context_scan':
         notes=[];text=(Path(project)/p['prose_path']).read_text(encoding='utf-8')
         if MARKER in text:
@@ -91,7 +95,7 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(digest(replay(self.db,'main')),before)
         self.submit(task,{'prose':'周行记得，她误信钥匙在东门。'})
         next_task,next_work,_=self.ready()
-        self.assertEqual(next_task['stage'],'facts')
+        self.assertEqual(next_task['stage'],'chapter_review')
         self.assertEqual(head(self.db,'main'),1)
 
     def test_reduction_coverage_and_source_chain(self):

@@ -1,10 +1,24 @@
 # 事实、阅读体验与完本审查
 
-## 事实阶段 facts
+候选修订任务的 `revision_context.chain` 包含全部未完成父子修订目标；最终 `revision_review` 的 `revision_intent` 必须对每项目标逐项核对并提供正文证据。局部文风修改不撤销父级结构扩充，旧卷末标记与传播范围结束也不代表目标完成。已写范围违背目标或过早收卷须 fix，超出传播范围的长期目标在有效设计与后续计划中继续承接，不要求本次历史修订写完未来全卷；歧义须报告；程序校验协议与证据，不从原因文本猜测硬章数配额。
+
+## 综合审稿 chapter_review
+
+每个章节批次派一个新的审稿 Worker，独立于执笔者，逐章完成下述事实与读者两类检查；旧任务、试章和历史修订仍逐章新派。批次先只读 task.json 的 first_read_files 全部正文，在 first_reads 逐章冻结四项体验后才解锁正式资料；无批次标记时先读取 first_read_path 正文，填写首读模板的 desire/obstacle/change/read_on_reason，执行信封的 `commands.first_read`；首读哈希绑定任务、输入与正文，落库后才交付 input.json 中的约定、计划、账本和人物材料；不读执笔自评。已首读的同版本正文不重复加载，核对疑点时补读必要语境。这是一个独立审稿者的两类检查；整批也不能称为每章分别由不同读者盲审。
+
+data={facts:{...},reader:{...}}，两类子回执分别给 verdict/checks/findings。facts 的 pass 另给 events/summary，reader 给 first_read；字段与事件去向见 [任务协议](protocol.md)。任一 fix 先返修，两类 pass 且事件和版本验证通过后才原子入库。
+
+正式回执必须原样保留冻结首读。按 `review_obligations` 中本类别的全部 ID 逐条判断：通用 language、每条 world_rules 和每条声线 traits；不可用“技术名词很多”“格式已过”或一句笼统总评替代。每条给正文证据，并在 challenge 选最可能违约的语段，解释为何成立或须返修。若 violated，同步对应检查为 fix，并给带该 obligation_id 的 quality/blocker finding。没有违约时说明具体作用和必要性；无法判断时补读或指出阻断疑点，不能猜 pass。
+
+这道关卡验证顺序、版本、覆盖和结论一致性，不能证明模型已理解正文，也不能把有引文的错误解释变为正确判断。不读旧审稿判词来套理由；通过结果仅表示该审稿者按协议提交了判断。共享文件和数据库不构成权限隔离，空历史由宿主核实。
+
+facts 与 reader 是同一回执中的两类检查，不单独调度。跨章复审的范围和方法见下文，会话分工见 [runtime](runtime.md)。
+
+## facts 子回执：事实检查
 
 通读当前正文，读取相关原文和当前账本；既检查计划结果，也发现计划之外的人物、承诺和资源变化。
 
-基础检查项为 `coverage / continuity / resources / knowledge / time / world_rules`；登记稳定事实或空间信息后增加 `stable_facts / spatial`，以本次 `payload.checks` 为准，每项给结论、理由和正文证据。`coverage` 特别核对“有没有已发生但漏登记的变化”；不相关项目明确给 `not_applicable` 理由，不能用一句套话覆盖所有项目。
+基础检查项为 `coverage / continuity / resources / knowledge / time / world_rules`；登记稳定事实或空间信息后增加 `stable_facts / spatial`，以本次 `payload.facts_checks` 为准，每项给结论、理由和正文证据。`coverage` 特别核对“有没有已发生但漏登记的变化”；不相关项目明确给 `not_applicable` 理由，不能用一句套话覆盖所有项目。
 
 涉及地点、移动、物品交接、感知或稳定外貌时，按 [空间核验](spatial-continuity.md) 比对原始证据和当前布局；检查跨句指代，不只响应自动地址提示。
 
@@ -12,11 +26,9 @@ pass 另需 events 与章摘要。引文精确支持结论，理由解释因果�
 
 profiled 模式增加 character_consistency，核对经历/认知/动机与成长因果；提取重要变化的 character_development 事件，见 [人物审查](characters.md)。
 
-## 读者阶段 reader
+## reader 子回执：读者检查
 
-先只读正文和本章任务，不读执笔自评或事实审稿结论；记 first_read，再 recall --contract 核对承诺。同会话须标 serial，不称盲审。
-
-first_read 包含 desire/obstacle/change/read_on_reason。检查项以 payload.checks 为准，reason 解释阅读影响，pass 的 findings=[]。
+按 `payload.reader_checks` 逐项检查，reason 解释阅读影响，pass 的 findings=[]；first_read 保留读取 input 前记录的首读体验。
 
 有篇幅目标时检查 substance：正文是否产生有效动作、信息、选择、关系或代价变化，是否以重复解释、标签或同义对话充数。不按字数达标或事件数量判质量。
 
@@ -32,7 +44,7 @@ profiled 模式增加 dialogue_identity：判断不同人物的关注点、关�
 
 定点缺陷给 repair_scope=local，整章因果问题用 chapter，见 [局部修订](repairs.md)。补丁后审完整新章，重核证据位置。
 
-每次修改重新两审，旧稿与回执留存。返工上限见 [核心规则](../SKILL.md)；偏好争议须给可检验的阅读影响。
+每次修改重新综合审稿，事实与读者两类检查都须通过，旧稿与回执留存。返工上限见 [核心规则](../SKILL.md)；偏好争议须给可检验的阅读影响。
 
 ## 十章、卷末及全书复核
 
@@ -41,6 +53,8 @@ profiled 模式增加 dialogue_identity：判断不同人物的关注点、关�
 跨章 pacing/repetition 对照正文与各章职责，核对无变化升级、无因果重置、余波遗漏和连续舒缓的推进。plans 供对照，以正文为准；举证重复机制，不按章末类别轮换验收。
 
 profiled 模式的整体复核增加 voice_evolution，检查声音同质化、无依据的人设突变、情绪重置和合理成长是否持续。存在 `style_anchor` 时 reader 审稿增加 voice_match：对照锚点 traits 与样例段，核对叙事口吻、句式节奏与用词域是否连续，必须有正文证据；声线漂移不是禁词问题，是换了叙述者。
+
+新复审的 `review_session` 允许一个新的独立审稿 Worker 在同次执行内处理各分块、综合判断与必要准备；同版本只复用自己已读的正文，各范围仍分别判断与举证，不把卷审 pass 自动当作修订审通过。
 
 `*_chunk` 提供全文、版本绑定与按章号索引的 plans，覆盖全部有效章节。正文按 prose_files 每章一个内容寻址文件交付，字节与任务 branch 的各章库存正文一致，证据坐标以对应章文件内容为准；含旧式分隔标题【第N章】的引文仅在剥离后唯一命中时可重定位。export/html 默认 active 分支，核对工作分支时显式 --branch。
 

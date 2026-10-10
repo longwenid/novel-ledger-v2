@@ -57,10 +57,10 @@ class PatchPipelineTests(unittest.TestCase):
     def task(self):return engine.next_task(self.db,self.path)
     def start(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task(),prose=self.text)
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['checks'],self.text)
+        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['facts_checks'],self.text)
         data['verdict']='fix';data['repair_scope']='local';data['checks'][0]['result']='fix'
         data['findings']=[{'severity':'quality','impact':'这段动作重复，削弱人物分工','goal':'让宋禾指出封条不同','evidence':ev(self.text,quote=self.target)}]
-        engine.submit(self.db,result(t,data));return self.task()
+        submit_review(self.db,t,data);return self.task()
     def patch(self,t,old=None,new='第40段：周行核对收据，宋禾指着重新粘过的封条，等他先开口。'):
         w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));old=old or self.target
         return result(t,{'base_hash':w['payload'].get('base_hash',digest(self.text)),'patches':[{'start':self.text.index(old),'old':old,'new':new}],'repair_note':'只改本段分工和动作'})
@@ -76,9 +76,9 @@ class PatchPipelineTests(unittest.TestCase):
         t=self.start();data=self.patch(t);engine.submit(self.db,data)
         self.assertTrue(engine.submit(self.db,data)['idempotent']);self.assertEqual(head(self.db,'main'),0)
         next_=self.task();w=json.loads(rpath(next_, 'input_path').read_text(encoding='utf-8'))
-        self.assertEqual(next_['stage'],'facts');self.assertEqual(pack_prose(self.path, w),self.text.replace(self.target,data['data']['patches'][0]['new']))
+        self.assertEqual(next_['stage'],'chapter_review');self.assertEqual(pack_prose(self.path, w),self.text.replace(self.target,data['data']['patches'][0]['new']))
         self.assertNotIn('facts_review',engine.load_draft(self.db,'main',1))
-        respond(self.db,self.path,next_);self.assertEqual(self.task()['stage'],'reader');respond(self.db,self.path,self.task())
+        respond(self.db,self.path,next_);self.assertEqual(head(self.db,'main'),1)
         self.assertTrue(engine.audit(self.db)['ok'])
         row=self.db.execute('SELECT * FROM tasks WHERE id=?',(t['task_id'],)).fetchone()
         self.assertEqual(read_slice(self.db,row,0,len(self.text))['text'],self.text) # Old source remains immutable.
@@ -107,7 +107,7 @@ class PatchPipelineTests(unittest.TestCase):
         # The author's voice is already part of both original review inputs.
         put(self.db,'style_anchor',{'source':'author','traits':['克制'],'sample':'先核凭证再开口。'})
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task(),prose=self.text)
-        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());engine.approve(self.db)
+        respond(self.db,self.path,self.task());engine.approve(self.db)
         with transaction(self.db):revision=engine.begin_revision(self.db,1,'复核后续连续性')
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
         self.assertEqual(t['stage'],'draft');self.assertEqual(w['payload']['base_hash'],digest(self.text))
@@ -119,9 +119,9 @@ class PatchPipelineTests(unittest.TestCase):
         self.assertEqual(head(self.db,revision['branch']),1)
     def test_candidate_revision_accepts_patch_with_original_branch_untouched(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task(),prose=self.text)
-        respond(self.db,self.path,self.task());respond(self.db,self.path,self.task());engine.approve(self.db)
+        respond(self.db,self.path,self.task());engine.approve(self.db)
         with transaction(self.db):revision=engine.begin_revision(self.db,1,'修正一段动作')
-        task=self.task();engine.submit(self.db,self.patch(task));respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
+        task=self.task();engine.submit(self.db,self.patch(task));respond(self.db,self.path,self.task())
         main=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',('main',)).fetchone()[0]
         new=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',(revision['branch'],)).fetchone()[0]
         self.assertEqual(main,self.text);self.assertNotEqual(new,self.text)

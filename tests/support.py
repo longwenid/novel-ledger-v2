@@ -7,8 +7,31 @@ from novel_core.store import initialize,connect,get,put,transaction,dump
 from novel_core import engine
 
 
+def fixture_first_read():
+    # Engineering fixture only: it makes no claim about literary quality.
+    return {'desire':'交收据','obstacle':'不信','change':'认可','read_on_reason':'后果'}
+
+
+def fixture_seal(task):
+    from novel_core import reviewflow
+    db=connect(task['project'])
+    try:
+        if not get(db,reviewflow.key(task['task_id'])):
+            receipt={'task_id':task['task_id'],'input_hash':task['input_hash'],
+                     'prose_hash':task['first_read_hash'],'first_read':fixture_first_read()}
+            reviewflow.seal(db,task['project'],task['task_id'],receipt)
+    finally:db.close()
+
+
+def fixture_obligations(work,category,prose,n):
+    return [{'id':row['id'],'result':'pass','reason':'工程夹具，不代表文学质量验证。',
+             'evidence':[ev(prose,n)],'challenge':{'disposition':'satisfied',
+             'reason':'合成正文无此工程约束冲突。','evidence':ev(prose,n)}}
+            for row in work.get('review_obligations',[]) if row['category']==category]
+
+
 def contract():
-    return {'context_mode':'legacy','title':'账本测试','reader_promise':'选择有代价的追索','protagonist_drive':'查清旧案','world_rules':['不能无代价制造资源'],
+    return {'chapter_batch_size':1,'context_mode':'legacy','review_chunk':1,'title':'账本测试','reader_promise':'选择有代价的追索','protagonist_drive':'查清旧案','world_rules':['不能无代价制造资源'],
             'ending':'主角交付证据','arcs':['由独行变为信任伙伴'],'volumes':[{'id':'v1','purpose':'追索并兑现'}], 'word_range':[1,100000],
             'entities':[{'id':'hero','name':'周行','kind':'person','aliases':['老周']},{'id':'ally','name':'宋禾','kind':'person'}],
             'initial_resources':[{'holder':'hero','asset':'cash','unit':'文','quantity':'100'}]}
@@ -21,6 +44,7 @@ def ev(text,n=1,quote=None):
 
 def rpath(task, key='input_path'):
     """Envelope routes are project-relative; join with the task's project base."""
+    if key=='input_path' and task.get('delivery_phase')=='first_read':fixture_seal(task)
     p=Path(task[key])
     return p if p.is_absolute() else Path(task['project'])/p
 
@@ -31,6 +55,12 @@ def pack_prose(base, pack, key='prose'):
 
 
 def result(task,data,**extra):
+    data=copy.deepcopy(data)
+    if task.get('stage')=='chapter_review' and isinstance(data,dict):
+        work=json.loads(rpath(task).read_text());prose=pack_prose(task['project'],work)
+        for category in ('facts','reader'):
+            if isinstance(data.get(category),dict):
+                data[category].setdefault('obligations',fixture_obligations(work,category,prose,task['chapter']))
     return {'schema':'novel-ledger-v2.result/1','task_id':task['task_id'],'input_hash':task['input_hash'],'data':data,**extra}
 
 
@@ -42,6 +72,28 @@ def review(checks,prose,n=1):
     return {'verdict':'pass','checks':[{'id':k,'result':'pass','reason':'这是测试审稿回执，不是文学质量证据。','evidence':[ev(prose,n)]} for k in checks], 'findings':[]}
 
 
+def combined_review(work,prose,n=1,events=None,summary='周行交付收据，宋禾确认。',**extra):
+    facts=review(work['payload']['facts_checks'],prose,n)
+    facts.update(events=events or [],summary=summary,**extra)
+    reader=review(work['payload']['reader_checks'],prose,n)
+    reader['first_read']=fixture_first_read()
+    return {'facts':facts,'reader':reader}
+
+
+def submit_review(db,task,data):
+    """Test convenience: customize one category in a complete combined receipt."""
+    if task['stage']=='chapter_review' and 'facts' not in data and 'reader' not in data:
+        work=json.loads(rpath(task).read_text(encoding='utf-8'))
+        prose=pack_prose(task['project'],work)
+        receipt=combined_review(work,prose,task['chapter'])
+        checks={check['id'] for check in data.get('checks',[])}
+        category='reader' if 'first_read' in data or checks & set(work['payload']['reader_checks']) else 'facts'
+        receipt[category]=data
+        receipt[category].setdefault('obligations',fixture_obligations(work,category,prose,task['chapter']))
+        data=receipt
+    return engine.submit(db,result(task,data))
+
+
 def respond(db,project,task,prose=None,events=None,ending=False):
     stage=task['stage']; n=task['chapter']
     pack=json.loads(rpath(task).read_text(encoding='utf-8'))
@@ -49,12 +101,9 @@ def respond(db,project,task,prose=None,events=None,ending=False):
     elif stage in ('draft','repair','redesign'):
         text=prose or f'第{n}章，周行把收据交给宋禾。她看了许久，终于按下指印。'
         data={'prose':text,'repair_note':'修正具体矛盾','design_change':'改为人物主动做决定'}
-    elif stage=='facts':
-        text=pack_prose(project,pack);data=review(pack['payload']['checks'],text,n)
-        data.update(events=events or [],summary='周行交付收据，宋禾确认。')
-    elif stage=='reader':
-        text=pack_prose(project,pack);data=review(pack['payload']['checks'],text,n)
-        data['first_read']={'desire':'交收据','obstacle':'不信','change':'认可','read_on_reason':'后果'}
+    elif stage=='chapter_review':
+        text=pack_prose(project,pack)
+        data=combined_review(pack,text,n,events)
     else:
         payload=pack['payload']; first=payload['first'];through=payload['through']
         source=db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(task['branch'],first)).fetchone()[0]

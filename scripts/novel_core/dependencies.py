@@ -115,7 +115,7 @@ def record_read(db,consumer_task,query,value,target_task=None):
             if item.get('kind')=='required_chapter' and isinstance(item.get('prose_hash'),str):
                 # Prose is delivered as a content-addressed file whose bytes
                 # equal the stored chapter prose; the hash certifies the body.
-                refs.append({'kind':'chapter_full','branch':query['branch'],'chapter':item['chapter'],
+                refs.append({'kind':'chapter_full','branch':item.get('branch',query['branch']),'chapter':item['chapter'],
                              'chapter_hash':item['hash'],'prose_hash':item['prose_hash']})
     watch=_watch(db,query,target_task)
     value_hash=digest(value)

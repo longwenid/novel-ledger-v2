@@ -18,7 +18,7 @@ def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot'):
+    for name in ('init','status','next','advance','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot','first-read','evidence','checkpoint'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
@@ -27,7 +27,17 @@ def parser():
         if name=='material':
             s.add_argument('--task',required=True);s.add_argument('--bundle',required=True);s.add_argument('--document',required=True);s.add_argument('--start',type=int,default=0)
         if name=='init': s.add_argument('--contract',required=True)
-        if name in ('submit','measure'): s.add_argument('--result',required=True)
+        if name in ('submit','measure','first-read'): s.add_argument('--result',required=True)
+        if name in ('status','submit'): s.add_argument('--brief',action='store_true')
+        if name=='submit':
+            s.add_argument('--continue-preparation',action='store_true');s.add_argument('--continue-chapter-batch',action='store_true')
+            s.add_argument('--continue-review',action='store_true')
+        if name in ('first-read','evidence'): s.add_argument('--task',required=True)
+        if name=='evidence':
+            s.add_argument('--quote',required=True);s.add_argument('--chapter',type=int);s.add_argument('--document')
+        if name=='checkpoint':
+            s.add_argument('--goal');s.add_argument('--writer-session');s.add_argument('--handled-chapter',type=int,action='append')
+        if name=='advance':s.add_argument('--after');s.add_argument('--through',type=int)
         if name=='recall':
             s.add_argument('--query',default='');s.add_argument('--entity');s.add_argument('--topic');s.add_argument('--branch')
             s.add_argument('--start',type=int,default=1);s.add_argument('--end',type=int);s.add_argument('--offset',type=int,default=0);s.add_argument('--limit',type=int,default=20)
@@ -44,7 +54,7 @@ def parser():
         if name=='html':
             s.add_argument('--out');s.add_argument('--branch')
         if name=='config':
-            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','published_through','style_anchor','review_chunk','chapter_target_han','character_views']);s.add_argument('--value')
+            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','preparation_policy','published_through','style_anchor','review_chunk','chapter_target_han','character_views','writer_batch','chapter_batch_size','batch_through']);s.add_argument('--value')
         if name=='candidate':
             s.add_argument('--task',required=True);s.add_argument('--start',type=int,default=0);s.add_argument('--end',type=int)
         if name=='character':
@@ -63,6 +73,11 @@ def parser():
 
 def dispatch(args):
     value=dispatch_raw(args)
+    if args.command in ('submit','approve','pause','resume','revise','complete','replan','pilot'):
+        from novel_core.taskio import checkpoint
+        db=connect(args.project)
+        try:checkpoint(db,args.project)
+        finally:db.close()
     if args.command not in ('recall','map','design','character','candidate','material','impact'):return value
     db=connect(args.project)
     try:
@@ -114,10 +129,35 @@ def dispatch_raw(args):
         return res
     db=connect(args.project)
     try:
+        if cmd in ('recall','map','design','character','candidate','material','impact') or (cmd=='config' and args.value is None):
+            from novel_core.reviewflow import require_material_access
+            require_material_access(db)
+        if cmd=='first-read':
+            from novel_core.reviewflow import seal
+            given=Path(args.result)
+            return seal(db,args.project,args.task,read(given if given.is_absolute() else Path(args.project).resolve()/given))
+        if cmd=='evidence':
+            from novel_core.taskio import locate
+            return locate(db,args.task,args.quote,args.chapter,args.document)
+        if cmd=='checkpoint':
+            from novel_core.taskio import checkpoint
+            return checkpoint(db,args.project,args.goal,args.writer_session,args.handled_chapter)
+        if cmd=='advance':
+            from novel_core.taskio import advance
+            if args.through is not None:
+                require(args.through>=0,'chapter_range','through 为授权目标章号；0 清除范围')
+                with transaction(db):
+                    require(not db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone() or args.through==get(db,'batch_through',0),
+                            'pending','不能在任务执行中更改授权章范围')
+                    from novel_core.batchflow import active
+                    batch=active(db)
+                    require(not batch or not args.through or args.through>=batch['last'],'chapter_range','已有批次超出新范围，须先处理已保存候选稿')
+                    put(db,'batch_through',args.through)
+            return advance(db,args.project,args.after)
         if cmd=='material':
             from novel_core.contextflow import material
             return material(db,args.task,args.bundle,args.document,args.start)
-        if cmd=='status': return engine.status(db)
+        if cmd=='status': return engine.status(db,brief=args.brief)
         if cmd=='dependencies':
             from novel_core.dependencies import inspect
             return inspect(db,args.task)
@@ -165,8 +205,40 @@ def dispatch_raw(args):
             return {'removed':len(removed),'directories':removed,'legacy_removed':swept['removed'],'legacy_kept':swept['kept']}
         if cmd=='submit':
             given=Path(args.result)
-            res = engine.submit(db,read(given if given.is_absolute() else Path(args.project).resolve()/given))
-            _auto_render_html(args.project, db)
+            receipt=engine.normalize_receipt(db,read(given if given.is_absolute() else Path(args.project).resolve()/given))
+            task=db.execute('SELECT * FROM tasks WHERE id=?',(receipt.get('task_id') if isinstance(receipt,dict) else None,)).fetchone()
+            require(sum((args.continue_preparation,args.continue_chapter_batch,args.continue_review))<=1,'chapter_session','连续处理选项只能选一个')
+            if args.continue_review:
+                from novel_core.reviewrun import PROTOCOL,allowed
+                work=json.loads(task['input']) if task else {}
+                require(task and work.get('review_session',{}).get('protocol')==PROTOCOL and allowed(work,work['review_session']),
+                        'review_session','连续复审只用于绑定同一独立审稿会话的任务')
+            if args.continue_chapter_batch:
+                from novel_core.batchflow import PROTOCOL
+                work=json.loads(task['input']) if task else {}
+                require(work.get('chapter_session',{}).get('protocol')==PROTOCOL,'chapter_session','只有绑定批次角色的任务可连续处理')
+            if args.continue_preparation:
+                from novel_core.contextflow import SESSION_PROTOCOL
+                work=json.loads(task['input']) if task else {}
+                require(task and task['stage'] in ('context_scan','context_reduce')
+                        and work.get('preparation_session',{}).get('protocol')==SESSION_PROTOCOL
+                        and work['preparation_session'].get('bundle')==work['payload'].get('bundle'),
+                        'preparation_session','连续提交只用于绑定同一批次的材料任务')
+            res = engine.submit(db,receipt,brief=args.brief)
+            if not task or (task['stage'] not in ('context_scan','context_reduce') and json.loads(task['input']).get('chapter_session',{}).get('role')!='writer'
+                            and (not task['stage'].endswith('_review') or task['stage']=='chapter_review')):
+                _auto_render_html(args.project, db)
+            if args.continue_chapter_batch:
+                from novel_core.batchflow import continue_session
+                return continue_session(db,args.project,task)
+            if args.continue_review:
+                from novel_core.reviewrun import continue_session
+                return continue_session(db,args.project,task)
+            if args.continue_preparation:
+                from novel_core.taskio import continue_preparation
+                return continue_preparation(db,args.project,task)
+            if args.brief:
+                return {**engine.status(db,brief=True), **{k:res[k] for k in ('accepted','idempotent','task_id','review_recheck_required','fast_committed','chapter') if k in res}}
             return res
         if cmd=='measure':
             from novel_core.budget import han_count
@@ -211,13 +283,18 @@ def dispatch_raw(args):
         if cmd=='complete':
             with transaction(db): return engine.complete_inner(db)
         if cmd=='doctor':
-            from novel_core.contextflow import usage, SCAN_UNITS, DIRECT_UNITS, REDUCE_INPUTS
+            from novel_core.contextflow import usage, SCAN_UNITS, DIRECT_UNITS, EXACT_UNITS, REDUCE_INPUTS, SESSION_PROTOCOL
+            from novel_core.reviewflow import PROTOCOL
             import platform, shutil
             report={'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
-                    'context_mode':get(db,'context_mode','bounded'),'character_limits_enforced':False,
-                    'material_structure':{'scan_units_per_page':SCAN_UNITS,'direct_material_units':DIRECT_UNITS,
+                    'context_mode':get(db,'context_mode','bounded'),'preparation_policy':get(db,'preparation_policy','adaptive'),'character_limits_enforced':False,
+                    'review_protocol':PROTOCOL,'review_verification':'order_and_evidence_coverage_only',
+                    'chapter_batch_size':get(db,'chapter_batch_size',5),'chapter_batch_protocol':'chapter-batch/1',
+                    'candidate_ledger':'drafts_only; canonical_commit_requires_independent_review',
+                    'material_structure':{'scan_units_per_page':SCAN_UNITS,'scan_layout':'multi-document/1','direct_material_units':DIRECT_UNITS,
+                                          'exact_record_units':EXACT_UNITS,'preparation_session':SESSION_PROTOCOL,
                                           'reduction_inputs_per_group':REDUCE_INPUTS,'limits_enforced':False},
-                    'explosion_control':'task isolation, topic selection, complete semantic-unit pages, source-bound preparation, load-once, actual host handoff',
+                    'explosion_control':'exact source records, same-bundle preparation, task isolation, topic selection, complete semantic-unit pages, source-bound preparation, load-once, actual host handoff',
                     'context_window_verified':False,'usage':usage(db),'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'host_must_verify_fresh_review_workers','independent_review_verified':False}
             litter=engine.sweep_legacy(args.project,apply=False)['removed']
             if litter: report['legacy_litter']=litter
@@ -242,7 +319,8 @@ def dispatch_raw(args):
                 from novel_core.ledger import replay
                 from novel_core.characters import resolve
                 require(args.entity or get(db,'context_mode','bounded')=='legacy','retrieval_scope','bounded 状态补读须带 --entity；用 --topic 进一步限定认知，不能整包倾倒全书状态')
-                state=replay(db,branch)
+                from novel_core.batchflow import state_for_task
+                state=state_for_task(db,branch,args.task)
                 if not args.entity:return state
                 eid=resolve(state,args.entity)
                 view={'branch':branch,'entity':eid,'clock':state['clock'],'entities':{eid:state['entities'][eid]},
@@ -258,6 +336,14 @@ def dispatch_raw(args):
                 return view
             if args.chapter is not None:
                 row=db.execute('SELECT number,hash,prose,data FROM chapters WHERE branch=? AND number=?',(branch,args.chapter)).fetchone()
+                if row is None and args.task:
+                    from novel_core.batchflow import active
+                    owner=db.execute("SELECT input,chapter,branch FROM tasks WHERE id=? AND state='pending'",(args.task,)).fetchone()
+                    if owner and owner['branch']==branch and json.loads(owner['input']).get('chapter_session',{}).get('role')=='writer' and args.chapter<owner['chapter']:
+                        candidate=engine.load_draft(db,branch,args.chapter)
+                        if candidate:
+                            return {'branch':branch,'number':args.chapter,'hash':__import__('hashlib').sha256(candidate['prose'].encode()).hexdigest(),
+                                    'prose':candidate['prose'],'summary':candidate.get('candidate_summary',''),'candidate':True}
                 require(row,'chapter','章节不存在')
                 # Reading a chapter means reading prose; the event/receipt ledger in
                 # `data` is several times the prose and stays reachable via recall.
@@ -284,8 +370,8 @@ def dispatch_raw(args):
                     return engine.status(db)
                 return engine.begin_revision(db,args.from_chapter,args.reason,style_only=args.style_only)
         if cmd=='config':
-            if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full')}
-            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key)}
+            if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'preparation_policy':get(db,'preparation_policy','adaptive'),'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full'),'writer_batch':get(db,'writer_batch',10),'chapter_batch_size':get(db,'chapter_batch_size',5),'batch_through':get(db,'batch_through',0)}
+            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key,{'preparation_policy':'adaptive','writer_batch':10,'chapter_batch_size':5,'batch_through':0}.get(args.key))}
             if args.key=='style_anchor':
                 try:
                     from novel_core.store import validate_style
@@ -293,12 +379,20 @@ def dispatch_raw(args):
                 except ValueError:
                     require(False,'config','style_anchor 需为合法 JSON 对象 {"traits":[...],"sample":"..."}')
             else:
-                value=args.value if args.key in ('context_mode','character_views') else int(args.value)
+                value=args.value if args.key in ('context_mode','character_views','preparation_policy') else int(args.value)
             if args.key=='review_chunk':require(1<=value<=5,'config','review_chunk 为 1~5 章的分段审稿粒度;覆盖范围不变,只调成本')
+            if args.key=='chapter_batch_size':require(1<=value<=5,'config','chapter_batch_size 为 1~5；1 为逐章审稿')
+            if args.key=='batch_through':
+                require(value>=0,'config','batch_through 为授权终止章号；0 清除范围')
+                from novel_core.batchflow import active
+                batch=active(db)
+                require(not batch or not value or value>=batch['last'],'chapter_range','已有候选批次超出新范围，须先处理已保存正文')
+            if args.key=='writer_batch':require(1<=value<=10,'config','writer_batch 为 1~10 章的执笔会话上限，不改变逐章提交')
             if args.key=='chapter_target_han':
                 from novel_core.budget import validate_chapter_target
                 validate_chapter_target(value)
             if args.key=='context_mode': require(value in ('bounded','legacy'),'config','context_mode 为 bounded/legacy；legacy 仅用于复现旧协议')
+            if args.key=='preparation_policy':require(value in ('adaptive','semantic'),'config','preparation_policy 为 adaptive/semantic；semantic 保留全量模型提炼用于对照')
             if args.key=='character_views':require(value in ('full','scoped'),'config','character_views 为 full/scoped')
             if args.key=='published_through': require(get(db,'published_through',0)<=value<=engine.head(db,get(db,'active_branch')),'config','发布边界只能前进至已验收章号')
             with transaction(db):
@@ -306,9 +400,6 @@ def dispatch_raw(args):
                 if args.key in ('chapter_target_han','character_views'):
                     contract=get(db,'contract');contract[args.key]=value;put(db,'contract',contract)
                 else:put(db,args.key,value)
-                if args.key.startswith('context_') and args.key!='context_mode':
-                    from novel_core.contextflow import limits
-                    limits(db)
                 log(db,'config',{'key':args.key,'value':value})
             result={args.key:value}
             if args.key.startswith('context_') and args.key!='context_mode':result['deprecated']='字符配置仅兼容旧项目，不形成内容或读取限制；分页按完整语义单元。'

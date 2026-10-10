@@ -1,7 +1,7 @@
 """sweep_legacy: retired driver/engine artifacts are swept; author and live files survive."""
 from pathlib import Path
 
-from tests.support import contract
+from support import contract
 
 from novel_core import engine
 from novel_core.store import initialize

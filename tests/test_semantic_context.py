@@ -19,14 +19,14 @@ class SemanticContextTests(unittest.TestCase):
     def tearDown(self):self.db.close();self.tmp.cleanup()
 
     def base(self,count=160):
-        return {'schema':'novel-ledger-v2.pack/1','branch':'main','chapter':2,'stage':'facts',
+        return {'schema':'novel-ledger-v2.pack/1','branch':'main','chapter':2,'stage':'chapter_review',
                 'contract':get(self.db,'contract'),'plan':{'goal':'保留不同来源的前置条件'},
                 'payload':{'prose':'本章完整正文。'},
                 'state':{'knowledge':{f'hero:k{i}':{'claim':f'完整条件{i}',
                           'evidence':{'chapter':1,'start':i,'quote':f'源句{i}'}} for i in range(count)}}}
 
     def pending(self,work):
-        self.db.execute("INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES ('read','main','facts',2,'fixture',?,'pending')",(dump(work),))
+        self.db.execute("INSERT INTO tasks(id,branch,stage,chapter,input_hash,input,state) VALUES ('read','main','chapter_review',2,'fixture',?,'pending')",(dump(work),))
 
     def scan_reply(self,work):
         p=work['payload'];unit=p['units'][0]
@@ -50,7 +50,7 @@ class SemanticContextTests(unittest.TestCase):
         base['payload']['prose']='完整正文。'*20000
         base['state']['knowledge']['hero:k0']['claim']='必要条件。'*20000
         work=contextflow.fit(self.db,base)
-        self.assertEqual(work['stage'],'facts')
+        self.assertEqual(work['stage'],'chapter_review')
         self.assertEqual(work['payload']['prose'],base['payload']['prose'])
         self.assertEqual(work['contract'],base['contract'])
         self.assertEqual(work['state'],base['state'])
@@ -111,7 +111,7 @@ class SemanticContextTests(unittest.TestCase):
         self.assertEqual(json.loads(source['text']),next(iter(before.values())))
         for index in range(100):
             work=contextflow.fit(self.db,base)
-            if work['stage']=='facts':break
+            if work['stage']=='chapter_review':break
             contextflow.accept(self.db,work,{'cannot_compact':True,'reason':'保留全部来源与结论。'},f'retain{index}')
         else:self.fail('Structural reduction did not finish')
         self.assertEqual(sum(len(n['notes']) for n in work['context_notes']),10)

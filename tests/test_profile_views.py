@@ -189,7 +189,7 @@ class ProfileViewTests(unittest.TestCase):
         self.assertEqual(view['profiles']['hero']['data'],record['data'])
     def test_fact_and_index_tasks_read_full_material(self):
         record=self.prepare();self.index(record)
-        for stage in ('facts','character_index','character_plan'):
+        for stage in ('chapter_review','character_index','character_plan'):
             with self.subTest(stage=stage):self.assertEqual(self.view(stage=stage)['profiles']['hero']['data'],record['data'])
     def test_historical_section_item_read_returns_complete_version_and_source(self):
         record=self.prepare(30);first=characters.profile_read(self.db,'main','hero','biography.experiences',17,1)
