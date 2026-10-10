@@ -1,4 +1,5 @@
 # 长历史材料组织
+何时读：材料准备任务（context_scan/reduce）、疑点补读与缓存失效边界。
 
 context_mode=bounded 表示按任务和来源组织材料。context_chars/context_output_chars/context_retrieval_chars/context_overhead_chars 不再限制内容；字符统计只观察重复读取。
 

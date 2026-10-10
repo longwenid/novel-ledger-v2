@@ -1,8 +1,13 @@
 # 任务与结果协议 v1
+何时读：需要任务信封、结果回执、事件 op、连续会话或错误码的精确定义时。
 
 ## 任务信封与输入交付
 
-next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input_hash/project/input_path/output_path。input_path/output_path/brief_path 是 PROJECT 相对 posix 路径，读写时与 project 拼接。输入存于数据库，重复 next 重建同一输入，修改文件不能改变任务。input.json 是多行缩进的交付视图（真源在库，逐行读取即可）；context_scan 单页按 payload.prose_path/prose_hash，跨文档批次按 payload.pages 中各项 prose_path/prose_hash 文件交付，evidence.start 为文档绝对字符位置，不是页内位置。正文按内容寻址文件交付：包内 `prose_path`/`prose_hash`（chapter_review/repair 的 payload）与 `prose_files`（分段审稿每章一项 {chapter,prose_path,prose_hash}）、`selected[].prose_path`（依赖章原文），文件在 `work/prose/<哈希前16>.txt`，字节与账本库存正文逐字一致，`{chapter,start,quote}` 坐标以文件内容为准；文件缺失或损坏时重新 next 即可重建（task 信封的 prose_files 字段列出已写文件）。
+next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input_hash/project/input_path/output_path。input_path/output_path/brief_path 是 PROJECT 相对 posix 路径，读写时与 project 拼接。输入存于数据库，重复 next 重建同一输入，修改文件不能改变任务。
+
+input.json 是多行缩进的交付视图（真源在库，逐行读取即可）；context_scan 单页按 payload.prose_path/prose_hash，跨文档批次按 payload.pages 中各项 prose_path/prose_hash 文件交付，evidence.start 为文档绝对字符位置，不是页内位置。
+
+正文按内容寻址文件交付：包内 `prose_path`/`prose_hash`（chapter_review/repair 的 payload）与 `prose_files`（分段审稿每章一项 {chapter,prose_path,prose_hash}）、`selected[].prose_path`（依赖章原文），文件在 `work/prose/<哈希前16>.txt`，字节与账本库存正文逐字一致，`{chapter,start,quote}` 坐标以文件内容为准；文件缺失或损坏时重新 next 即可重建（task 信封的 prose_files 字段列出已写文件）。
 
 `context_delivery.mode=exact-records/1` 表示所列字段逐字保留冻结来源，`sources` 只是版本目录。完整记录仍在对应字段，需实际阅读核对；与模型准备结论及质量通过无关。路径选择与中断恢复见 [上下文协议](context-runtime.md)。
 
@@ -25,7 +30,11 @@ submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为�
 
 ## 主控交接（advance）
 
-默认主控入口 `advance` 返回 `schema=novel-ledger-v2.handoff/1`、`action`、短 `status`，以及 `task` 信封或 `transition`；同时写恢复点。启动或恢复可不带 after；宿主 Worker 结束后带 `--after 任务ID`，引擎在派工事务内核对该任务已真实提交且为当前分支最近完成任务。未提交返回 `wait_for_submit`，未知 ID 报 `handoff_task`，过时、取消或异分支返回 `resync`，均不生成下一任务；重复有效交接恢复同一 pending。`task_ready` 表示可以按信封派工，其他 action 包括 `await_author`、`revision_promoted`、`paused`、`completed`。主控负责确认宿主执行已结束；交接不代替首章作者批准或审稿校验。
+默认主控入口 `advance` 返回 `schema=novel-ledger-v2.handoff/1`、`action`、短 `status`，以及 `task` 信封或 `transition`；同时写恢复点。
+
+启动或恢复可不带 after；宿主 Worker 结束后带 `--after 任务ID`，引擎在派工事务内核对该任务已真实提交且为当前分支最近完成任务。未提交返回 `wait_for_submit`，未知 ID 报 `handoff_task`，过时、取消或异分支返回 `resync`，均不生成下一任务；重复有效交接恢复同一 pending。
+
+`task_ready` 表示可以按信封派工，其他 action 包括 `await_author`、`revision_promoted`、`paused`、`completed`。主控负责确认宿主执行已结束；交接不代替首章作者批准或审稿校验。
 
 `status.recovery` 区分工作稿与正式稿位置，并保留未完成修订链；target 不等于已完成卷次，传播范围结束时停留在 revision_boundary。见 [运行与恢复](runtime.md)。
 
@@ -53,7 +62,9 @@ submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为�
 
 任务文件在 `work/ch<四位章号>/<阶段>-<ID前8位>/`。派新任务时已完成目录只留最近 3 个，tidy 可清空；真源仍为 SQLite。
 
-项目根目录只应出现引擎产物：`contract.json`、`novel.sqlite3`（及其 -wal/-shm）、`book.html` 与 `work/`；`export/`、`evaluation/` 按需生成，作者自建目录（如旧稿归档）互不干扰。旧版驱动或引擎遗留的散落文件（`novel.db`、`st*.err`、`tmp_context_*.json`、`workch*.json`、`work/next_task.json`、`work/plans_data.json`、`work/vol_data.json`、`work/_tmp_*`、`_review_tmp/`）由 `tidy` 一并清扫：只按精确名单与模式匹配，绝不触碰上述引擎与作者文件；`novel.db` 非空时保留并在返回的 `legacy_kept` 中上报。`doctor` 以 `legacy_litter` 字段报告未清理的遗留物。
+项目根目录只应出现引擎产物：`contract.json`、`novel.sqlite3`（及其 -wal/-shm）、`book.html` 与 `work/`；`export/`、`evaluation/` 按需生成，作者自建目录（如旧稿归档）互不干扰。
+
+旧版驱动或引擎遗留的散落文件（`novel.db`、`st*.err`、`tmp_context_*.json`、`workch*.json`、`work/next_task.json`、`work/plans_data.json`、`work/vol_data.json`、`work/_tmp_*`、`_review_tmp/`）由 `tidy` 一并清扫：只按精确名单与模式匹配，绝不触碰上述引擎与作者文件；`novel.db` 非空时保留并在返回的 `legacy_kept` 中上报。`doctor` 以 `legacy_litter` 字段报告未清理的遗留物。
 
 ## 各阶段 data
 
@@ -61,11 +72,19 @@ submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为�
 
 统一使用 chapter_review，writer_batch 默认 10，review_chunk 默认 3。`config --key writer_batch --value N`（N 为 1～10）只能在没有 pending 时修改。writer_batch 是主控复用执笔会话的章数上限，单次任务仍提交一章。本版本数据库 schema=novel-ledger-v2/2，不兼容旧项目，不提供分阶段审稿模式或迁移。
 
-新 chapter_review 冻结 `review_protocol=sealed-review/1`。信封初始 `delivery_phase=first_read`，只有 first_read_path/first_read_hash、首读模板和命令；input_path 尚未生成。审稿者只读当前正文，将 first_read_template_path 填写到 first_read_result_path，执行 commands.first_read。首读文件为 `{task_id,input_hash,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}`，四项均非空文字。成功响应的 `task` 直接提供 input_path/template_path/event_contract_path，无须再次读取 task.json；正式 reader.first_read 原样保留。相同首读重试幂等，改写被拒；版本变化取新任务，不改旧记录。未带该协议的已有 pending 沿用冻结格式。同版本正文不重复加载。input.payload.facts_checks 与 reader_checks 分别列出两类必查项，事实输入同时提供账本、人物、连续性及前序事件。
+新 chapter_review 冻结 `review_protocol=sealed-review/1`。信封初始 `delivery_phase=first_read`，只有 first_read_path/first_read_hash、首读模板和命令；input_path 尚未生成。审稿者只读当前正文，将 first_read_template_path 填写到 first_read_result_path，执行 commands.first_read。
+
+首读文件为 `{task_id,input_hash,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}`，四项均非空文字。成功响应的 `task` 直接提供 input_path/template_path/event_contract_path，无须再次读取 task.json；正式 reader.first_read 原样保留。相同首读重试幂等，改写被拒；版本变化取新任务，不改旧记录。
+
+未带该协议的已有 pending 沿用冻结格式。同版本正文不重复加载。input.payload.facts_checks 与 reader_checks 分别列出两类必查项，事实输入同时提供账本、人物、连续性及前序事件。
 
 批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；后续章任务直接绑定同一批次已冻结的对应首读，仍校验当前 input/prose 版本、作者约定、证据与前态。前章返修/正式事件改变或依赖失效时，新批次重新首读。
 
-结果 data={facts:{verdict,checks,findings,events,summary,...},reader:{verdict,checks,findings,first_read,...}}，两类子回执格式见下面审稿字段。新协议另要求 facts/reader.obligations 恰好覆盖 review_obligations 对应类别，每项为 `{id,result,reason,evidence:[正文引用],challenge:{disposition:satisfied|violated,reason,evidence:正文引用}}`。violated 必须 result=fix、对应检查 fix、类别 verdict=fix，并有标记 obligation_id 的 quality/blocker finding；模板没有预填 pass。facts 的 pass 必须提供 events/summary，reader 必须提供 first_read；两类分别逐项验证。两类 pass 且事件语义校验通过时在同一事务入库；任一 fix 合并两类发现进入一次返修，不写事实账本。缺失检查、无效证据或过期输入拒绝提交，原 pending 与候选稿保留。正文变化后重新执行两类检查。
+结果 data={facts:{verdict,checks,findings,events,summary,...},reader:{verdict,checks,findings,first_read,...}}，两类子回执格式见下面审稿字段。
+
+新协议另要求 facts/reader.obligations 恰好覆盖 review_obligations 对应类别，每项为 `{id,result,reason,evidence:[正文引用],challenge:{disposition:satisfied|violated,reason,evidence:正文引用}}`。violated 必须 result=fix、对应检查 fix、类别 verdict=fix，并有标记 obligation_id 的 quality/blocker finding；模板没有预填 pass。
+
+facts 的 pass 必须提供 events/summary，reader 必须提供 first_read；两类分别逐项验证。两类 pass 且事件语义校验通过时在同一事务入库；任一 fix 合并两类发现进入一次返修，不写事实账本。缺失检查、无效证据或过期输入拒绝提交，原 pending 与候选稿保留。正文变化后重新执行两类检查。
 
 正式审稿输入的 review_context_hash 冻结作者约定、声线、范围计划、正文/事件前缀及相关人物与 world/本卷设计版本，本地只计算签名，不向模型重复倾倒整套依赖。提交时依赖已变化报 review_context_stale；重新 next 在旧租约结束后派有效任务，旧结果不能改信封冒用。无关未来卷、人物和计划不使旧范围无故失效。旧无签名 pending 保持原 ID/input/hash，回执可接受并标记需补派核验，不临时补签当已验证。相关档案缺历史归因时保守复审；失效的旧卷在终章集中补核。
 
@@ -97,7 +116,9 @@ character_views=scoped 的新档案先派 character_index，data={"indexes":[...
 
 卷 ID 来自约定，不倒序，不在未标卷末处跨卷。
 
-分层模式一批不能跨卷；另需 reader_experience、character_choices 和含 intent/conflict/turn 的 scenes，可选 expression_space。章计划还须 `sequence_refs`（推进本卷 sequence 的节拍序号数组，序号合法）与 `ending_shape`（“类别:说明”的收束形态，类别受控，可连续使用）。设计版本由控制器绑定，不能用提案覆盖已知事实。开新卷的 volume_plan 工作包含前卷设计交接面（prior_volume：climax/handoff/ending_setup）——设计是意图，carries_in 须按账本实际写成的前卷对齐。profiled 模式 scenes 可选 speakers（省略为 present 中人物），需要各发言者 dialogue_intents，静默场景明确空数组。
+分层模式一批不能跨卷；另需 reader_experience、character_choices 和含 intent/conflict/turn 的 scenes，可选 expression_space。章计划还须 `sequence_refs`（推进本卷 sequence 的节拍序号数组，序号合法）与 `ending_shape`（“类别:说明”的收束形态，类别受控，可连续使用）。设计版本由控制器绑定，不能用提案覆盖已知事实。
+
+开新卷的 volume_plan 工作包含前卷设计交接面（prior_volume：climax/handoff/ending_setup）——设计是意图，carries_in 须按账本实际写成的前卷对齐。profiled 模式 scenes 可选 speakers（省略为 present 中人物），需要各发言者 dialogue_intents，静默场景明确空数组。
 
 可选 `execution / rhythm / scene.dramatization` 的完整结构见 [章纲展开与节奏](design-and-brief.md)。有声明则验证完整类型与场景引用；这些字段未声明时不执行对应结构检查。`contract.chapter_target_han` 为可选通常目标，`execution.target_han` 覆盖本章目标，均为正整数汉字数，不设置正文上限。低于通常目标的刻意短章需事先 `target_reason`。使用的计数范围为完整 prose（含标题）中的汉字，标点、数字及英文不计入。
 
@@ -105,7 +126,11 @@ character_views=scoped 的新档案先派 character_index，data={"indexes":[...
 
 ### draft / repair / redesign
 
-首稿及 redesign 的 `prose` 为完整正文字符串，可含章标题。repair 和已有原稿的候选修订 draft 可提交 `base_hash/patches/repair_note`，避免整章重复；确无需改文的候选 draft 可用 `base_hash/reuse_original:true`。三种正文方式不能混用，完整字段与扩大上下文见 [局部修订](repairs.md)。整章 prose 模式的 repair 另需 `repair_note`，必须实际修改原稿；redesign 另需 `design_change` 说明设计改变，必须实际改文。仅 redesign 可选 `plan_update`，draft/repair 提交此字段会报错；它仅更新当前章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm，不能变更约定、卷序、终局标记或自行下调已定目标。
+首稿及 redesign 的 `prose` 为完整正文字符串，可含章标题。repair 和已有原稿的候选修订 draft 可提交 `base_hash/patches/repair_note`，避免整章重复；确无需改文的候选 draft 可用 `base_hash/reuse_original:true`。三种正文方式不能混用，完整字段与扩大上下文见 [局部修订](repairs.md)。
+
+整章 prose 模式的 repair 另需 `repair_note`，必须实际修改原稿；redesign 另需 `design_change` 说明设计改变，必须实际改文。
+
+仅 redesign 可选 `plan_update`，draft/repair 提交此字段会报错；它仅更新当前章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm，不能变更约定、卷序、终局标记或自行下调已定目标。
 
 reuse_original 仅省去正文重传；免逐章审稿还要求本章与全部前文版本未变、原 facts/reader verdict 为 pass、两次已验证审稿的持久上下文签名与当前依赖一致、正文哈希有效且事件可复算。作者约定、声线、相关人物/设计或事实依赖变化时进入正常审稿。没有完整历史读依赖集合，事件前值通过不足以证明后文语义安全。
 
@@ -134,7 +159,10 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 
 发现格式：`{"severity":"quality", "impact":"读者受何影响", "goal":"修订要实现什么", "evidence":{...}}`。severity 为 blocker/quality/note，前两者必须给 fix。检查项 fix 也必须有具体发现，不能只有判词。
 
-- facts 的 pass 另需 `events: []`、`summary`（完整覆盖本章核心变化，不设字符限额）。没有变化可空事件，但必须核对计划外重要变化。**返修/重设计后的 facts 复审**：payload 会附 `prior_events`（改动前该章完整已登记事件，包含自动续算项，空快照也有效）与 `prior_events_note`。仅全部本章证据的完整句语境未变时可进入 auto_carry；引文存留但否定或来源语境已变、或引用历史章原因证据时，须在 prior_dispositions 逐项明确 kept/dropped/replaced。kept 需要原样重报事件并核对新语境；dropped/replaced 说明实际变化。也可用该声明覆盖 auto_carry，不能重复提交自动续算项。历史原因证据保留所属章坐标。机械语境相等仍不证明跨句语义相同，须独立核验。综合审稿提供 auto_carry，前序事件去向必须按本次冻结输入核验。
+- facts 的 pass 另需 `events: []`、`summary`（完整覆盖本章核心变化，不设字符限额）。没有变化可空事件，但必须核对计划外重要变化。
+- **返修/重设计后的 facts 复审**：payload 会附 `prior_events`（改动前该章完整已登记事件，包含自动续算项，空快照也有效）与 `prior_events_note`。
+- 仅全部本章证据的完整句语境未变时可进入 auto_carry；引文存留但否定或来源语境已变、或引用历史章原因证据时，须在 prior_dispositions 逐项明确 kept/dropped/replaced。kept 需要原样重报事件并核对新语境；dropped/replaced 说明实际变化。也可用该声明覆盖 auto_carry，不能重复提交自动续算项。
+- 历史原因证据保留所属章坐标。机械语境相等仍不证明跨句语义相同，须独立核验。综合审稿提供 auto_carry，前序事件去向必须按本次冻结输入核验。
 - reader 另需 `first_read`，四个非空字段 `desire / obstacle / change / read_on_reason`，以实际首读感受及其依据为准，不设字符限额。先读正文再补读约定。
 - 整体 `batch/volume/revision/book` 复核的 pass 另需 `memory: {"text":"保留必要因果、分歧与未决压力的提炼，不限篇幅", "sources":[证据对象]}`；逐章 `_chunk` 不需要 memory。memory 也接受纯字符串形式（来源以分段审稿回执为准）。
 - 整体复核接收覆盖范围和此前分段审稿的实际结论与来源；超大材料先经扫描归并。正文疑点用定向分页的 recall 补读或 context_more 获取；证据必须来自本次范围内当前有效正文。覆盖哈希不是审读内容。

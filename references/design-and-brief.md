@@ -1,4 +1,5 @@
 # 分层设计与场景任务书
+何时读：world_plan/volume_plan/plan 回执字段与 writer_brief、execution/rhythm。
 
 planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 writer_brief。
 

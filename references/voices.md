@@ -1,4 +1,5 @@
 # 声线与文风锚点
+何时读：写 style_anchor.traits，执笔与审稿核验 language/voice_match。
 
 选定或混合声线后，将规则写入 style_anchor.traits，voice 记名称，sample 提供试章参照。
 

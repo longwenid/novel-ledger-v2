@@ -1,4 +1,5 @@
 # 人物档案、声线与成长
+何时读：profiled 人物档案、character_plan/character_index 回执与人物审稿检查项。
 
 ## 三层人物数据结构
 
