@@ -1,27 +1,12 @@
 # 任务与结果协议 v1
 
-## 不变信封
+## 任务信封与输入交付
 
 next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input_hash/project/input_path/output_path。input_path/output_path/brief_path 是 PROJECT 相对 posix 路径，读写时与 project 拼接。输入存于数据库，重复 next 重建同一输入，修改文件不能改变任务。input.json 是多行缩进的交付视图（真源在库，逐行读取即可）；context_scan 单页按 payload.prose_path/prose_hash，跨文档批次按 payload.pages 中各项 prose_path/prose_hash 文件交付，evidence.start 为文档绝对字符位置，不是页内位置。正文按内容寻址文件交付：包内 `prose_path`/`prose_hash`（chapter_review/repair 的 payload）与 `prose_files`（分段审稿每章一项 {chapter,prose_path,prose_hash}）、`selected[].prose_path`（依赖章原文），文件在 `work/prose/<哈希前16>.txt`，字节与账本库存正文逐字一致，`{chapter,start,quote}` 坐标以文件内容为准；文件缺失或损坏时重新 next 即可重建（task 信封的 prose_files 字段列出已写文件）。
 
-默认主控入口 `advance` 返回 `schema=novel-ledger-v2.handoff/1`、`action`、短 `status`，以及 `task` 信封或 `transition`；同时写恢复点。启动或恢复可不带 after；宿主 Worker 结束后带 `--after 任务ID`，引擎在派工事务内核对该任务已真实提交且为当前分支最近完成任务。未提交返回 `wait_for_submit`，未知 ID 报 `handoff_task`，过时、取消或异分支返回 `resync`，均不生成下一任务；重复有效交接恢复同一 pending。`task_ready` 表示可以按信封派工，其他 action 包括 `await_author`、`revision_promoted`、`paused`、`completed`。主控负责确认宿主执行已结束；交接不代替首章作者批准或审稿校验。
-
-新材料信封的 `preparation_session={protocol:"same-bundle/1",bundle:ID}` 允许生成的提交命令使用 `--continue-preparation`。正常提交校验成功后响应 `schema=novel-ledger-v2.preparation/1`、`accepted=true`、刚提交的 `task_id` 与 `bundle`；`action=continue_preparation` 时含同批次下一 `task`，否则含结束状态或 transition。重复提交恢复同一 pending，过时回调不新派工；该入口不创建执笔、审稿、另一批次或执行作者边界。无标记的旧材料任务和正式任务拒绝此选项。主控用最后已提交 ID 交接。材料提交不刷新整本 HTML。
-
 `context_delivery.mode=exact-records/1` 表示所列字段逐字保留冻结来源，`sources` 只是版本目录。完整记录仍在对应字段，需实际阅读核对；与模型准备结论及质量通过无关。路径选择与中断恢复见 [上下文协议](context-runtime.md)。
 
-`chapter_session={protocol:"chapter-batch/1",batch:ID,role:writer|reviewer,first:N,last:M}` 绑定最多五章与单一角色。生成的 submit 命令带 `--continue-chapter-batch`；与其他连续处理选项互斥，只允许标记任务。响应 `schema=novel-ledger-v2.chapter-batch/1`，含刚提交 task_id/session；`continue_chapter_batch` 含同批同角色下一 task，`chapter_batch_done` 交回主控，其他 action 依暂停/过时回调边界处理。重复提交恢复同一 pending，不跨批次、角色或作者边界。主控 after 使用最后提交的 ID。
-
-批内写作/返修的 data 在原契约外必含 `summary`、`candidate_events` 数组和非空具体 `self_check`。临时事件按正式事件的坐标与前态校验，但仅保存 drafts；input 的 state/continuity 已叠加前章候选变化，`candidate_ledger` 标明未审前缀与来源。带当前 `--task` 的 recall --state / --chapter 可读候选前态与前章原文，不带 task 时始终读正式账本；普通事件检索仍查正式事件，候选事件完整列在 candidate_ledger。审稿者不读取执笔自评或候选事件提案，独立登记正式事件。
-
-批内 input.json 为冻结输入的拆分交付视图：`shared_materials` 各字段含 `{path,hash,encoding:"json"}`，完整值在 PROJECT/work/shared/<哈希>.json。哈希按标准 dump 的逻辑值计算，真源仍在任务 input；恢复会重建缺失或损坏文件。guide 也可从该目录取得。首次接手须阅读全部所需来源，同一 Worker 只复用已读且未变的版本；新 Worker 不沿用别人的已读判断。
-
-批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；后续章任务直接绑定同一批次已冻结的对应首读，仍校验当前 input/prose 版本、作者约定、证据与前态。前章返修/正式事件改变或依赖失效时，新批次重新首读。
-
-
-任务文件在 `work/ch<四位章号>/<阶段>-<ID前8位>/`。派新任务时已完成目录只留最近 3 个，tidy 可清空；真源仍为 SQLite。
-
-项目根目录只应出现引擎产物：`contract.json`、`novel.sqlite3`（及其 -wal/-shm）、`book.html` 与 `work/`；`export/`、`evaluation/` 按需生成，作者自建目录（如旧稿归档）互不干扰。旧版驱动或引擎遗留的散落文件（`novel.db`、`st*.err`、`tmp_context_*.json`、`workch*.json`、`work/next_task.json`、`work/plans_data.json`、`work/vol_data.json`、`work/_tmp_*`、`_review_tmp/`）由 `tidy` 一并清扫：只按精确名单与模式匹配，绝不触碰上述引擎与作者文件；`novel.db` 非空时保留并在返回的 `legacy_kept` 中上报。`doctor` 以 `legacy_litter` 字段报告未清理的遗留物。
+## 结果格式与提交
 
 结果写入 output_path（建议多行缩进书写，便于主控与作者复查；submit 只程序化解析，格式不影响提交）：
 
@@ -38,6 +23,38 @@ next 返回 schema=novel-ledger-v2.task/1 及 task_id/stage/chapter/branch/input
 
 submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为最近任务的裸回执重试。只归一结构，不改内容，input_version 与重放哈希照常校验；显式错误 task_id 且无 pending 时报 task 错误。只使用本任务指定路径。
 
+## 主控交接（advance）
+
+默认主控入口 `advance` 返回 `schema=novel-ledger-v2.handoff/1`、`action`、短 `status`，以及 `task` 信封或 `transition`；同时写恢复点。启动或恢复可不带 after；宿主 Worker 结束后带 `--after 任务ID`，引擎在派工事务内核对该任务已真实提交且为当前分支最近完成任务。未提交返回 `wait_for_submit`，未知 ID 报 `handoff_task`，过时、取消或异分支返回 `resync`，均不生成下一任务；重复有效交接恢复同一 pending。`task_ready` 表示可以按信封派工，其他 action 包括 `await_author`、`revision_promoted`、`paused`、`completed`。主控负责确认宿主执行已结束；交接不代替首章作者批准或审稿校验。
+
+`status.recovery` 区分工作稿与正式稿位置，并保留未完成修订链；target 不等于已完成卷次，传播范围结束时停留在 revision_boundary。见 [运行与恢复](runtime.md)。
+
+## 连续会话
+
+### 章节批次 chapter_session
+
+`chapter_session={protocol:"chapter-batch/1",batch:ID,role:writer|reviewer,first:N,last:M}` 绑定最多五章与单一角色。生成的 submit 命令带 `--continue-chapter-batch`；与其他连续处理选项互斥，只允许标记任务。响应 `schema=novel-ledger-v2.chapter-batch/1`，含刚提交 task_id/session；`continue_chapter_batch` 含同批同角色下一 task，`chapter_batch_done` 交回主控，其他 action 依暂停/过时回调边界处理。重复提交恢复同一 pending，不跨批次、角色或作者边界。主控 after 使用最后提交的 ID。
+
+批内写作/返修的 data 在原契约外必含 `summary`、`candidate_events` 数组和非空具体 `self_check`。临时事件按正式事件的坐标与前态校验，但仅保存 drafts；input 的 state/continuity 已叠加前章候选变化，`candidate_ledger` 标明未审前缀与来源。带当前 `--task` 的 recall --state / --chapter 可读候选前态与前章原文，不带 task 时始终读正式账本；普通事件检索仍查正式事件，候选事件完整列在 candidate_ledger。审稿者不读取执笔自评或候选事件提案，独立登记正式事件。
+
+批内 input.json 为冻结输入的拆分交付视图：`shared_materials` 各字段含 `{path,hash,encoding:"json"}`，完整值在 PROJECT/work/shared/<哈希>.json。哈希按标准 dump 的逻辑值计算，真源仍在任务 input；恢复会重建缺失或损坏文件。guide 也可从该目录取得。首次接手须阅读全部所需来源，同一 Worker 只复用已读且未变的版本；新 Worker 不沿用别人的已读判断。
+
+### 材料准备 preparation_session
+
+新材料信封的 `preparation_session={protocol:"same-bundle/1",bundle:ID}` 允许生成的提交命令使用 `--continue-preparation`。正常提交校验成功后响应 `schema=novel-ledger-v2.preparation/1`、`accepted=true`、刚提交的 `task_id` 与 `bundle`；`action=continue_preparation` 时含同批次下一 `task`，否则含结束状态或 transition。重复提交恢复同一 pending，过时回调不新派工；该入口不创建执笔、审稿、另一批次或执行作者边界。无标记的旧材料任务和正式任务拒绝此选项。主控用最后已提交 ID 交接。材料提交不刷新整本 HTML。
+
+### 跨章复审 review_session
+
+`review_session={protocol:"review-run/1",id:依赖指纹,branch,through,role:"reviewer"}` 绑定正式版本下的独立跨章复审。submit 的 `--continue-review` 与章节/材料连续选项互斥，只有带该标记的 batch/volume/revision/book 复审和继承标记的准备任务可使用。响应 `schema=novel-ledger-v2.review-run/1` 含 accepted/task_id/session；continue_review 提供下一 task，review_done 或 paused/resync 等交回主控。最后提交 ID 用于主控 advance --after。旧信封不补写标记或改变 input_hash。
+
+同一会话可跨复审 scope，不能跨正式版本或进入执笔/合并/完本。各 scope 保留独立检查、正文证据、版本签名和综合 memory；不自动复用文学 pass。新复审输入的公共字段也可用 shared_materials 引用完整 JSON；恢复重建缺失或损坏文件。Worker 仅复用本次自己已读且哈希未变的资料，新 Worker 完整读取必要来源。材料准备继承 review_session 时，生成命令以 continue-review 为准，不使用 continue-preparation 跳过正式复审交接。
+
+## 文件与目录
+
+任务文件在 `work/ch<四位章号>/<阶段>-<ID前8位>/`。派新任务时已完成目录只留最近 3 个，tidy 可清空；真源仍为 SQLite。
+
+项目根目录只应出现引擎产物：`contract.json`、`novel.sqlite3`（及其 -wal/-shm）、`book.html` 与 `work/`；`export/`、`evaluation/` 按需生成，作者自建目录（如旧稿归档）互不干扰。旧版驱动或引擎遗留的散落文件（`novel.db`、`st*.err`、`tmp_context_*.json`、`workch*.json`、`work/next_task.json`、`work/plans_data.json`、`work/vol_data.json`、`work/_tmp_*`、`_review_tmp/`）由 `tidy` 一并清扫：只按精确名单与模式匹配，绝不触碰上述引擎与作者文件；`novel.db` 非空时保留并在返回的 `legacy_kept` 中上报。`doctor` 以 `legacy_litter` 字段报告未清理的遗留物。
+
 ## 各阶段 data
 
 ### 运行模式与综合审稿 chapter_review
@@ -46,7 +63,13 @@ submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为�
 
 新 chapter_review 冻结 `review_protocol=sealed-review/1`。信封初始 `delivery_phase=first_read`，只有 first_read_path/first_read_hash、首读模板和命令；input_path 尚未生成。审稿者只读当前正文，将 first_read_template_path 填写到 first_read_result_path，执行 commands.first_read。首读文件为 `{task_id,input_hash,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}`，四项均非空文字。成功响应的 `task` 直接提供 input_path/template_path/event_contract_path，无须再次读取 task.json；正式 reader.first_read 原样保留。相同首读重试幂等，改写被拒；版本变化取新任务，不改旧记录。未带该协议的已有 pending 沿用冻结格式。同版本正文不重复加载。input.payload.facts_checks 与 reader_checks 分别列出两类必查项，事实输入同时提供账本、人物、连续性及前序事件。
 
+批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；后续章任务直接绑定同一批次已冻结的对应首读，仍校验当前 input/prose 版本、作者约定、证据与前态。前章返修/正式事件改变或依赖失效时，新批次重新首读。
+
 结果 data={facts:{verdict,checks,findings,events,summary,...},reader:{verdict,checks,findings,first_read,...}}，两类子回执格式见下面审稿字段。新协议另要求 facts/reader.obligations 恰好覆盖 review_obligations 对应类别，每项为 `{id,result,reason,evidence:[正文引用],challenge:{disposition:satisfied|violated,reason,evidence:正文引用}}`。violated 必须 result=fix、对应检查 fix、类别 verdict=fix，并有标记 obligation_id 的 quality/blocker finding；模板没有预填 pass。facts 的 pass 必须提供 events/summary，reader 必须提供 first_read；两类分别逐项验证。两类 pass 且事件语义校验通过时在同一事务入库；任一 fix 合并两类发现进入一次返修，不写事实账本。缺失检查、无效证据或过期输入拒绝提交，原 pending 与候选稿保留。正文变化后重新执行两类检查。
+
+正式审稿输入的 review_context_hash 冻结作者约定、声线、范围计划、正文/事件前缀及相关人物与 world/本卷设计版本，本地只计算签名，不向模型重复倾倒整套依赖。提交时依赖已变化报 review_context_stale；重新 next 在旧租约结束后派有效任务，旧结果不能改信封冒用。无关未来卷、人物和计划不使旧范围无故失效。旧无签名 pending 保持原 ID/input/hash，回执可接受并标记需补派核验，不临时补签当已验证。相关档案缺历史归因时保守复审；失效的旧卷在终章集中补核。
+
+### 卷预算
 
 volumes[].word_budget 为正整数汉字数，全填或全不填，合计落入 word_range；新书需分配，未配置预算仍审查实际展开。volume_budget 为只读建议：baseline_han/written_han/deviation_han/suggested_remaining_han/closed 分别为参考量、验收量、实际减参考、建议余量和关闭状态。按工作分支统计，草稿不计；单卷偏差不是配额，全书区间仍有效。
 
@@ -84,6 +107,8 @@ character_views=scoped 的新档案先派 character_index，data={"indexes":[...
 
 首稿及 redesign 的 `prose` 为完整正文字符串，可含章标题。repair 和已有原稿的候选修订 draft 可提交 `base_hash/patches/repair_note`，避免整章重复；确无需改文的候选 draft 可用 `base_hash/reuse_original:true`。三种正文方式不能混用，完整字段与扩大上下文见 [局部修订](repairs.md)。整章 prose 模式的 repair 另需 `repair_note`，必须实际修改原稿；redesign 另需 `design_change` 说明设计改变，必须实际改文。仅 redesign 可选 `plan_update`，draft/repair 提交此字段会报错；它仅更新当前章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm，不能变更约定、卷序、终局标记或自行下调已定目标。
 
+reuse_original 仅省去正文重传；免逐章审稿还要求本章与全部前文版本未变、原 facts/reader verdict 为 pass、两次已验证审稿的持久上下文签名与当前依赖一致、正文哈希有效且事件可复算。作者约定、声线、相关人物/设计或事实依赖变化时进入正常审稿。没有完整历史读依赖集合，事件前值通过不足以证明后文语义安全。
+
 submit 自动校验全文或补丁合成稿的实际篇幅。measure --result <output_path> 为可选只读预检，返回 chapter_length。不足稿保留并派 repair，两轮仍不足转 redesign，再失败报告阻碍；超过目标不截断。综合审稿与入库记录实际 chapter_length；有目标增 substance，有 rhythm 增 pacing，均须正文证据。
 
 ### facts / reader 子回执与跨章复审的共同字段
@@ -114,6 +139,7 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 - 整体 `batch/volume/revision/book` 复核的 pass 另需 `memory: {"text":"保留必要因果、分歧与未决压力的提炼，不限篇幅", "sources":[证据对象]}`；逐章 `_chunk` 不需要 memory。memory 也接受纯字符串形式（来源以分段审稿回执为准）。
 - 整体复核接收覆盖范围和此前分段审稿的实际结论与来源；超大材料先经扫描归并。正文疑点用定向分页的 recall 补读或 context_more 获取；证据必须来自本次范围内当前有效正文。覆盖哈希不是审读内容。
 - 整体 volume_review（scope=volume，不含 volume_chunk）须查 volume_development，材料在同名 payload；要求见 [卷末复核](editorial.md)。旧 pending 保持原检查项和哈希。
+- 新整体 revision_review（scope=revision）的 revision_intent 需要正文证据，核对全部父子目标；旧 pending 保留冻结检查项。新修订任务携带 revision_context；旧冻结任务不改变 input_hash，在首读门禁之后由信封补交修订目标。
 
 ## 事件
 
@@ -134,25 +160,23 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 
 所有变化以前态为条件，同一章多个事件按顺序应用。state 的 `before:null` 表示尚未登记此属性，不代表历史上一定不存在。复活（alive false→true）额外要求 exception_reason。不认识的事件类型被拒绝。
 
-## 按需扩展与成本观察
+clock 可用 thread 维护独立支线日历；主线时间不因支线事件自动变化。场景 time_hint 的 D+N 以计划签发时的时钟为锚；有 day_span 的章结算须满足 `[锚+N_min,锚+N_max+1]`。这些是日程和引用校验，时间词存在不能证明推算语义正确。
+
+## 按需扩展
 
 空间事件 `anchor/anchor_assert/anchor_change/place/place_change/link/link_change/placement/move/perceive`、address_responses 和地图查询见 [空间协议](spatial-continuity.md)。人物小传、character_development、对白意图见 [人物协议](characters.md)。event_spine、sequence_refs、设计失效与重规划见 [分层设计](design-and-brief.md)。chapter_review 按 payload.facts_checks/reader_checks 返回检查项，跨章复审按 payload.checks，不写死列表。
+
+dependencies 原文只注入执笔，其他阶段给摘要/哈希和 recall 指引。chapter_review 首读只读正文，之后读取含完整计划的输入包，不读执笔自评。补丁与正文复用见 [repairs](repairs.md)。
+
+## 配置与用量观测
+
+contract.style 可设 voice/traits/sample/sample_close；无锚点时 approve 从试章取开头/结尾。config 可更新 style_anchor；reader 增 voice_match，整体查 repetition。traits 与 language 遵守 [声线规则](voices.md)，不改写样本引文。
+
+status/doctor.usage 返回 task_input_chars、accepted_receipt_chars、attempted_receipt_chars、preparation_input_chars、supplemental_read_chars、tasks。accepted 只计已接受结果，attempted 包括可识别任务的失败提交；不含系统提示、聊天或协议外读写。billed_tokens/session_handoffs 无宿主证据为 null，字符不换算费用。doctor 不验证宿主隔离或窗口，见 [runtime](runtime.md)。
 
 ## 修订影响查询
 
 `impact --fact <坐标>` 返回某事实坐标被断言过的全部已提交章节与事件摘要，以及其后仍列出该实体的未来章计划。坐标即 `recall --state` 显示的键：state 事实 `entity:key`、knowledge `entity:topic`、关系 `from>to:key`（任一端查询都命中）。历史修订前先查影响面；查无记录不等于没有牵连。
-
-clock 可用 thread 维护独立支线日历；主线时间不因支线事件自动变化。场景 time_hint 的 D+N 以计划签发时的时钟为锚；有 day_span 的章结算须满足 `[锚+N_min,锚+N_max+1]`。这些是日程和引用校验，时间词存在不能证明推算语义正确。
-
-contract.style 可设 voice/traits/sample/sample_close；无锚点时 approve 从试章取开头/结尾。config 可更新 style_anchor；reader 增 voice_match，整体查 repetition。traits 与 language 遵守 [声线规则](voices.md)，不改写样本引文。
-
-dependencies 原文只注入执笔，其他阶段给摘要/哈希和 recall 指引。chapter_review 首读只读正文，之后读取含完整计划的输入包，不读执笔自评。补丁与正文复用见 [repairs](repairs.md)。
-
-reuse_original 仅省去正文重传；免逐章审稿还要求本章与全部前文版本未变、原 facts/reader verdict 为 pass、两次已验证审稿的持久上下文签名与当前依赖一致、正文哈希有效且事件可复算。作者约定、声线、相关人物/设计或事实依赖变化时进入正常审稿。没有完整历史读依赖集合，事件前值通过不足以证明后文语义安全。
-
-正式审稿输入的 review_context_hash 冻结作者约定、声线、范围计划、正文/事件前缀及相关人物与 world/本卷设计版本，本地只计算签名，不向模型重复倾倒整套依赖。提交时依赖已变化报 review_context_stale；重新 next 在旧租约结束后派有效任务，旧结果不能改信封冒用。无关未来卷、人物和计划不使旧范围无故失效。旧无签名 pending 保持原 ID/input/hash，回执可接受并标记需补派核验，不临时补签当已验证。相关档案缺历史归因时保守复审；失效的旧卷在终章集中补核。
-
-status/doctor.usage 返回 task_input_chars、accepted_receipt_chars、attempted_receipt_chars、preparation_input_chars、supplemental_read_chars、tasks。accepted 只计已接受结果，attempted 包括可识别任务的失败提交；不含系统提示、聊天或协议外读写。billed_tokens/session_handoffs 无宿主证据为 null，字符不换算费用。doctor 不验证宿主隔离或窗口，见 [runtime](runtime.md)。
 
 ## 错误与修正
 
@@ -161,9 +185,3 @@ CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧�
 `stale_task/input_version/lease` 表示结果不再属于有效任务，不能把旧结果的 ID/哈希改成新任务后重交；重新读任务和材料。无权限改约、核心设定无法调和、修订次数耗尽时，报告具体阻碍与可选处理。
 
 核心项 coverage/continuity/read_on/character/change/language/substance/causality/character_arcs/payoffs/pacing/ending/length/core_promises/stable_facts/spatial/character_consistency/voice_evolution 不能使用 not_applicable 绕过证据；其余项不适用也必须提供非空字符串理由。
-
-`status.recovery` 区分工作稿与正式稿位置，并保留未完成修订链；target 不等于已完成卷次，传播范围结束时停留在 revision_boundary。见 [运行与恢复](runtime.md)。新修订任务携带 revision_context；旧冻结任务不改变 input_hash，在首读门禁之后由信封补交修订目标。新整体 revision_review（scope=revision）的 revision_intent 需要正文证据，核对全部父子目标；旧 pending 保留冻结检查项。
-
-`review_session={protocol:"review-run/1",id:依赖指纹,branch,through,role:"reviewer"}` 绑定正式版本下的独立跨章复审。submit 的 `--continue-review` 与章节/材料连续选项互斥，只有带该标记的 batch/volume/revision/book 复审和继承标记的准备任务可使用。响应 `schema=novel-ledger-v2.review-run/1` 含 accepted/task_id/session；continue_review 提供下一 task，review_done 或 paused/resync 等交回主控。最后提交 ID 用于主控 advance --after。旧信封不补写标记或改变 input_hash。
-
-同一会话可跨复审 scope，不能跨正式版本或进入执笔/合并/完本。各 scope 保留独立检查、正文证据、版本签名和综合 memory；不自动复用文学 pass。新复审输入的公共字段也可用 shared_materials 引用完整 JSON；恢复重建缺失或损坏文件。Worker 仅复用本次自己已读且哈希未变的资料，新 Worker 完整读取必要来源。材料准备继承 review_session 时，生成命令以 continue-review 为准，不使用 continue-preparation 跳过正式复审交接。
