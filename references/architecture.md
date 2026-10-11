@@ -80,6 +80,16 @@
 
 `html` 与 `export` 共用 `novel._output_target`：**先解析路径、判定归属，再写盘**，两个入口都回传 `inside_project`。写到项目外是正当的导出需求，因此允许，但必须（a）在写盘之前决定，（b）显式回传。绝不允许「写出外部文件、再抛错」这种半完成的副作用。
 
+### 交付成本
+
+Worker 的成本 ≈ **读入量 × 轮数**，而每一轮都要重发全部历史。所以同一条信息交付两次，代价不是两倍，而是「两倍 × 剩余轮数」。三条判据：
+
+1. **同一批信息只交付一次**。派生视图要自报身份：[brief.md](repairs.md) 是 `input.json` 里任务书的渲染版，内容全部来自后者。实测 Worker 两个都读，各 27.3K——同一批信息付两遍，且第二遍在后续每一轮继续重发。
+2. **大块材料按需交付，必读且小的内联**。`design_context`、`character_context` 按内容寻址外置；`contract`、`style_anchor`、`state`、`guide` 留在信封里。判据是「Worker 会不会跳过它」，不是「它大不大」——定点返修会跳过完整世界设计，却不会跳过前态。
+3. **信封要落进宿主单次读取上限**。超过时限，Worker 会把同一个文件读成两三页，每页都留在上下文里被反复重发。实测 412K 字符的重复读入（占全部 read 的 28%），累积上下文放大 10–59 倍。压缩省的不是字节，是「读不完」。
+
+这三条由 `tests/test_architecture_layers.py::DeliveryCostTests` 锁定。
+
 
 ### P5 机械事实单源（Single Source for Mechanical Facts）
 

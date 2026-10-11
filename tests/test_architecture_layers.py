@@ -16,8 +16,8 @@ CORE = ROOT / 'scripts' / 'novel_core'
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from novel_core import access, atoms, batchflow, engine, transitions
-from novel_core.store import Error, VERSION, connect, initialize
+from novel_core import access, atoms, batchflow, engine, taskio, transitions
+from novel_core.store import Error, VERSION, connect, initialize, put
 from support import contract
 
 # 架构契约第四节的分层。编号越小越底层；模块级 import 只能指向 <= 自己的层。
@@ -390,6 +390,91 @@ class DomainReadTests(unittest.TestCase):
     def test_ancestor_walk_terminates_at_the_root(self):
         self.assertIsNone(atoms.parent_of(self.db, 'main'))
         self.assertIsNone(atoms.ancestor_chapter_prose(self.db, 'main', 99))
+
+
+class DeliveryCostTests(unittest.TestCase):
+    """交付成本契约：同一批信息不得付两遍，大块材料不得强制内联。
+
+    实测来源：一份真实会话的 16 个 Worker，one-shot 信封 60–72K，超过宿主单次
+    读取上限，Worker 分页读完且每页被后续每一轮重发；同一个文件被反复读入
+    412K 字符（占全部 read 的 28%）。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name)
+        initialize(self.path, contract())
+        self.db = connect(self.path)
+        self.addCleanup(self.db.close)
+
+    @staticmethod
+    def blob(count, tag):
+        line = '北岸旧城的水道决定运送证据的路线，不能在推进剧情时凭空消失。'
+        return {f'{tag}{i}': line * 22 for i in range(count)}
+
+    def envelope(self, stage, **extra):
+        work = {'branch': 'main', 'stage': stage, 'chapter': 9,
+                'payload': {'prose_path': 'work/prose/x.txt', 'prose_hash': 'x'},
+                'contract': self.blob(4, 'c'), 'style_anchor': self.blob(1, 's')}
+        work.update(extra)
+        return work
+
+    def test_a_oneshot_envelope_addresses_its_block_materials(self):
+        """design_context / character_context 超过阈值时必须外置。
+
+        它们合占实测信封的 44–51%，内联就把信封顶到单次读取上限之上。
+        """
+        work = self.envelope('draft', design_context=self.blob(24, 'd'),
+                             character_context={'profiles': self.blob(10, 'p')})
+        view = taskio.shared_delivery(str(self.path), work)
+        self.assertNotIn('design_context', view, '大块设计材料不得内联')
+        self.assertNotIn('character_context', view, '大块人物档案不得内联')
+        addressed = view['shared_materials']
+        self.assertIn('design_context', addressed)
+        self.assertIn('character_context', addressed)
+        self.assertTrue((self.path / addressed['design_context']['path']).is_file())
+
+    def test_required_readings_stay_inline(self):
+        """契约、声线锚点与前态是 Worker 不能漏看且不大的读数，必须留在信封里。"""
+        work = self.envelope('draft', state={'facts': self.blob(6, 'f')},
+                             design_context=self.blob(24, 'd'))
+        view = taskio.shared_delivery(str(self.path), work)
+        for field in ('contract', 'style_anchor', 'state'):
+            self.assertIn(field, view, f'{field} 应保持内联')
+
+    def test_an_untouched_envelope_is_unchanged(self):
+        """没有外置发生时不得添加空清单，否则每个冻结任务都会多出字段。"""
+        work = self.envelope('draft', state={'facts': {'hero:mood': '警觉'}})
+        view = taskio.shared_delivery(str(self.path), work)
+        self.assertNotIn('shared_materials', view)
+        self.assertNotIn('shared_read_rule', view)
+
+    def test_brief_declares_itself_a_substitute_view(self):
+        """brief.md 的内容全部派生自 input.json；文件本身要说明这一点，
+        否则 Worker 会把同一批信息付两遍（实测两处各 27.3K）。"""
+        from novel_core.design import render_brief
+        work = self.envelope('draft', writer_brief={
+            'schema': 'novel-ledger-v2.writer-brief/2', 'chapter': 9,
+            'dramatic_task': {'reader_experience': 'x', 'goal': 'g', 'conflict': 'c',
+                              'necessary_change': 'n', 'ending_shape': 'e', 'character_choices': []},
+            'scene_proposals': [], 'expression_space': [], 'instruction': 'i'})
+        rendered = render_brief(work)
+        self.assertIn('替代视图', rendered)
+        self.assertIn('不要读本文件', rendered)
+
+    def test_handoff_keeps_a_batch_writer_alive(self):
+        """批次进行中时，交接边界必须要求复用同一执笔者，而不是等它结束。"""
+        branch = 'main'
+        put(self.db, 'chapter_batch:' + branch,
+            {'id': 'b' * 32, 'branch': branch, 'first': 1, 'last': 3, 'phase': 'writing'})
+        boundary = taskio._handoff_boundary(self.db, branch)
+        self.assertIn('同一执笔者', boundary)
+        self.assertIn('不要新建', boundary)
+
+    def test_handoff_without_a_batch_keeps_the_wait_wording(self):
+        boundary = taskio._handoff_boundary(self.db, 'main')
+        self.assertIn('等待宿主 Worker 结束', boundary)
 
 
 class DegradationTests(unittest.TestCase):
