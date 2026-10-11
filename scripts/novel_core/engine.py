@@ -1304,7 +1304,23 @@ def submit(db, result, brief=False, preview=False):
                 # reviewer happened to quote evidence.
                 start=transitions.revision_start(data['findings'],through)
                 limit=get(db,'revision_chain_limit',2)
-                if get(db,'revision_failures',0)>=2 or _chain_depth(db)+1>limit:
+                revision=db.execute('SELECT * FROM branches WHERE id=?',(branch,)).fetchone()
+                if revision['status']=='candidate' and transitions.outside_revision_scope(data['findings'],revision['start']):
+                    # A revision branch answers only "did THIS change propagate
+                    # correctly". Findings citing chapters before revision_start
+                    # are pre-existing defects the review read on its way past,
+                    # and chaining them drags the finished revision backwards
+                    # (measured: one glyph in an unrevised chapter re-drafted
+                    # nine chapters of work). Whether to fix them is the
+                    # author's call, so record and pause instead of guessing.
+                    put(db,'status','paused')
+                    put(db,'pause_reason',{'code':'outside_revision_scope',
+                        'branch':branch,'revision_range':[revision['start'],revision['through']],
+                        'findings':data['findings'],
+                        'directive':'这些发现指向本次修订范围之前的章：它们不是本次修订引入的，'
+                                    '不在这里建链（否则会把已完成的修订整条拉回重做）。'
+                                    '向作者报告后结束会话，由作者决定是否另开一次以该章为起点的修订。'})
+                elif get(db,'revision_failures',0)>=2 or _chain_depth(db)+1>limit:
                     from .recovery import revision_context
                     put(db,'status','paused')
                     put(db,'pause_reason',{'code':'revision_exhausted','findings':data['findings'],

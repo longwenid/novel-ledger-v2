@@ -84,3 +84,29 @@ def revision_start(findings, through):
     if routed:
         return min(routed)
     return through
+
+
+def outside_revision_scope(findings, revision_start):
+    """True when every fix-demanding finding points before the revision began.
+
+    A revision branch answers one question: did THIS change propagate
+    correctly? Findings that cite chapters before `revision_start` are not
+    consequences of the change — they are pre-existing defects the review
+    happened to read on its way through. Building a chain for them drags the
+    completed revision backwards: measured, one mixed-script character in an
+    unrevised chapter re-drafted nine chapters' worth of work and left the
+    real revision range unreviewed.
+
+    Whether such findings should be fixed is the author's call, not the
+    engine's, so this returns a fact rather than a decision.
+    """
+    repairing = [f for f in findings
+                 if isinstance(f, dict) and f.get('severity') in ('blocker', 'quality')]
+    if not repairing:
+        return False
+    for finding in repairing:
+        ref = finding.get('evidence')
+        chapter = ref.get('chapter') if isinstance(ref, dict) else None
+        if type(chapter) is not int or chapter >= revision_start:
+            return False
+    return True

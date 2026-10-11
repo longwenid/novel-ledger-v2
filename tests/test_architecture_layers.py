@@ -270,6 +270,30 @@ class RevisionStartTests(unittest.TestCase):
              {'severity': 'quality', 'repair_route': 'revise', 'evidence': 'nope'}],
             through=7), 7)
 
+    def test_findings_before_the_revision_are_out_of_scope(self):
+        """修订分支只回答「这次改动是否传播正确」。范围之前的发现是复审路过
+        时读到的既有缺陷——为它们建链会把已完成的修订整条拉回（实测：未修订
+        章里的一个异体字重做了九章的活，而真正的修订范围一次没被复核）。"""
+        self.assertTrue(transitions.outside_revision_scope(
+            [self.finding(severity='quality', evidence={'chapter': 2})], revision_start=5))
+        self.assertTrue(transitions.outside_revision_scope(
+            [self.finding(severity='blocker', evidence={'chapter': 1}),
+             self.finding(severity='quality', evidence={'chapter': 4})], revision_start=5))
+
+    def test_a_finding_inside_the_revision_is_in_scope(self):
+        self.assertFalse(transitions.outside_revision_scope(
+            [self.finding(severity='quality', evidence={'chapter': 5})], revision_start=5))
+        self.assertFalse(transitions.outside_revision_scope(
+            [self.finding(severity='quality', evidence={'chapter': 2}),
+             self.finding(severity='quality', evidence={'chapter': 7})], revision_start=5))
+
+    def test_notes_and_malformed_entries_are_never_out_of_scope(self):
+        self.assertFalse(transitions.outside_revision_scope(
+            [self.finding(severity='note', evidence={'chapter': 1})], revision_start=5))
+        self.assertFalse(transitions.outside_revision_scope(
+            [self.finding(severity='quality', evidence='nope')], revision_start=5))
+        self.assertFalse(transitions.outside_revision_scope([], revision_start=5))
+
 
 class ReviewSeverityTests(unittest.TestCase):
     """轻微缺陷必须有非返工的出口。
