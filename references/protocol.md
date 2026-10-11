@@ -236,4 +236,4 @@ CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧�
 
 `revision_exhausted` 暂停属于需作者决策的阻碍：主控报告链摘要与全部发现后结束会话，不得 resume 重派同一整体复审，也不得再开新链。嵌套候选被 `revise --discard` 丢弃时回到父候选续作，而非直接跳回正式分支。
 
-核心项 coverage/continuity/read_on/character/change/language/substance/causality/character_arcs/payoffs/pacing/ending/length/core_promises/stable_facts/spatial/character_consistency/voice_evolution 不能使用 not_applicable 绕过证据；其余项不适用也必须提供非空字符串理由。
+核心项 coverage/continuity/read_on/character/change/language/substance/causality/character_arcs/payoffs/pacing/ending/length/core_promises/stable_facts/spatial/character_consistency/voice_evolution/voice_match/volume_development/revision_intent 不能使用 not_applicable 绕过证据；其余项不适用也必须提供非空字符串理由。清单与 `engine.REVIEW_MANDATORY_CHECKS` 一致，由架构守护测试锁定。

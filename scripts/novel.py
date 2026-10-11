@@ -6,8 +6,8 @@ import json
 import sqlite3
 import sys
 from pathlib import Path
-from novel_core import engine
-from novel_core.store import Error, VERSION, connect, initialize, get, put, transaction, chapters, write_json, log, require
+from novel_core import access, atoms, engine
+from novel_core.store import Error, VERSION, connect, initialize, get, put, transaction, chapters, write_json, log, require, head
 from novel_core.memory import recall
 
 # Windows consoles default to a legacy code page; captured CJK output then
@@ -136,6 +136,13 @@ def dispatch(args):
 
 
 def _auto_render_html(project, db=None):
+    """Refresh the derived page, degrading instead of swallowing (P4).
+
+    book.html is a derived view, so a failed render must never abort a commit
+    that already succeeded in the ledger. It must, however, leave a trace: the
+    failure is logged and returned so the caller can surface it. A silently
+    stale page is worse than a reported one.
+    """
     try:
         from novel_core.bookpage import render, save
         closed_db = False
@@ -145,26 +152,43 @@ def _auto_render_html(project, db=None):
         try:
             target = Path(project).resolve() / 'book.html'
             branch = get(db, 'active_branch') or get(db, 'work_branch') or 'main'
-            page = render(db, branch)
-            save(target, page)
+            save(target, render(db, branch))
+            return None
         finally:
             if closed_db:
                 db.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        # Rendered views are derived: no failure here may change the outcome of
+        # a commit that already succeeded in the ledger. Broad capture is
+        # deliberate; what P4 forbids is capturing and DISCARDING.
+        failed = {'code': getattr(exc, 'code', type(exc).__name__), 'message': str(exc)[:200]}
+        try:
+            probe = db if db is not None else connect(project)
+            try:
+                log(probe, 'html_render_failed', failed)
+            finally:
+                if db is None:
+                    probe.close()
+        except Exception:
+            # The one sanctioned silent point, registered in
+            # references/architecture.md P4: the ledger itself is unwritable, so
+            # there is nowhere to record the failure. The caller still receives
+            # `failed`; only the trace is lost.
+            pass
+        return failed
 
 
 def dispatch_raw(args):
     cmd=args.command
     if cmd=='init':
         res = initialize(args.project,read(args.contract))
-        _auto_render_html(args.project)
-        return res
+        failed=_auto_render_html(args.project)
+        return {**res,**({'html_render_error':failed} if failed else {})}
     db=connect(args.project)
     try:
-        if cmd in ('recall','map','design','character','candidate','material','impact','patch') or (cmd=='config' and args.value is None):
-            from novel_core.reviewflow import require_material_access
-            require_material_access(db)
+        # P2 default-deny: the tier table is the single registry; an unlisted
+        # command is refused rather than silently unguarded.
+        access.guard(db,cmd,args)
         if cmd=='first-read':
             from novel_core.reviewflow import seal
             given=Path(args.result)
@@ -202,7 +226,16 @@ def dispatch_raw(args):
                     batch=active(db)
                     require(not batch or not args.through or args.through>=batch['last'],'chapter_range','已有批次超出新范围，须先处理已保存候选稿')
                     put(db,'batch_through',args.through)
-            return advance(db,args.project,args.after)
+            before=head(db,get(db,'work_branch'))
+            out=advance(db,args.project,args.after)
+            # P1 single writer for derived views: the page belongs to the
+            # controller's chapter boundary. Refreshing once per landed chapter
+            # keeps book.html current for the author without charging every
+            # worker receipt for a full audit and a full-book render.
+            if head(db,get(db,'work_branch'))>before:
+                failed=_auto_render_html(args.project,db)
+                if failed:out={**out,'html_render_error':failed}
+            return out
         if cmd=='material':
             from novel_core.contextflow import material
             return material(db,args.task,args.bundle,args.document,args.start)
@@ -273,9 +306,20 @@ def dispatch_raw(args):
                         and work['preparation_session'].get('bundle')==work['payload'].get('bundle'),
                         'preparation_session','连续提交只用于绑定同一批次的材料任务')
             res = engine.submit(db,receipt,brief=args.brief)
-            if not task or (task['stage'] not in ('context_scan','context_reduce') and json.loads(task['input']).get('chapter_session',{}).get('role')!='writer'
-                            and (not task['stage'].endswith('_review') or task['stage']=='chapter_review')):
-                _auto_render_html(args.project, db)
+            html_failed=None
+            # `--brief` / `--compact` are worker hand-off modes: they shrink the
+            # RESPONSE. Rendering book.html needs a full verified audit plus
+            # every chapter inlined, so doing it per receipt was the "heavy
+            # status" the compact contract exists to avoid — and the bare
+            # `except Exception: pass` used to hide that it happened at all.
+            # The page is now refreshed at the controller's chapter boundary.
+            if not (getattr(args,'compact',False) or getattr(args,'brief',False)) and (not task or (task['stage'] not in ('context_scan','context_reduce') and json.loads(task['input']).get('chapter_session',{}).get('role')!='writer'
+                            and (not task['stage'].endswith('_review') or task['stage']=='chapter_review'))):
+                html_failed=_auto_render_html(args.project, db)
+            if html_failed:
+                # P4: surface the degraded step instead of reporting a clean
+                # `accepted` while book.html stays stale.
+                res={**res,'html_render_error':html_failed}
             if args.continue_chapter_batch:
                 from novel_core.batchflow import continue_session
                 return {**continue_session(db,args.project,task),**{k:res[k] for k in ('settlement','numeric_correction') if k in res}}
@@ -323,8 +367,8 @@ def dispatch_raw(args):
                     'chapter_length':observation or {'unit':'han_characters','actual_han':han_count(prose),'target_han':None,'status':'no_target_configured'}}
         if cmd=='approve':
             res = engine.approve(db)
-            _auto_render_html(args.project, db)
-            return res
+            failed=_auto_render_html(args.project, db)
+            return {**res,**({'html_render_error':failed} if failed else {})}
         if cmd=='audit': return engine.audit(db)
         if cmd=='pause': return engine.pause(db,args.reason,args.cancel_task)
         if cmd=='resume': return engine.resume(db)
@@ -333,7 +377,7 @@ def dispatch_raw(args):
         if cmd=='doctor':
             from novel_core.contextflow import usage, SCAN_UNITS, DIRECT_UNITS, EXACT_UNITS, REDUCE_INPUTS, SESSION_PROTOCOL
             from novel_core.reviewflow import PROTOCOL
-            import platform, shutil
+            import platform
             report={'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
                     'context_mode':get(db,'context_mode','bounded'),'preparation_policy':get(db,'preparation_policy','adaptive'),'character_limits_enforced':False,
                     'review_protocol':PROTOCOL,'review_verification':'order_and_evidence_coverage_only',
@@ -411,7 +455,7 @@ def dispatch_raw(args):
                 if args.discard:
                     work=get(db,'work_branch')
                     require(work!=get(db,'active_branch'),'revision','没有候选修订')
-                    parent=db.execute('SELECT parent FROM branches WHERE id=?',(work,)).fetchone()['parent']
+                    parent=atoms.branch(db,work)['parent']
                     parent_row=db.execute('SELECT status FROM branches WHERE id=?',(parent,)).fetchone() if parent else None
                     # Nested chains fall back to the parent candidate, not the active branch.
                     restore=parent if parent_row and parent_row['status']=='candidate' else get(db,'active_branch')
@@ -480,13 +524,22 @@ def dispatch_raw(args):
         if cmd=='html':
             from novel_core.bookpage import render, save
             from pathlib import Path as _P
+            root=_P(args.project).resolve()
             given=_P(args.out) if args.out else _P('book.html')
-            target=given if given.is_absolute() else _P(args.project).resolve()/given
+            target=(given if given.is_absolute() else root/given).resolve()
+            # Decide the reported route BEFORE writing. The old prefix test
+            # (`str(target).startswith(str(root))`) matched sibling directories,
+            # so it wrote the file outside the project and only then raised
+            # ValueError from relative_to — a partial side effect plus an
+            # opaque failure. Writing outside is a legitimate export, so it is
+            # allowed and declared rather than half-performed.
+            inside=target.is_relative_to(root)
+            rel=target.relative_to(root).as_posix() if inside else str(target)
             page_branch=args.branch or get(db,'active_branch')
             page=render(db,page_branch)
             save(target,page)
-            rel=target.relative_to(_P(args.project).resolve()).as_posix() if str(target).startswith(str(_P(args.project).resolve())) else str(target)
-            return {'file':rel,'branch':page_branch,'chars':len(page)}
+            return {'file':rel,'branch':page_branch,'chars':len(page),
+                    'inside_project':inside}
         if cmd=='export':
             root=Path(args.out).resolve();root.mkdir(parents=True,exist_ok=True)
             branch=get(db,'active_branch'); manifest=[]

@@ -9,6 +9,7 @@ from pathlib import Path
 from .store import Error, Batch, require, dump, digest, get, put, transaction, log, chapters, head, branch_hash, write_json
 from .ledger import replay, append_events, evidence
 from .memory import pack
+from . import atoms, transitions
 
 FACT_CHECKS = ('coverage', 'continuity', 'resources', 'knowledge', 'time', 'world_rules')
 READER_CHECKS = ('read_on', 'character', 'change', 'emotion_cost', 'language', 'repetition')
@@ -79,8 +80,10 @@ def develop_short_draft(db,branch,n,draft,observation,prior_prose=None):
         draft['length_cycle_target_han']=observation['target_han']
     draft['length_attempts']=draft.get('length_attempts',0)+1
     combined_findings=retained_findings+[finding]
-    draft.update(chapter_length=observation,findings=combined_findings,repair_scope='chapter',
-                 stage='repair' if draft['length_attempts']<=2 else 'redesign')
+    # INV-4: stricter of the two ladders, so the length cycle cannot demote a
+    # chapter the semantic ladder already escalated to redesign.
+    stage,_=transitions.resolve_stage(draft.get('attempts',0),draft['length_attempts'])
+    draft.update(chapter_length=observation,findings=combined_findings,repair_scope='chapter',stage=stage)
     if draft['length_attempts']>3:
         put(db,'status','paused')
         put(db,'pause_reason',{'code':'chapter_development_exhausted','chapter':n,
@@ -115,6 +118,12 @@ def status(db, brief=False):
             'skill_version':VERSION, 'db_version':get(db,'version'),
             'review_verification':'protocol_and_evidence_only; semantic judgment belongs to the reviewer'}
     if not brief: result.update(volume_budget=overview(db,work), usage=usage(db))
+    # INV-6: a chapter that reached canon by carry skipped per-chapter
+    # independent review. That exception must be visible to the controller and
+    # the author, not only to the revision reviewer.
+    from .carriage import carried_chapters
+    carried=carried_chapters(db,work)
+    if carried: result['carried_chapters']=carried
     return result
 
 
@@ -220,7 +229,7 @@ def _choose_single(db):
         # Review every full text in chunks, then inspect cross-chunk causal chains.
         if n % 10 == 0 and not reviewed(db,branch,'batch',n):
             return review_job(db,branch,'batch',max(1,n-9),n)
-        plan = json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
+        plan = atoms.plan(db,branch,n)
         if plan.get('volume_end') and not reviewed(db,branch,'volume',n):
             first = next(c['number'] for c in chapters(db,branch) if json.loads(c['data'])['volume']==plan['volume'])
             return review_job(db,branch,'volume',first,n)
@@ -259,12 +268,8 @@ def _choose_single(db):
     payload = {}
     rev = db.execute('SELECT * FROM branches WHERE id=?',(branch,)).fetchone()
     if rev['status']=='candidate':
-        ancestor=rev['parent']
-        original=None
-        while ancestor and original is None:
-            original=db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(ancestor,n+1)).fetchone()
-            ancestor=db.execute('SELECT parent FROM branches WHERE id=?',(ancestor,)).fetchone()[0]
-        payload = {'original_prose':original[0] if original else '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。事实/数字/清单类目标先对账再动笔：用 impact 与正文检索列出该事实在各章的全部出现位置，一次把所有耦合章改平，对齐结论写进 repair_note；只改被点名章而其他章残留旧口径，修订整体复审判未完成。'}
+        original=atoms.ancestor_chapter_prose(db,rev['parent'],n+1)
+        payload = {'original_prose':original or '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。事实/数字/清单类目标先对账再动笔：用 impact 与正文检索列出该事实在各章的全部出现位置，一次把所有耦合章改平，对齐结论写进 repair_note；只改被点名章而其他章残留旧口径，修订整体复审判未完成。'}
     observation=chapter_length(db,branch,n+1)
     if observation:payload['chapter_length']=observation
     return 'draft',n+1,payload
@@ -818,6 +823,17 @@ def validate_plan(db,branch,start,data):
         db.execute('INSERT INTO plans VALUES (?,?,?)',row)
 
 
+# P5: the mandatory-check list is a mechanical fact. It lives here and
+# references/protocol.md must list exactly these ids; the architecture test
+# asserts the two agree, so neither can drift silently.
+REVIEW_MANDATORY_CHECKS = frozenset((
+    'coverage', 'continuity', 'read_on', 'character', 'change', 'language',
+    'substance', 'causality', 'character_arcs', 'payoffs', 'pacing', 'ending',
+    'length', 'core_promises', 'stable_facts', 'spatial',
+    'character_consistency', 'voice_evolution', 'voice_match',
+    'volume_development', 'revision_intent'))
+
+
 def validate_review(data,checks,sources):
     from .patches import validate_scope
     validate_scope(data)
@@ -825,8 +841,7 @@ def validate_review(data,checks,sources):
     rows = data.get('checks')
     require(isinstance(rows,list) and all(isinstance(r,dict) for r in rows) and {r.get('id') for r in rows}==set(checks) and len(rows)==len(checks), 'review','审稿检查项不完整或重复')
     batch=Batch()
-    mandatory={'coverage','continuity','read_on','character','change','language','substance','causality','character_arcs','payoffs','pacing','ending','length','core_promises','spatial','stable_facts','character_consistency','voice_evolution','voice_match','volume_development'}
-    mandatory.add('revision_intent')
+    mandatory=REVIEW_MANDATORY_CHECKS
     for index,row in enumerate(rows):
         where={'check_id':row.get('id'),'row_index':index}
         batch.require(row.get('result') in ('pass','fix') and isinstance(row.get('reason'),str) and row['reason'].strip(),
@@ -868,11 +883,13 @@ def repair(db,branch,n,draft,findings,scope='chapter'):
         draft['prior_event_snapshot']={'events':copy.deepcopy(draft['events']),'prose':draft['prose'],
                                        'verified':draft.get('facts_context_hash') is not None}
     # Preserve every candidate in the task log/receipt. Last good prose stays available.
-    draft['stage']='repair' if attempts<=2 else 'redesign'
+    # INV-4: the semantic and length ladders both feed draft['stage']. Taking
+    # the stricter side stops a length shortfall from demoting a chapter that
+    # the semantic ladder already escalated to redesign.
+    draft['stage'],_=transitions.resolve_stage(attempts,draft.get('length_attempts',0))
     if attempts>3:
         put(db,'status','paused')
         put(db,'pause_reason',{'code':'quality_exhausted','chapter':n,'findings':findings})
-        draft['stage']='redesign'
     draft.pop('facts_review',None)
     draft.pop('reader_review',None)
     save_draft(db,branch,n,draft)
@@ -1164,7 +1181,7 @@ def submit(db, result, brief=False, preview=False):
                 require(data.get('design_change'),'redesign','重写须说明设计改动，不能原样重试')
                 require(draft and prose!=draft['prose'],'redesign','重设计须产生实际变化的正文；说明设计改动不能替代原样重试')
                 if data.get('plan_update'):
-                    old_plan=json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
+                    old_plan=atoms.plan(db,branch,n)
                     update=data['plan_update']
                     require(isinstance(update,dict) and set(update)<=set(('goal','conflict','change','entities','topics','hooks','dependencies','scenes','reader_experience','character_choices','expression_space','execution','rhythm')), 'plan_update','重设计只能调整当前章具体内容，不可更改卷序或终局标记')
                     from .budget import chapter_length as observe

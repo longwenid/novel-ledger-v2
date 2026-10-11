@@ -4,6 +4,7 @@ import json
 import math
 from .store import get, put, require, digest, head, log, Batch
 from .ledger import replay
+from . import atoms
 
 
 def enabled(db):
@@ -98,7 +99,7 @@ def validate_spine(spine):
     ids=set()
     for layer in SPINE_LAYERS:
         items=spine[layer]
-        require(isinstance(items,list) and items and all(isinstance(i,dict) for i in items),f'design',
+        require(isinstance(items,list) and items and all(isinstance(i,dict) for i in items),'design',
                 f'脊柱 {layer} 层为非空触点对象数组')
         for item in items:
             require(isinstance(item,dict) and all(text(item.get(k)) for k in ('id','span','event')),'design',
@@ -202,7 +203,7 @@ def save(db,branch,scope,chapter,data,task_id):
     from .engine import load_draft
     doomed=[row['number'] for row in db.execute(
         'SELECT number FROM plans WHERE branch=? AND number>?',(branch,head(db,branch))).fetchall()
-        if scope=='world' or json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,row['number'])).fetchone()[0])['volume']==scope]
+        if scope=='world' or atoms.plan(db,branch,row['number'])['volume']==scope]
     for n in doomed:
         require(not load_draft(db,branch,n),'design',
                 '该章已有草稿，先按审稿流程处理或 replan 取消批次，不能由设计重存直接删除其章计划',

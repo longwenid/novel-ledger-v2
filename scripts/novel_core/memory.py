@@ -1,9 +1,9 @@
 """Task-scoped, provenance-bearing work packs and historical recall."""
 import json
-from .store import dump, get, head, require, Error, digest
+from .store import dump, get, head, require, digest
 from .ledger import replay
 from .patches import save_source
-from .spatial import event_refs, spatial_view, address_signals
+from .spatial import spatial_view, address_signals
 
 # Narrative prose travels as content-addressed files next to the pack; the pack
 # carries path+hash and SQLite keeps the authoritative bytes for re-materialization.

@@ -6,8 +6,9 @@ by the existing chapter-review transaction, never by the writer's self-check.
 import copy
 import json
 import uuid
-from .store import Error, get, put, digest, dump, require, head, log
+from .store import Error, get, put, digest, require, head, log
 from .ledger import replay, apply
+from . import atoms
 
 PROTOCOL='chapter-batch/1'
 
@@ -63,6 +64,24 @@ def signature(db,task,work):
                    'constraints':constraints(db,branch,s['first'],s['last'])})
 
 
+def new_generation(db,batch,phase='writing'):
+    """INV-5: the single authority for advancing a batch into a new generation.
+
+    A generation change moves `first`, so the constraint digest — which covers
+    the plan range [first,last] — must be recomputed. Without that, the very
+    next `choose` compares a digest of the old range against the new one and
+    invalidates the batch with the false reason "contract/plan/character
+    version changed", destroying the very suffix a local repair meant to keep.
+    The previous generation's hold marker is dropped here for the same reason:
+    a superseded `local_repair` must not fire against the new generation.
+    """
+    branch=batch['branch']
+    batch.update(id=uuid.uuid4().hex,first=head(db,branch)+1,phase=phase)
+    batch.pop('local_repair',None)
+    batch['constraints']=constraints(db,branch,batch['first'],batch['last'])
+    return batch
+
+
 def invalidate(db,batch,start,reason):
     """Keep prose/attempt counts, but require rechecking every dependent draft."""
     from . import engine
@@ -77,8 +96,7 @@ def invalidate(db,batch,start,reason):
         for field in ('candidate_events','candidate_prefix_hash','facts_review','reader_review','facts_context_hash','reader_context_hash','candidate_rebound'):
             draft.pop(field,None)
         engine.save_draft(db,branch,n,draft)
-    batch.update(id=uuid.uuid4().hex,first=head(db,branch)+1,phase='writing')
-    batch['constraints']=constraints(db,branch,batch['first'],batch['last'])
+    new_generation(db,batch)
     put(db,key(branch),batch)
     log(db,'chapter_batch_invalidated',{'branch':branch,'from':start,'last':batch['last'],'reason':reason})
 
@@ -95,7 +113,7 @@ def choose(db,single,allow_new_batch=True):
             for n in range(committed+1,batch['last']+1):
                 draft=engine.load_draft(db,branch,n)
                 if draft and draft['stage']=='chapter_review':continue
-                p=json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
+                p=atoms.plan(db,branch,n)
                 job=characters.next_job(db,branch,n,p) or characters.next_index_job(db,branch,n,p)
                 if job:
                     # Preparation of a new profile changes dependencies. Review
@@ -115,8 +133,7 @@ def choose(db,single,allow_new_batch=True):
         return single(db)
     saved=engine.load_draft(db,branch,committed+1)
     if saved and saved.get('candidate_invalidated') and saved['stage']=='draft':
-        row=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,committed+1)).fetchone()
-        plan=json.loads(row[0])
+        plan=atoms.plan(db,branch,committed+1)
         job=characters.next_job(db,branch,committed+1,plan) or characters.next_index_job(db,branch,committed+1,plan)
         if job:return job
     job=single(db);stage,n,_=job
@@ -273,8 +290,8 @@ def after_review(db,branch,n,proposed,accepted_events,passed,proposed_state=None
         if scope=='local' and proposed_state is not None:
             from .settlement import state_hash
             put(db,'chapter_batch_archive:'+batch['id'],copy.deepcopy(batch))
-            batch.update(id=uuid.uuid4().hex,first=head(db,branch)+1,phase='writing',
-                         local_repair={'chapter':n,'after_state_hash':state_hash(proposed_state)})
+            new_generation(db,batch)
+            batch['local_repair']={'chapter':n,'after_state_hash':state_hash(proposed_state)}
             put(db,key(branch),batch)
             log(db,'local_repair_suffix_held',{'chapter':n,'last':batch['last']})
             return

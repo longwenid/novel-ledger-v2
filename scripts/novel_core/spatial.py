@@ -5,7 +5,7 @@ All changes still enter through the chapter event transaction.
 """
 from __future__ import annotations
 import copy
-from .store import Error, require
+from .store import require
 
 PLACE_BINDINGS = ('office_place','function_place')
 SPATIAL_OPS = {'anchor', 'anchor_change', 'anchor_assert', 'place', 'link', 'link_change', 'placement', 'move', 'perceive', 'place_change'}

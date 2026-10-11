@@ -10,7 +10,7 @@ description: >-
 
 `ROOT` 是 Skill 绝对路径；`PROJECT` 是独立小说项目绝对路径。小说账本、正文和运行产物只存 PROJECT，不写入 ROOT。任务路由相对 PROJECT 解析。
 
-命令入口：`python3 "$ROOT/scripts/novel.py"`（Windows 用 `python`）。初始化、定调和入库会刷新 `$PROJECT/book.html`，汇报时提供该文件的绝对路径链接。
+命令入口：`python3 "$ROOT/scripts/novel.py"`（Windows 用 `python`）。派生视图 `$PROJECT/book.html` 的刷新归属主控的章节边界：初始化、定调、非轻量 `submit`，以及「有章节落地的 `advance`」都会刷新；Worker 用 `--brief`/`--compact` 交接时只更新 controller 快照、不渲染（那是响应模式，不是副作用）。需要即时页面时显式执行 `html`。汇报时提供该文件的绝对路径链接。
 
 ## 核心操作流
 
@@ -42,6 +42,7 @@ description: >-
 
 | 使用时机 | 读取资料 |
 |---|---|
+| 修改引擎、新增命令、调整守卫之前 | [架构契约](references/architecture.md) |
 | 查看整体流程、持续派工与局部返修关系 | [流程图](references/workflow.md) |
 | 选方向、开新书、试章定调 | [creation](references/creation.md) / [hatch-ideas](references/hatch-ideas.md) / [voices](references/voices.md) |
 | 全书/分卷世界设计、卷纲脑爆、任务书 | [design-and-brief](references/design-and-brief.md) / [hatch-ideas](references/hatch-ideas.md) |

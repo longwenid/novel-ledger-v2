@@ -1,6 +1,6 @@
 # novel-ledger-v2
 
-跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.45.0**。
+跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.47.0**。
 
 ## 核心理念
 
@@ -41,12 +41,16 @@ python scripts/novel.py <command> --project "$PROJECT"
 SKILL.md              Skill 入口与核心规则
 agents/               宿主 agent 展示配置
 assets/               契约与实体示例 JSON
-references/           阶段指南（creation/runtime/writing/protocol/voices… 16 篇）
-scripts/novel.py      CLI 入口
-scripts/novel_core/   引擎（engine/store/memory/ledger/batchflow/reviewflow… ）
-tests/                引擎与行为边界测试（pytest）
+references/           阶段指南与架构契约（creation/runtime/writing/protocol/architecture… 17 篇）
+scripts/novel.py      CLI 入口（含默认拒绝的访问分级守卫）
+scripts/novel_core/   引擎（engine/store/ledger/batchflow/reviewflow/atoms/transitions… ）
+tests/                引擎与行为边界测试（pytest；含架构守护）
 validation/           端到端验证脚本与基准（chapter_batch / review_session / material_efficiency）
 ```
+
+## 架构
+
+改引擎前先读 [references/architecture.md](references/architecture.md)：五条设计原则（单一权威 / 默认拒绝 / 能力诚实 / 失败分级 / 机械事实单源）、十条不变量、模块分层与延迟绑定登记表、修改检查表。这些契约由 `tests/test_architecture_layers.py` 以测试形式锁定——分层违规、未登记的命令分级、未登记的回环、文档与代码的机械事实漂移，都会在合并前失败。
 
 ## 开发
 
