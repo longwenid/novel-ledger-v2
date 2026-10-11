@@ -488,7 +488,24 @@ def sweep_legacy(project, apply=True):
                 removed.append(prefix+name+'/')
     sweep_dir(base, LEGACY_ROOT_FILES, LEGACY_ROOT_GLOBS, '')
     sweep_dir(base/'work', LEGACY_WORK_FILES, LEGACY_WORK_GLOBS, 'work/')
-    return {'removed': removed, 'kept': kept}
+    # Retired-driver databases hold author data: relocate, never delete.
+    relocated = []
+    for name in ('ledger.sqlite', 'ledger.sqlite3'):
+        source = base/name
+        if not source.is_file():
+            continue
+        target_dir = base/'work'/'backup-legacy-db'
+        target = target_dir/name
+        if apply:
+            target_dir.mkdir(parents=True, exist_ok=True)
+            suffix = 0
+            while target.exists():
+                suffix += 1
+                target = target_dir/f'{name}.{suffix}'
+            shutil.move(str(source), str(target))
+        relocated.append({'path': name, 'moved_to': 'work/backup-legacy-db/'+target.name,
+                          'reason': '旧版驱动的账本文件，已备份迁移；确认无用后可自行删除'})
+    return {'removed': removed, 'kept': kept, 'relocated': relocated}
 
 
 def materialize_prose(db, project, work):
@@ -701,22 +718,34 @@ def validate_plan(db,branch,start,data):
     prior = db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,start-1)).fetchone()
     if prior:
         last_volume = json.loads(prior[0])['volume']
+    # One rejection answers the whole batch: every failing chapter and field is
+    # collected before raising; valid rows are only inserted after the pass.
+    batch=Batch(); inserts=[]; broken=False
+    from .characters import enabled as characters_enabled, validate_scenes
     for i,p in enumerate(plans,start):
-        require(isinstance(p,dict) and p.get('number')==i, 'plan', '章号必须连续且从任务章号开始')
-        require(all(p.get(k) for k in ('goal','conflict','change','volume')) and p['volume'] in volumes, 'plan','章计划缺少目标、阻力、变化或合法卷 ID')
-        require(isinstance(p.get('entities'),list) and p['entities'] and all(e in state['entities'] for e in p['entities']), 'plan','entities 应引用已登记稳定实体 ID；新人物在正文事实阶段登记')
+        mark=len(batch.issues)
+        context={'chapter':i}
+        if broken:context['cascade']=True
+        if not isinstance(p,dict) or p.get('number')!=i:
+            batch.add('plan','章号必须连续且从任务章号开始',**context); broken=True; continue
+        volume=p.get('volume')
+        batch.require(all(p.get(k) for k in ('goal','conflict','change','volume')) and volume in volumes,'plan','章计划缺少目标、阻力、变化或合法卷 ID',**context)
+        entities=p.get('entities')
+        batch.require(isinstance(entities,list) and entities and all(e in state['entities'] for e in entities),'plan','entities 应引用已登记稳定实体 ID；新人物在正文事实阶段登记',**context)
         scenes=p.get('scenes',[])
-        require(isinstance(scenes,list) and all(isinstance(s,dict) for s in scenes),'scene','scenes 须为场景对象数组')
-        for scene in scenes:
-            require(nonempty_scene(scene,state),'scene','场景须引用已登记 place 或给出未确立新场所的 label；present 使用实体 ID')
-        design.validate_chapter_execution(p)
+        if batch.require(isinstance(scenes,list) and all(isinstance(s,dict) for s in scenes),'scene','scenes 须为场景对象数组',**context):
+            for scene in scenes:
+                batch.require(nonempty_scene(scene,state),'scene','场景须引用已登记 place 或给出未确立新场所的 label；present 使用实体 ID',**context)
+        if not layered:
+            design.validate_chapter_execution(p,sink=batch,chapter=i)
         author_target=get(db,'contract').get('chapter_target_han')
         execution=p.get('execution',{})
-        if author_target and execution.get('target_han',author_target)<author_target:
-            require(isinstance(execution.get('target_reason'),str) and execution['target_reason'].strip(),
-                    'chapter_target','刻意短章须事先在 execution.target_reason 说明本章作用及较短目标的理由')
-        require(all(type(n) is int and 1<=n<start for n in p.get('dependencies',[])), 'plan','历史依赖须为已提交章号')
-        require(not last_volume or volumes.index(p['volume'])>=volumes.index(last_volume), 'plan','卷序不能倒退')
+        if isinstance(execution,dict) and author_target and execution.get('target_han',author_target)<author_target:
+            batch.require(isinstance(execution.get('target_reason'),str) and execution['target_reason'].strip(),
+                    'chapter_target','刻意短章须事先在 execution.target_reason 说明本章作用及较短目标的理由',**context)
+        dependencies=p.get('dependencies',[])
+        batch.require(isinstance(dependencies,list) and all(type(n) is int and 1<=n<start for n in dependencies),'plan','历史依赖须为已提交章号',**context)
+        batch.require(not last_volume or not (isinstance(volume,str) and volume in volumes) or volumes.index(volume)>=volumes.index(last_volume),'plan','卷序不能倒退',**context)
         spans=[]
         for scene in scenes:
             hint=scene.get('time_hint') if isinstance(scene,dict) else None
@@ -725,38 +754,44 @@ def validate_plan(db,branch,start,data):
             # Day schedule: D+N in scene time_hints is measured in clock units from
             # this batch's anchor (the clock when the batch is signed).
             p['day_anchor']=state['clock'];p['day_span']=[min(spans),max(spans)]
-        if last_volume and last_volume!=p['volume']:
+        if last_volume and last_volume!=volume:
             prev = plans[i-start-1] if i>start else json.loads(prior[0])
-            require(prev.get('volume_end'), 'plan','跨卷前须标明卷末复核')
+            batch.require(isinstance(prev,dict) and prev.get('volume_end'), 'plan','跨卷前须标明卷末复核',**context)
         if p.get('major_turn'):
             alternatives = p.get('alternatives',[])
-            require(isinstance(alternatives,list) and all(isinstance(a,str) and a.strip() for a in alternatives) and len(alternatives)>=2 and len(set(alternatives))==len(alternatives) and p.get('selection_reason'), 'plan','重要转折需两个不同方案和择优依据')
+            batch.require(isinstance(alternatives,list) and all(isinstance(a,str) and a.strip() for a in alternatives) and len(alternatives)>=2 and len(set(alternatives))==len(alternatives) and p.get('selection_reason'), 'plan','重要转折需两个不同方案和择优依据',**context)
         if p.get('book_end'):
             branch_meta=db.execute('SELECT status,through FROM branches WHERE id=?',(branch,)).fetchone()
-            require(branch_meta['status']!='candidate' or i>=branch_meta['through'],'revision','候选修订不能提前结束而跳过原有后文复核')
-            require(i==start+len(plans)-1 and p['volume']==volumes[-1] and p.get('volume_end'), 'plan','终章须是末卷最后一章并触发卷审')
-        from .characters import enabled,validate_scenes
-        if enabled(db):validate_scenes(p,state)
+            batch.require(branch_meta['status']!='candidate' or i>=branch_meta['through'],'revision','候选修订不能提前结束而跳过原有后文复核',**context)
+            batch.require(i==start+len(plans)-1 and volume==volumes[-1] and p.get('volume_end'), 'plan','终章须是末卷最后一章并触发卷审',**context)
+        if characters_enabled(db):validate_scenes(p,state,sink=batch,chapter=i)
         if layered:
-            require(not p.get('volume_end') or i==start+len(plans)-1,'plan','分层计划的卷末必须是本批最后一章，不能在卷审后继续同卷')
-            require(p['volume']==expected_volume and design.usable(db,branch,expected_volume),'design','每批仅细化已准备的当前卷，跨卷前先完成分卷设计')
-            world=design.current(db,branch,'world');volume=design.current(db,branch,expected_volume)
-            known=set(volume['data']['location_ids'])
-            design.validate_brief(p,state,known,volume['data'])
-            # Repeated shapes may be deliberate; pacing and repetition require
-            # semantic review rather than a forced category rotation.
-            # Major turns must cite which spine touchpoints they advance when a
-            # spine exists; older spineless world designs are grandfathered.
-            spine=design.spine_ids(db,branch)
-            refs=p.get('spine_refs',[])
-            require(isinstance(refs,list) and all(isinstance(r,str) for r in refs),'plan','spine_refs 为脊柱触点 ID 数组')
-            if spine is not None:
-                if p.get('major_turn'):require(refs,'plan','重大转折须引用 event_spine 触点（spine_refs），不能脱离全书结构单独成立')
-                for r in refs:
-                    require(r in spine,'plan',f'spine_refs 引用了不存在的脊柱触点：{r}')
-            p['_design_versions']={'world':world['hash'],'volume':volume['hash']}
-        db.execute('INSERT INTO plans VALUES (?,?,?)',(branch,i,dump(p)))
-        last_volume=p['volume']
+            batch.require(not p.get('volume_end') or i==start+len(plans)-1,'plan','分层计划的卷末必须是本批最后一章，不能在卷审后继续同卷',**context)
+            if batch.require(volume==expected_volume and design.usable(db,branch,expected_volume),'design','每批仅细化已准备的当前卷，跨卷前先完成分卷设计',**context):
+                world=design.current(db,branch,'world');volume_row=design.current(db,branch,expected_volume)
+                known=set(volume_row['data']['location_ids'])
+                design.validate_brief(p,state,known,volume_row['data'],sink=batch,chapter=i)
+                # Repeated shapes may be deliberate; pacing and repetition require
+                # semantic review rather than a forced category rotation.
+                # Major turns must cite which spine touchpoints they advance when a
+                # spine exists; older spineless world designs are grandfathered.
+                spine=design.spine_ids(db,branch)
+                refs=p.get('spine_refs',[])
+                batch.require(isinstance(refs,list) and all(isinstance(r,str) for r in refs),'plan','spine_refs 为脊柱触点 ID 数组',**context)
+                if spine is not None:
+                    if p.get('major_turn'):batch.require(refs,'plan','重大转折须引用 event_spine 触点（spine_refs），不能脱离全书结构单独成立',**context)
+                    for r in refs:
+                        batch.require(r in spine,'plan',f'spine_refs 引用了不存在的脊柱触点：{r}',**context)
+                p['_design_versions']={'world':world['hash'],'volume':volume_row['hash']}
+        if len(batch.issues)==mark:
+            inserts.append((branch,i,dump(p)))
+        else:
+            broken=True
+        if isinstance(volume,str) and volume in volumes:
+            last_volume=volume
+    batch.raise_if_any()
+    for row in inserts:
+        db.execute('INSERT INTO plans VALUES (?,?,?)',row)
 
 
 def validate_review(data,checks,sources):

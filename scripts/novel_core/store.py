@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.43.0'
+VERSION = '1.44.0'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -68,6 +68,7 @@ class Batch:
     def capture(self, error, **details):
         """Adopt a raised row-level Error; surrounding context wins on clashes."""
         self.add(error.code, str(error), **{**(error.details or {}), **details})
+
 
     def raise_if_any(self):
         if self.issues:

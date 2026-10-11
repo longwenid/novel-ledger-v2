@@ -2,7 +2,7 @@
 import copy
 import json
 import math
-from .store import get, put, require, digest, head, log
+from .store import get, put, require, digest, head, log, Batch
 from .ledger import replay
 
 
@@ -256,94 +256,115 @@ def context(db,branch,volume=None):
     return out
 
 
-def validate_chapter_execution(plan):
+def validate_chapter_execution(plan, sink=None, chapter=None):
     """Validate declared planning coordinates; this cannot certify prose quality.
 
     Existing plans without these optional dimensions remain usable. A single
     scene or event may support several developments; no event-count minimum or
-    alternating pressure pattern is imposed.
+    alternating pressure pattern is imposed. With a sink, every failing row is
+    collected there instead of raising on the first one.
     """
+    standalone=sink is None; batch=sink if sink is not None else Batch()
+    def close():
+        if standalone: batch.raise_if_any()
+        return batch
+    where={'chapter':chapter} if chapter is not None else {}
     scenes=plan.get('scenes',[])
-    require(isinstance(scenes,list) and all(isinstance(s,dict) for s in scenes),'scene','scenes 须为场景对象数组')
+    if not batch.require(isinstance(scenes,list) and all(isinstance(s,dict) for s in scenes),'scene','scenes 须为场景对象数组',**where):
+        return close()
     def scene_ref(value):
         return type(value) is int and 1<=value<=len(scenes)
     for scene in scenes:
         if 'dramatization' in scene:
-            require(strings(scene['dramatization'],True),'chapter_execution',
-                    'scene.dramatization 为具体可演出的展开依据数组，不能以事件数量代替展开内容')
+            batch.require(strings(scene['dramatization'],True),'chapter_execution',
+                    'scene.dramatization 为具体可演出的展开依据数组，不能以事件数量代替展开内容',**where)
     if 'execution' in plan:
         execution=plan['execution']
-        require(isinstance(execution,dict) and set(execution)<= {'target_han','target_reason','expansion_units','spare_options'},
-                'chapter_execution','execution 只接受 target_han/target_reason/expansion_units/spare_options')
+        if not batch.require(isinstance(execution,dict) and set(execution)<= {'target_han','target_reason','expansion_units','spare_options'},
+                'chapter_execution','execution 只接受 target_han/target_reason/expansion_units/spare_options',**where):
+            return close()
         if 'target_han' in execution:
-            require(type(execution['target_han']) is int and execution['target_han']>0,
-                    'chapter_execution','execution.target_han 为正整数目标汉字数，不设上限')
+            batch.require(type(execution['target_han']) is int and execution['target_han']>0,
+                    'chapter_execution','execution.target_han 为正整数目标汉字数，不设上限',**where)
         if 'target_reason' in execution:
-            require(text(execution['target_reason']),'chapter_execution','execution.target_reason 要说明内容容量与目标的关系')
+            batch.require(text(execution['target_reason']),'chapter_execution','execution.target_reason 要说明内容容量与目标的关系',**where)
         units=execution.get('expansion_units')
-        require(isinstance(units,list) and units,'chapter_execution',
-                'execution.expansion_units 至少写出一项有因果或人物作用的展开依据，数量不固定')
-        ids=set()
-        for unit in units:
-            require(isinstance(unit,dict) and set(unit)<= {'id','scene','focus','development','expected_change','weight'},
-                    'chapter_execution','展开单元只接受 id/scene/focus/development/expected_change/weight')
-            require(all(text(unit.get(k)) for k in ('id','focus','development','expected_change')),
-                    'chapter_execution','展开单元需要 id/focus/development/expected_change，写明展开什么及其作用')
-            require(unit['id'] not in ids,'chapter_execution','展开单元 ID 不能重复')
-            ids.add(unit['id'])
-            require(scene_ref(unit.get('scene')),'chapter_execution','展开单元 scene 须引用本章 1 起的场景序号')
-            if 'weight' in unit:
-                weight=unit['weight']
-                require(type(weight) in (int,float) and (type(weight) is int or math.isfinite(weight)) and weight>0,
-                        'chapter_execution','展开单元 weight 为正数注意力权重，不是字数达标证明')
-        require(strings(execution.get('spare_options',[])),'chapter_execution','spare_options 为仍在本章任务内的备选展开方向数组')
+        if batch.require(isinstance(units,list) and units,'chapter_execution',
+                'execution.expansion_units 至少写出一项有因果或人物作用的展开依据，数量不固定',**where) and isinstance(units,list):
+            ids=set()
+            for unit in units:
+                if not isinstance(unit,dict):
+                    batch.require(False,'chapter_execution','展开单元只接受 id/scene/focus/development/expected_change/weight',**where);continue
+                batch.require(set(unit)<= {'id','scene','focus','development','expected_change','weight'},
+                        'chapter_execution','展开单元只接受 id/scene/focus/development/expected_change/weight',**where)
+                batch.require(all(text(unit.get(k)) for k in ('id','focus','development','expected_change')),
+                        'chapter_execution','展开单元需要 id/focus/development/expected_change，写明展开什么及其作用',**where)
+                identifier=unit.get('id')
+                batch.require(text(identifier) and identifier not in ids,'chapter_execution','展开单元 ID 不能重复',**where)
+                if text(identifier):ids.add(identifier)
+                batch.require(scene_ref(unit.get('scene')),'chapter_execution','展开单元 scene 须引用本章 1 起的场景序号',**where)
+                if 'weight' in unit:
+                    weight=unit['weight']
+                    batch.require(type(weight) in (int,float) and (type(weight) is int or math.isfinite(weight)) and weight>0,
+                            'chapter_execution','展开单元 weight 为正数注意力权重，不是字数达标证明',**where)
+            batch.require(strings(execution.get('spare_options',[])),'chapter_execution','spare_options 为仍在本章任务内的备选展开方向数组',**where)
     if 'rhythm' in plan:
         rhythm=plan['rhythm']
-        require(isinstance(rhythm,dict) and set(rhythm)== {'chapter_role','pressure_curve','breathing_points','carries_in','handoff'},
-                'chapter_rhythm','rhythm 需要 chapter_role/pressure_curve/breathing_points/carries_in/handoff')
-        require(all(text(rhythm.get(k)) for k in ('chapter_role','carries_in','handoff')),
-                'chapter_rhythm','rhythm 要说明本章作用、承接的前章后果和交给下一章的推进')
-        curve=rhythm['pressure_curve']
-        require(isinstance(curve,list) and curve,'chapter_rhythm','pressure_curve 为有序压力发展数组，走势不要求固定松紧交替')
-        previous=0
-        for point in curve:
-            require(isinstance(point,dict) and set(point)== {'scene','movement','cause'} and
-                    scene_ref(point.get('scene')) and text(point.get('movement')) and text(point.get('cause')),
-                    'chapter_rhythm','压力发展需要真实 scene 序号、movement 和 cause')
-            require(point['scene']>=previous,'chapter_rhythm','pressure_curve 按本章场景顺序陈述，可在同一场景内多次变化')
-            previous=point['scene']
-        breathing=rhythm['breathing_points']
-        require(isinstance(breathing,list),'chapter_rhythm','breathing_points 为呼吸落点数组；持续紧绷章可以为空')
-        for point in breathing:
-            require(isinstance(point,dict) and set(point)== {'scene','placement','function'} and
-                    scene_ref(point.get('scene')) and text(point.get('placement')) and text(point.get('function')),
-                    'chapter_rhythm','呼吸落点需要真实 scene 序号、placement 和人物/认知/后果 function')
+        if batch.require(isinstance(rhythm,dict),'chapter_rhythm','rhythm 需要 chapter_role/pressure_curve/breathing_points/carries_in/handoff',**where) and isinstance(rhythm,dict):
+            batch.require(set(rhythm)== {'chapter_role','pressure_curve','breathing_points','carries_in','handoff'},
+                    'chapter_rhythm','rhythm 需要 chapter_role/pressure_curve/breathing_points/carries_in/handoff',**where)
+            batch.require(all(text(rhythm.get(k)) for k in ('chapter_role','carries_in','handoff')),
+                    'chapter_rhythm','rhythm 要说明本章作用、承接的前章后果和交给下一章的推进',**where)
+            curve=rhythm.get('pressure_curve')
+            if batch.require(isinstance(curve,list) and curve,'chapter_rhythm','pressure_curve 为有序压力发展数组，走势不要求固定松紧交替',**where) and isinstance(curve,list):
+                previous=0
+                for point in curve:
+                    batch.require(isinstance(point,dict) and set(point)== {'scene','movement','cause'} and
+                            scene_ref(point.get('scene')) and text(point.get('movement')) and text(point.get('cause')),
+                            'chapter_rhythm','压力发展需要真实 scene 序号、movement 和 cause',**where)
+                    batch.require(isinstance(point,dict) and type(point.get('scene')) is int and point['scene']>=previous,
+                            'chapter_rhythm','pressure_curve 按本章场景顺序陈述，可在同一场景内多次变化',**where)
+                    if isinstance(point,dict) and type(point.get('scene')) is int:previous=point['scene']
+            breathing=rhythm.get('breathing_points')
+            if batch.require(isinstance(breathing,list),'chapter_rhythm','breathing_points 为呼吸落点数组；持续紧绷章可以为空',**where) and isinstance(breathing,list):
+                for point in breathing:
+                    batch.require(isinstance(point,dict) and set(point)== {'scene','placement','function'} and
+                            scene_ref(point.get('scene')) and text(point.get('placement')) and text(point.get('function')),
+                            'chapter_rhythm','呼吸落点需要真实 scene 序号、placement 和人物/认知/后果 function',**where)
+    return close()
 
 
-def validate_brief(plan,state,known_locations,volume=None):
-    validate_chapter_execution(plan)
-    require(text(plan.get('reader_experience')),'brief','分层模式需要本章 reader_experience')
+def validate_brief(plan,state,known_locations,volume=None,sink=None,chapter=None):
+    standalone=sink is None; batch=sink if sink is not None else Batch()
+    def close():
+        if standalone: batch.raise_if_any()
+        return batch
+    where={'chapter':chapter} if chapter is not None else {}
+    validate_chapter_execution(plan,sink=batch,chapter=chapter)
+    batch.require(text(plan.get('reader_experience')),'brief','分层模式需要本章 reader_experience',**where)
     # 章计划对卷纲的方向对齐在这里把关:每章声明推进的节拍与本章收束形态。
     refs=plan.get('sequence_refs')
     sequence=(volume or {}).get('sequence') or []
     if sequence:
-        require(isinstance(refs,list) and refs and all(type(n) is int and 1<=n<=len(sequence) for n in refs),'brief',
-                f'sequence_refs 须为 1..{len(sequence)} 的节拍序号数组,声明本章推进本卷 sequence 的哪些节拍')
+        batch.require(isinstance(refs,list) and refs and all(type(n) is int and 1<=n<=len(sequence) for n in refs),'brief',
+                f'sequence_refs 须为 1..{len(sequence)} 的节拍序号数组,声明本章推进本卷 sequence 的哪些节拍',**where)
     shape=plan.get('ending_shape')
-    require(text(shape),'brief','分层模式需要本章收束形态 ending_shape,格式"类别:说明"')
-    require(closing_category(shape) is not None,'brief',
-            f'ending_shape 须以收束类别开头({"、".join(CLOSING_SHAPES)}),后接具体说明')
+    batch.require(text(shape) and closing_category(shape) is not None,'brief',
+            f'ending_shape 须以收束类别开头({"、".join(CLOSING_SHAPES)}),后接具体说明',**where)
     choices=plan.get('character_choices')
-    require(isinstance(choices,list) and choices,'brief','本章需要人物选择 character_choices')
-    for c in choices:
-        require(isinstance(c,dict) and c.get('entity') in state['entities'] and all(text(c.get(k)) for k in ('desire','pressure','choice','cost')),'brief','人物选择需要 entity/desire/pressure/choice/cost')
-    require(isinstance(plan.get('scenes'),list) and plan['scenes'],'brief','每章至少一个场景提案，数量与顺序不固定')
-    for scene in plan['scenes']:
-        require(all(text(scene.get(k)) for k in ('intent','conflict','turn')),'brief','场景提案需要 intent/conflict/turn')
-        require(not scene.get('design_location') or scene['design_location'] in known_locations,'brief','场景候选地点不属于本卷设计')
-        require(isinstance(scene.get('props',[]),list) and all(e in state['entities'] for e in scene.get('props',[])),'brief','关键物品 props 使用已登记实体 ID，新物品先在正文中呈现')
-        require(all(strings(scene.get(k,[])) for k in ('blocking','perceptual_limits')),'brief','站位建议和感知限制为字符串数组')
-    require(strings(plan.get('expression_space',[])),'brief','expression_space 为表达空间数组')
+    batch.require(isinstance(choices,list) and choices,'brief','本章需要人物选择 character_choices',**where)
+    for c in choices if isinstance(choices,list) else []:
+        batch.require(isinstance(c,dict) and c.get('entity') in state['entities'] and all(text(c.get(k)) for k in ('desire','pressure','choice','cost')),'brief','人物选择需要 entity/desire/pressure/choice/cost',**where)
+    scenes=plan.get('scenes')
+    if batch.require(isinstance(scenes,list) and scenes,'brief','每章至少一个场景提案，数量与顺序不固定',**where) and isinstance(scenes,list):
+        for scene in scenes:
+            if not isinstance(scene,dict):continue
+            batch.require(all(text(scene.get(k)) for k in ('intent','conflict','turn')),'brief','场景提案需要 intent/conflict/turn',**where)
+            batch.require(not scene.get('design_location') or scene['design_location'] in known_locations,'brief','场景候选地点不属于本卷设计',**where)
+            batch.require(isinstance(scene.get('props',[]),list) and all(e in state['entities'] for e in scene.get('props',[])),'brief','关键物品 props 使用已登记实体 ID，新物品先在正文中呈现',**where)
+            batch.require(all(strings(scene.get(k,[])) for k in ('blocking','perceptual_limits')),'brief','站位建议和感知限制为字符串数组',**where)
+    batch.require(strings(plan.get('expression_space',[])),'brief','expression_space 为表达空间数组',**where)
+    return close()
 
 
 def writer_brief(plan):

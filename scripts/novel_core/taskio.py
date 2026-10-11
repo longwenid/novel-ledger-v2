@@ -94,13 +94,49 @@ def shared_delivery(project,work):
     for record in view.get('candidate_ledger',{}).get('prefix',[]):
         record['events_material']=shared(record.pop('events'))
     view['shared_materials']=materials
-    view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 和 candidate_ledger.prefix.events_material 也须读取。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
+    view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取；其余可先以摘要兜底，疑点用 commands 定向补读。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
     return view
 
 
-def template(task, work, saved=None):
+def template(task, work, saved=None, db=None):
     data = {}
-    if task['stage'] == 'chapter_review':
+    if task['stage'] == 'plan':
+        # Skeleton mirrors the validators for THIS project's mode flags; the
+        # same-source guarantee is locked by tests filling the skeleton and
+        # passing validate_plan. Optional bundles (rhythm, major_turn,
+        # dependencies, spare_options) stay opt-in and are not scaffolded.
+        from . import design, characters
+        layered = db is not None and design.enabled(db)
+        profiled = db is not None and characters.enabled(db)
+        contract = (get(db, 'contract') if db is not None else None) or {}
+        volumes = [v['id'] for v in contract.get('volumes', [])]
+        volume = volumes[0] if volumes else ''
+        sequence = []
+        if layered:
+            try:
+                volume = design.volume_for(db, task['branch'], task['chapter']) or volume
+                current_volume = design.current(db, task['branch'], volume)
+                sequence = (current_volume or {}).get('data', {}).get('sequence') or []
+            except Exception:
+                pass
+        scene = {'label': '<新场所短名；已登记场所改用 place 字段写场所ID>', 'present': ['<在场实体ID>'],
+                 'intent': '<场景意图>', 'conflict': '<场景阻力>', 'turn': '<场景转折>',
+                 'time_hint': '<时序提示；跨日推进写 D+1 形式，单日可省略本字段>'}
+        if profiled:
+            scene['speakers'] = ['<拟发言人物ID，静默场景改为空数组>']
+            scene['dialogue_intents'] = [{'entity': '<人物ID>', 'seeks': '', 'withholds': '', 'pressure': '', 'tactic': ''}]
+        chapter = {'number': task['chapter'], 'goal': '<本章目标>', 'conflict': '<本章阻力>', 'change': '<本章变化>',
+                   'volume': volume, 'entities': ['<已登记实体ID>'], 'scenes': [scene],
+                   'execution': {'target_han': contract.get('chapter_target_han', 3000), 'expansion_units': [
+                       {'id': 'u1', 'scene': 1, 'focus': '<展开什么>', 'development': '<怎样展开>',
+                        'expected_change': '<落地变化>', 'weight': 1}]}}
+        if layered:
+            chapter.update(reader_experience='<本章读者体验>', ending_shape='<收束类别>:<具体说明>',
+                           character_choices=[{'entity': '<实体ID>', 'desire': '<想要什么>', 'pressure': '<承受什么>',
+                                               'choice': '<做出什么选择>', 'cost': '<付出什么代价>'}],
+                           sequence_refs=[1] if sequence else [], expression_space=[])
+        data = {'chapters': [chapter]}
+    elif task['stage'] == 'chapter_review':
         data['evidence_catalog']={}
         for category in ('facts', 'reader'):
             data[category] = {'verdict': '', 'checks': check_rows(work['payload'][category+'_checks']), 'findings': []}
@@ -190,10 +226,14 @@ def delivery(db, project, task, work, envelope):
     if gated:
         envelope.update(delivery_phase='first_read', first_read_result_path=str(root.relative_to(base)/'first_read.json'))
         first = {'task_id': task['id'], 'input_hash': task['input_hash'],
-                 'prose_hash': work['payload']['prose_hash'], 'first_read': {k: '' for k in reviewflow.FIRST_FIELDS}}
+                 'prose_hash': work['payload']['prose_hash']}
         if envelope.get('first_read_files'):
+            # The engine derives the top-level first_read from the current
+            # chapter's entry; workers fill the array exactly once.
             first['first_reads']=[{'chapter':r['chapter'],'prose_hash':r['prose_hash'],
                 'first_read':{k:'' for k in reviewflow.FIRST_FIELDS}} for r in envelope['first_read_files']]
+        else:
+            first['first_read']={k: '' for k in reviewflow.FIRST_FIELDS}
         write_json(root/'first_read.template.json', first)
         envelope['first_read_template_path'] = str((root/'first_read.template.json').relative_to(base))
         commands['first_read'] = command('first-read', '--task', task['id'], '--result', root/'first_read.json','--compact')
@@ -212,7 +252,7 @@ def delivery(db, project, task, work, envelope):
             envelope['revision_context'] = revision
             envelope['worker_prompt'] += '核对信封 revision_context 的全部未完成父子修订目标，后加文风目标不撤销父级结构目标。'
         envelope['template_path'] = str((root/'result.template.json').relative_to(base))
-        write_json(root/'result.template.json', template(task, work, saved))
+        write_json(root/'result.template.json', template(task, work, saved, db=db))
         envelope['worker_prompt'] += '读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。响应 task 有 task_path 时读该文件取得完整信封。'
         if task['stage'] in ('draft', 'repair', 'redesign'):
             envelope['worker_prompt'] += '程序校验合成全文及篇幅；需在提交前查看计数时可用 commands.measure。'

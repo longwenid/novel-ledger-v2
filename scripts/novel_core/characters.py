@@ -1,7 +1,7 @@
 """Versioned character interpretations with source-bound growth, not new world facts."""
 import copy
 import json
-from .store import get,put,require,digest,dump,log,head
+from .store import get,put,require,digest,dump,log,head,Batch
 from .ledger import replay,evidence
 
 
@@ -432,18 +432,26 @@ def apply_development(state,event,prose,chapter):
     state.setdefault('character_developments',{}).setdefault(eid,[]).append(item)
 
 
-def validate_scenes(plan,state):
-    for scene in plan.get('scenes',[]):
+def validate_scenes(plan,state,sink=None,chapter=None):
+    standalone=sink is None; batch=sink if sink is not None else Batch()
+    def close():
+        if standalone: batch.raise_if_any()
+        return batch
+    where={'chapter':chapter} if chapter is not None else {}
+    for scene in plan.get('scenes',[]) if isinstance(plan.get('scenes'),list) else []:
+        if not isinstance(scene,dict):continue
         present=scene.get('present',[])
         speakers=scene.get('speakers',[e for e in present if person(state,e)])
-        require(isinstance(speakers,list) and len(speakers)==len(set(speakers)) and all(person(state,e) and e in present for e in speakers),'dialogue','speakers 必须是本场景在场人物，静默场景可明确空数组')
+        batch.require(isinstance(speakers,list) and len(speakers)==len(set(speakers)) and all(isinstance(e,str) and person(state,e) and e in present for e in speakers),'dialogue','speakers 必须是本场景在场人物，静默场景可明确空数组',**where)
         intents=scene.get('dialogue_intents',[])
-        require(isinstance(intents,list) and all(isinstance(x,dict) for x in intents),'dialogue','dialogue_intents 为数组')
-        require(len(intents)==len(speakers) and {i.get('entity') for i in intents}==set(speakers),'dialogue','每个拟发言者需要独立场景意图')
-        for i in intents:
-            require(all(text(i.get(k)) for k in ('seeks','withholds','pressure','tactic')),'dialogue','意图需要 seeks/withholds/pressure/tactic，允许明确说明无隐瞒或无额外压力')
-            require(not i.get('to') or person(state,i['to']),'dialogue','to 引用已登记对话对象')
-            require(strings(i.get('knowledge_topics',[])),'dialogue','knowledge_topics 为需核对的话题，不等于人物已知')
+        batch.require(isinstance(intents,list) and all(isinstance(x,dict) for x in intents),'dialogue','dialogue_intents 为数组',**where)
+        batch.require(isinstance(intents,list) and isinstance(speakers,list) and len(intents)==len(speakers) and {i.get('entity') for i in intents if isinstance(i,dict)}==set(speakers),'dialogue','每个拟发言者需要独立场景意图',**where)
+        for i in intents if isinstance(intents,list) else []:
+            if not isinstance(i,dict):continue
+            batch.require(all(text(i.get(k)) for k in ('seeks','withholds','pressure','tactic')),'dialogue','意图需要 seeks/withholds/pressure/tactic，允许明确说明无隐瞒或无额外压力',**where)
+            batch.require(not i.get('to') or person(state,i['to']),'dialogue','to 引用已登记对话对象',**where)
+            batch.require(strings(i.get('knowledge_topics',[])),'dialogue','knowledge_topics 为需核对的话题，不等于人物已知',**where)
+    return close()
 
 
 def copy_for_revision(db,parent,branch):

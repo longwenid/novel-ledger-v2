@@ -92,7 +92,7 @@ submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果�
 
 批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；后续章任务直接绑定同一批次已冻结的对应首读，仍校验当前 input/prose 版本、作者约定、证据与前态。
 
-某章审稿通过入库后，引擎把后章候选链重排（rebind）到新正式账本：`state`/`relation`/`knowledge` 的自由文本前件按正式措辞自动对齐（候选稿标记 `candidate_rebound`，日志记 `chapter_batch_rebound`），数值余额、时钟、实体等硬前件保持严格。只有硬前件矛盾（如正式结算余额与后章候选假设不符）才作废后章、重开新批次重新首读；审稿者改写措辞、合并或重组认知话题不再触发重开。后章自身的密封审稿仍是唯一入库闸门，重排不替后章签审。前章返修须重核承接时，同样按硬前件边界作废。
+某章审稿通过入库后，引擎把后章候选链重排（rebind）到新正式账本。因此审稿者 facts.events 从正文独立重报即可，无需也无法对齐执笔者表述：`state`/`relation`/`knowledge` 的自由文本前件按正式措辞自动对齐（候选稿标记 `candidate_rebound`，日志记 `chapter_batch_rebound`），数值余额、时钟、实体等硬前件保持严格。只有硬前件矛盾（如正式结算余额与后章候选假设不符）才作废后章、重开新批次重新首读；审稿者改写措辞、合并或重组认知话题不再触发重开。后章自身的密封审稿仍是唯一入库闸门，重排不替后章签审。前章返修须重核承接时，同样按硬前件边界作废。
 
 结果 data={facts:{verdict,checks,findings,events,summary,...},reader:{verdict,checks,findings,first_read,...}}，两类子回执格式见下面审稿字段。
 

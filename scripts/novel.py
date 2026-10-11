@@ -179,8 +179,8 @@ def dispatch_raw(args):
         if cmd=='preflight':
             receipt=read_receipt(db,args.project,args.result,record=False)
             task=db.execute('SELECT * FROM tasks WHERE id=?',(receipt.get('task_id') if isinstance(receipt,dict) else None,)).fetchone()
-            require(task and task['state']=='pending' and task['stage'] in ('draft','repair','redesign','chapter_review'),
-                    'preflight','预检只用于当前有效执笔或审稿任务')
+            require(task and task['state']=='pending' and task['stage'] in ('plan','draft','repair','redesign','chapter_review'),
+                    'preflight','预检只用于当前有效规划、执笔或审稿任务')
             require(args.task is None or args.task==task['id'],'preflight','--task 与回执绑定的任务不一致，按回执 task_id 预检')
             before=engine.head(db,task['branch'])
             checked=engine.submit(db,receipt,brief=True,preview=True)
@@ -250,7 +250,7 @@ def dispatch_raw(args):
                 removed=engine.prune_work(db,args.project,keep=0)
                 log(db,'work_tidy',{'removed':removed,'mode':'manual'})
             swept=engine.sweep_legacy(args.project)
-            return {'removed':len(removed),'directories':removed,'legacy_removed':swept['removed'],'legacy_kept':swept['kept']}
+            return {'removed':len(removed),'directories':removed,'legacy_removed':swept['removed'],'legacy_kept':swept['kept'],'legacy_relocated':swept['relocated']}
         if cmd=='submit':
             receipt=read_receipt(db,args.project,args.result)
             task=db.execute('SELECT * FROM tasks WHERE id=?',(receipt.get('task_id') if isinstance(receipt,dict) else None,)).fetchone()
@@ -343,8 +343,9 @@ def dispatch_raw(args):
                                           'reduction_inputs_per_group':REDUCE_INPUTS,'limits_enforced':False},
                     'explosion_control':'exact source records, same-bundle preparation, task isolation, topic selection, complete semantic-unit pages, source-bound preparation, load-once, actual host handoff',
                     'context_window_verified':False,'usage':usage(db),'python':platform.python_version(),'sqlite':__import__('sqlite3').sqlite_version,'python_path':sys.executable,'file_roundtrip':'database opened','automatic_after_chat_close':'host main session owns continuous scheduling','independent_review':'host_must_verify_fresh_review_workers','independent_review_verified':False}
-            litter=engine.sweep_legacy(args.project,apply=False)['removed']
-            if litter: report['legacy_litter']=litter
+            swept=engine.sweep_legacy(args.project,apply=False)
+            if swept['removed']: report['legacy_litter']=swept['removed']
+            if swept['relocated']: report['stray_ledger_files']=swept['relocated']
             return report
         if cmd=='map':
             from novel_core.ledger import replay

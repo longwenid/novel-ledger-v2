@@ -78,4 +78,4 @@ def test_sweep_on_clean_project_is_noop(tmp_path):
     project = tmp_path/'p'
     initialize(project, contract())
     report = engine.sweep_legacy(project)
-    assert report == {'removed': [], 'kept': []}
+    assert report == {'removed': [], 'kept': [], 'relocated': []}

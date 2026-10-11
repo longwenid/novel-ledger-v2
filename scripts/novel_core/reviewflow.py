@@ -95,10 +95,23 @@ def seal(db, project, task_id, receipt):
                         and set(impression)==set(FIRST_FIELDS)
                         and all(isinstance(impression[k],str) and impression[k].strip() for k in FIRST_FIELDS),
                         'batch_first_read','各章首读须绑定正文版本并填齐四项具体体验')
-            current=next(r for r in reads if r['chapter']==task['chapter'])
-            require(receipt.get('first_read')==current['first_read'],'first_read_conflict','本章首读须与批次记录一致')
             put(db,batch_key(session['batch']),{'reads':copy.deepcopy(reads),'hash':digest(reads)})
             log(db,'chapter_batch_first_read_sealed',{'batch':session['batch'],'chapters':sorted(expected)})
+        # Single source of truth: with a reads array the top-level entry for
+        # the current chapter is derived by the engine; declaring a divergent
+        # copy is the only failure, and the error shows both texts.
+        reads = receipt.get('first_reads')
+        if isinstance(reads, list):
+            match = next((r for r in reads if isinstance(r, dict) and r.get('chapter') == task['chapter']), None)
+            if isinstance(match, dict) and isinstance(match.get('first_read'), dict):
+                declared = receipt.get('first_read')
+                def _peek(impression):
+                    return {k: (v[:40] if isinstance(v, str) else v) for k, v in impression.items()}
+                require(declared is None or declared == match['first_read'], 'first_read_conflict',
+                        '顶层 first_read 与 first_reads 中本章条目不一致；只填 first_reads 一处，顶层由程序生成本章条目',
+                        {'chapter': task['chapter'], 'entry': _peek(match['first_read']),
+                         'declared': _peek(declared) if isinstance(declared, dict) else declared})
+                receipt['first_read'] = copy.deepcopy(match['first_read'])
         first = receipt.get('first_read')
         require(isinstance(first, dict) and set(first) == set(FIRST_FIELDS)
                 and all(isinstance(first[k], str) and first[k].strip() for k in FIRST_FIELDS),

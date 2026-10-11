@@ -48,6 +48,22 @@ class ChapterBatchTests(unittest.TestCase):
         work=self.work(t);draft=engine.load_draft(self.db,'main',t['chapter'])
         return combined_review(work,draft['prose'],t['chapter'],events=draft['candidate_events'] if events is None else events)
 
+    def test_first_read_seal_derives_top_level_from_batch_entry(self):
+        out,_=self.writer_batch();t=self.cli('advance','--after',out['task_id'])['task']
+        delivered=json.loads((self.path/t['first_read_template_path']).read_text(encoding='utf-8'))
+        self.assertNotIn('first_read',delivered);self.assertIn('first_reads',delivered)
+        reads=[{'chapter':r['chapter'],'prose_hash':r['prose_hash'],'first_read':fixture_first_read()} for r in t['first_read_files']]
+        divergent={'task_id':t['task_id'],'input_hash':t['input_hash'],'prose_hash':t['first_read_hash'],
+                   'first_reads':reads,'first_read':{**fixture_first_read(),'change':'补读后另写'}}
+        with self.assertRaises(Error) as caught:reviewflow.seal(self.db,self.path,t['task_id'],divergent)
+        self.assertEqual(caught.exception.code,'first_read_conflict')
+        self.assertEqual(caught.exception.details['chapter'],t['chapter'])
+        self.assertIn('entry',caught.exception.details)
+        self.assertIsNone(reviewflow.record(self.db,t['task_id']))
+        receipt={'task_id':t['task_id'],'input_hash':t['input_hash'],'prose_hash':t['first_read_hash'],'first_reads':reads}
+        reviewflow.seal(self.db,self.path,t['task_id'],receipt)
+        self.assertEqual(reviewflow.record(self.db,t['task_id'])['receipt']['first_read'],fixture_first_read())
+
     def test_five_drafts_then_one_reviewer_session_without_canonical_writes(self):
         before=digest(replay(self.db,'main'));out,tasks=self.writer_batch()
         self.assertEqual([t['chapter'] for t in tasks],[2,3,4,5,6]);self.assertEqual(out['action'],'chapter_batch_done')
