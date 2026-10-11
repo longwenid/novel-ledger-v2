@@ -410,6 +410,7 @@ def render(db, branch):
         for k, v in sorted(open_hooks.items(), key=lambda kv: kv[1].get('due', 0)):
             due = v.get('due', 0)
             cls = 'bad' if due <= head_n else 'warn'
+            left = f'剩余{max(due - head_n, 0)}章'
             imp_tag = '<span class="pill">重要</span>' if v.get('important', True) else ''
             seed_ch = _esc((v.get('seed') or {}).get('chapter', '?'))
             page.append(f'<div class="evt"><div class="head"><b>{_esc(k)}</b><span class="pill {cls}">最迟第{due}章 · {left}</span>'
