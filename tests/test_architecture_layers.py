@@ -46,6 +46,28 @@ LATE_BINDING = {
 }
 
 
+# 跨角色/跨进程边界上被依赖的协议标识。账本 schema 用完整形式；其余用协议
+# 标识本身，因为代码里既有 `sealed-review/1` 这样的比较常量，也有
+# `novel-ledger-v2.result/1` 这样的回执 schema —— 标识是二者的共同子串。
+# 内部形状标识（status/pack/settlement/review-context/impact/character-view/
+# character-index/writer-brief 等只用于标记来源或划分哈希域）不在此列，
+# 这个划分是显式决定，并由下面的测试锁定。
+WIRE_PROTOCOLS = (
+    'novel-ledger-v2/2',
+    'task/1',
+    'result/1',
+    'handoff/1',
+    'controller/1',
+    'preflight/1',
+    'preparation/1',
+    'chapter-batch/1',
+    'sealed-review/1',
+    'review-run/1',
+    'same-bundle/1',
+    'numeric-patch/1',
+)
+
+
 def package_imports(node, sink):
     """Collect intra-package imports from one AST node.
 
@@ -359,6 +381,16 @@ class MechanicalFactTests(unittest.TestCase):
         missing = sorted(name for name in parser()._subparsers._group_actions[0].choices
                          if f'`{name}`' not in text)
         self.assertEqual(missing, [], f'README 未提及这些子命令：{missing}')
+
+    def test_wire_protocols_are_documented_and_live(self):
+        """P5 双向锁定：跨边界协议串既要在 protocol.md 登记，也要仍在代码里。"""
+        documented = self.doc('references/protocol.md')
+        code = '\n'.join([path.read_text(encoding='utf-8') for path in sorted(CORE.glob('*.py'))]
+                         + [(ROOT / 'scripts' / 'novel.py').read_text(encoding='utf-8')])
+        for token in WIRE_PROTOCOLS:
+            with self.subTest(token=token):
+                self.assertIn(token, documented, f'{token} 未在 protocol.md 的协议串清单中登记')
+                self.assertIn(token, code, f'{token} 已不在代码中：协议串清单过期')
 
     def test_architecture_doc_links_resolve(self):
         text = self.doc('references/architecture.md')

@@ -244,3 +244,22 @@ CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧�
 `revision_exhausted` 暂停属于需作者决策的阻碍：主控报告链摘要与全部发现后结束会话，不得 resume 重派同一整体复审，也不得再开新链。嵌套候选被 `revise --discard` 丢弃时回到父候选续作，而非直接跳回正式分支。
 
 核心项 coverage/continuity/read_on/character/change/language/substance/causality/character_arcs/payoffs/pacing/ending/length/core_promises/stable_facts/spatial/character_consistency/voice_evolution/voice_match/volume_development/revision_intent 不能使用 not_applicable 绕过证据；其余项不适用也必须提供非空字符串理由。清单与 `engine.REVIEW_MANDATORY_CHECKS` 一致，由架构守护测试锁定。
+
+## 协议串清单
+
+跨角色或跨进程边界上被依赖的标识。**判据**：Worker 或宿主会读到它、并据此解析或判断流程的，属于此列；只用于标记来源或划分哈希域的内部形状标识（`status`、`pack`、`settlement`、`review-context`、`impact`、`character-view`、`character-index`、`writer-brief` 等）不在此列。本清单与代码由守护测试双向锁定（[架构契约](architecture.md) P5）：文档里登记了而代码里消失，或代码里新增而文档没登记，测试都会失败。
+
+| 协议串 | 出现处 | 用途 |
+|---|---|---|
+| `novel-ledger-v2/2` | 账本 `meta.schema` | 数据库结构版本；不兼容旧项目 |
+| `novel-ledger-v2.task/1` | 任务信封 | 主控派工 |
+| `novel-ledger-v2.result/1` | 结果回执 | Worker 提交 |
+| `novel-ledger-v2.handoff/1` | 交接视图 | `advance` 返回 |
+| `novel-ledger-v2.controller/1` | `work/controller.json` | 主控恢复点快照 |
+| `novel-ledger-v2.preflight/1` | 只读预检 | `preflight` 返回 |
+| `novel-ledger-v2.preparation/1` | 材料任务 | 语义准备 |
+| `novel-ledger-v2.chapter-batch/1` | 批次会话 | 连写与整批审稿 |
+| `novel-ledger-v2.sealed-review/1` | 首读封存 | 盲读门禁 |
+| `novel-ledger-v2.review-run/1` | 连续复审会话 | 跨章复审 |
+| `novel-ledger-v2.same-bundle/1` | 材料快照 | 同一批次材料 |
+| `novel-ledger-v2.numeric-patch/1` | 数字快修 | 定点数字修正 |
