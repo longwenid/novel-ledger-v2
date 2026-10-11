@@ -10,7 +10,9 @@ semantic claim. It is a conservative filter, not a proof, and it is blind in
 exactly the direction of what prose can do that keys cannot:
 
   * a value reached only through free text whose owning entity the chapter
-    never names (指代、称谓、"那笔本钱");
+    never names (指代、称谓、"那笔本钱") — this one now has a channel: the
+    writer can declare the coordinate in `reads`, and a declared read always
+    refuses the carry. Without a declaration the blind spot stands;
   * a surface form the sweep does not enumerate (paraphrase, dropped unit,
     a number spelled in a way `_value_forms` does not generate).
 
@@ -27,12 +29,16 @@ Detectors, each of which may independently refuse a carry:
      path stays authoritative and carry never fires;
   1. declared dependencies — every chapter named in `plan['dependencies']`
      must be byte-identical between parent and branch;
-  2. dependency delta — the changed state keys must be disjoint from the
+  2. declared reads — the chapter's own `reads` list must not intersect the
+     changed coordinates. This is the only detector that can see a
+     description-style reference, because it is the only one the writer
+     supplies rather than the engine guessing;
+  3. dependency delta — the changed state keys must be disjoint from the
      chapter's read-set (plan entities + entities named in prose);
-  3. surface sweep — literal forms of the old/new values, their Chinese
+  4. surface sweep — literal forms of the old/new values, their Chinese
      numeric spelling, and the owning entities' names must not appear in the
      chapter's prose;
-  4. replay — the chapter's own events must re-apply against the new branch
+  5. replay — the chapter's own events must re-apply against the new branch
      prefix, and the parent's stored review verdicts must actually have passed.
 
 The net that actually closes the class: carried chapters stay inside the
@@ -222,6 +228,32 @@ def _declared_dependency_changed(db, branch, parent, n):
     return False
 
 
+def _changed_keys(delta):
+    """Coordinates the revision changed, in the same `entity:key` string form a
+    writer declares reads in."""
+    return {key for collection in ('facts', 'knowledge') for key in (delta.get(collection) or {})}
+
+
+def _declared_reads(db, branch, parent, n):
+    """The chapter's own declaration of which ledger coordinates it read.
+
+    Accepting a declaration can only narrow the carry set, never widen it, so an
+    incomplete one is safe and an absent one keeps the previous behaviour. This
+    is the only channel through which a chapter that refers to a value by
+    description ("那笔本钱") can state the dependency at all — entity names and
+    literal values cannot express it.
+    """
+    for source in (branch, parent):
+        row = db.execute('SELECT data FROM chapters WHERE branch=? AND number=?',
+                         (source, n)).fetchone()
+        if row is None:
+            continue
+        reads = json.loads(row[0]).get('reads')
+        if isinstance(reads, list):
+            return {item for item in reads if isinstance(item, str)}
+    return set()
+
+
 def carried_chapters(db, branch):
     rows = db.execute('SELECT number,data FROM chapters WHERE branch=? ORDER BY number', (branch,)).fetchall()
     out = []
@@ -263,6 +295,8 @@ def _carry_one(db, branch, parent, n, chapter_row):
     if changed is None:
         return None
     if _declared_dependency_changed(db, branch, parent, n):
+        return None
+    if _declared_reads(db, branch, parent, n) & _changed_keys(delta):
         return None
     if changed & _read_set(db, branch, parent, n, prose, entities_index):
         return None

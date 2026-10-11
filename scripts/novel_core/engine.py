@@ -912,6 +912,24 @@ def validate_hook_deadlines(state,chapter):
                      'retrieval':{'command':'recall','topic':hid,'instruction':'按此话题查询完整埋设和变更证据；处理后再次提交会报告下一项'}})
 
 
+def validate_reads(value):
+    """Ledger coordinates the chapter's prose actually reads (P3).
+
+    Carry decides "this chapter is unaffected" by intersecting changed ledger
+    keys with the chapter's read-set. That read-set is derived structurally —
+    plan entities plus entities named in the prose — so a chapter that refers
+    to a value by description ("那笔本钱") contributes nothing, and could be
+    carried while its prose asserted a value the revision had just changed.
+
+    The writer knows what it read; this is where it says so. Declaring reads can
+    only refuse more carries, never allow one, so an incomplete declaration is
+    not a safety regression and an absent one keeps the previous behaviour.
+    """
+    require(isinstance(value,list) and all(isinstance(item,str) and item.strip() for item in value),
+            'reads','reads 为账本坐标字符串数组，如 ["周行:装备","patron:loan"]；它声明本章正文依赖的账本键')
+    return sorted(set(value))
+
+
 def commit_draft(db,branch,n,draft):
     state=replay(db,branch)
     plan_row=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
@@ -927,6 +945,9 @@ def commit_draft(db,branch,n,draft):
     if draft.get('numeric_correction'):stored['numeric_correction']=copy.deepcopy(draft['numeric_correction'])
     from .budget import han_count
     stored.update(volume=plan['volume'],prose_hash=digest(draft['prose']),han_characters=han_count(draft['prose']))
+    # Declared read-set travels with the chapter so a later revision can carry
+    # it accurately instead of guessing from entity names (P3, INV-12).
+    if draft.get('reads'):stored['reads']=list(draft['reads'])
     if observation:stored['chapter_length']=observation
     db.execute('INSERT INTO chapters VALUES (?,?,?,?,?)',(branch,n,draft['prose'],dump(stored),digest(draft['prose'])))
     append_events(db,branch,n,draft['prose'],draft['events'],state)
@@ -1204,6 +1225,8 @@ def submit(db, result, brief=False, preview=False):
             if not draft:
                 draft={'attempts':0}
             prior_prose=draft.get('prose')
+            if 'reads' in data:
+                draft['reads']=validate_reads(data['reads'])
             for obsolete in ('events','summary','facts_review','reader_review'):draft.pop(obsolete,None)
             draft.update(prose=prose,stage='chapter_review')
             if work.get('chapter_session',{}).get('role')=='writer':

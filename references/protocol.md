@@ -142,6 +142,8 @@ character_views=scoped 的新档案先派 character_index，data={"indexes":[...
 
 首稿及 redesign 的 `prose` 为完整正文字符串，可含章标题。repair 和已有原稿的候选修订 draft 可提交 `base_hash/patches/repair_note`，避免整章重复；确无需改文的候选 draft 可用 `base_hash/reuse_original:true`。三种正文方式不能混用，完整字段与扩大上下文见 [局部修订](repairs.md)。
 
+`reads`（可选，draft/repair/redesign 均可）：本章正文实际依赖的账本坐标数组，如 `["周行:装备","patron:loan"]`。它服务于历史修订——引擎据此判断哪些后文未受影响、可以免于逐章重做；实体名与数值字面扫荡看不到指代（"那笔本钱"），只有这句声明能表达该依赖。声明是**单调**的：它只会让更多后文重做，绝不会让更多后文被携带，所以漏声明不会出错（行为与不声明相同），错声明也不危险。声明随章节入库，供后续修订使用。判据见 [架构契约](architecture.md) INV-12。
+
 整章 prose 模式的 repair 另需 `repair_note`，必须实际修改原稿；redesign 另需 `design_change` 说明设计改变，必须实际改文。
 
 仅 redesign 可选 `plan_update`，draft/repair 提交此字段会报错；它仅更新当前章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm，不能变更约定、卷序、终局标记或自行下调已定目标。

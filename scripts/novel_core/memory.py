@@ -63,9 +63,12 @@ STAGE_PRIMERS = {
     'context_reduce': 'data={notes:[{text,evidence:[{document,start,quote}]}],accounting:[{input_id,disposition:kept|duplicate|irrelevant,reason,duplicate_of?:输出note下标}]}。'
                       '逐项登记全部 payload.inputs；kept/duplicate 的完整因果证据须整体继承到对应输出。'
                       'cannot_compact:true+reason 保留全部节点；不得新增未读来源。',
-    'draft': 'data={prose:完整正文非空字符串可含章标题,summary:本章摘要覆盖选择/后果/未决压力}。执笔不替自己签发审稿,不提交 events 或 findings。短章目标见包内 chapter_length,目标不能擅改。',
-    'repair': '局部返修交 data={base_hash,patches:[{start,old,new}],repair_note};old 须与基稿该处精确一致且 start 按完整基稿定位。整章重写才交 prose+repair_note,必须实际改文。reuse_original 仅限历史修订 draft，不用于 repair/redesign。',
-    'redesign': 'data 同 draft 的 prose/summary，另必交 design_change 说明设计改变，须产生实际变化的正文;可附 plan_update 仅调当章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm,不可改卷序、终局标记或篇幅目标。',
+    'draft': 'data={prose:完整正文非空字符串可含章标题,summary:本章摘要覆盖选择/后果/未决压力,reads?:["实体:键",...]}。'
+             'reads 声明本章正文实际依赖的账本坐标，包括用「那笔本钱」这类指代引用的值——名字和数值扫荡看不到指代，只有你的声明能表达它。'
+             '历史修订据此判断后文是否受影响：声明过的键一旦被改，这一章就会重做而不是被携带。漏声明不会报错，只会让后文保守地全部重做。'
+             '执笔不替自己签发审稿,不提交 events 或 findings。短章目标见包内 chapter_length,目标不能擅改。',
+    'repair': '局部返修交 data={base_hash,patches:[{start,old,new}],repair_note};old 须与基稿该处精确一致且 start 按完整基稿定位。整章重写才交 prose+repair_note,必须实际改文。reuse_original 仅限历史修订 draft，不用于 repair/redesign。新增依赖可附 reads。',
+    'redesign': 'data 同 draft 的 prose/summary（可带 reads），另必交 design_change 说明设计改变，须产生实际变化的正文;可附 plan_update 仅调当章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm,不可改卷序、终局标记或篇幅目标。',
     'facts': '另必交 events:[{op,evidence:{chapter,start,quote},...}] 和非空 summary（覆盖选择/后果/未决压力）。事件类型和字段按 references/protocol.md，返修去向按 prior_events_note；前态照抄 state，不重报 auto_carry 续算事件。',
     'reader': '另必交 first_read={desire,obstacle,change,read_on_reason}（四项均非空），保留读取 input 前记录的首读体验；档案不能替正文辩护。',
     'world_plan': 'data 只含引擎允许字段(报错会列出收到键与允许键);不能提交正文事件或覆盖作者约定;event_spine 四层 main/subplot/timeline/tension,触点 id 用 sp: 前缀。',

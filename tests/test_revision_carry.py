@@ -12,7 +12,7 @@ from support import (contract, initialize, connect, respond, result, review,
                      plan, rpath, pack_prose, submit_review)
 from novel_core import engine
 from novel_core.ledger import replay
-from novel_core.store import get, head
+from novel_core.store import Error, get, head
 
 CH2_OLD = '半文旧账'
 CH2_NEW = '一文清账'
@@ -30,7 +30,7 @@ class RevisionCarryTests(unittest.TestCase):
     def task(self):
         return engine.next_task(self.db, self.path)
 
-    def _chapter(self, prose, events, plan_entities=None, plan_extra=None):
+    def _chapter(self, prose, events, plan_entities=None, plan_extra=None, draft_extra=None):
         planned = self.task(); self.assertEqual(planned['stage'], 'plan')
         if plan_entities is not None or plan_extra:
             from support import result as _result
@@ -42,7 +42,11 @@ class RevisionCarryTests(unittest.TestCase):
             engine.submit(self.db, _result(planned, {'chapters': [chapter]}))
         else:
             respond(self.db, self.path, planned)
-        respond(self.db, self.path, self.task(), prose=prose)     # draft
+        draft_run = self.task()
+        if draft_extra:
+            engine.submit(self.db, result(draft_run, {'prose': prose, **draft_extra}))
+        else:
+            respond(self.db, self.path, draft_run, prose=prose)
         task = self.task(); self.assertEqual(task['stage'], 'chapter_review')
         work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
         text = pack_prose(self.path, work)
@@ -121,6 +125,39 @@ class RevisionCarryTests(unittest.TestCase):
         page = render(self.db, branch)
         self.assertIn('未逐章重审', page)
         self.assertIn('第3章', page)
+
+    def test_declared_read_blocks_carry_through_a_description(self):
+        """The blind spot `reads` closes. Chapter 3 depends on the ledger value
+        but refers to it by description — it names neither the owning entity nor
+        the figure — so the entity read-set and the literal sweep are both blind
+        to it. Only the writer's own declaration can express this dependency."""
+        p1 = '第1天，周行在铺子把收据交给宋禾。'
+        self._chapter(p1, [self._state_event('hero', 'mood', None, '警觉', '收据', p1, 1)])
+        if self.task().get('stage') == 'await_author':
+            engine.approve(self.db)
+        p2 = '第2天，宋禾在柜台记下' + CH2_OLD + '，压低了声音。'
+        self._chapter(p2, [self._state_event('ally', 'ledger_note', None, CH2_OLD, CH2_OLD, p2, 2)])
+        p3 = '第3天，周行翻出旧案卷宗，按自己的计划排好了顺序。'
+        self._chapter(p3, [self._state_event('hero', 'plan', None, '追索', '旧案', p3, 3)],
+                      plan_entities=['hero'],
+                      draft_extra={'reads': ['ally:ledger_note']})
+        row = self.db.execute('SELECT data FROM chapters WHERE branch=? AND number=3',
+                              ('main',)).fetchone()
+        self.assertEqual(json.loads(row['data'])['reads'], ['ally:ledger_note'])
+        branch = self._revise_ch2()
+        following = self.task()
+        self.assertEqual(following['stage'], 'draft')
+        self.assertEqual(following['chapter'], 3)
+        self.assertIsNone(self.db.execute(
+            'SELECT data FROM chapters WHERE branch=? AND number=3', (branch,)).fetchone())
+
+    def test_malformed_reads_is_refused(self):
+        planned = self.task()
+        respond(self.db, self.path, planned)
+        with self.assertRaises(Error) as caught:
+            engine.submit(self.db, result(self.task(), {'prose': '第1天，周行收下收据。',
+                                                        'reads': 'ally:ledger_note'}))
+        self.assertEqual(caught.exception.code, 'reads')
 
     def test_downstream_precondition_blocks_carry(self):
         p3 = '第3天，宋禾把' + CH2_OLD + '逐笔核对了一遍。'
