@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.34.1'
+VERSION = '1.35.0'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -118,7 +118,7 @@ def initialize(project, contract):
     require(contract.get('character_mode','legacy') in ('legacy','profiled'),'contract','character_mode 为 profiled 或 legacy')
     require(contract.get('character_views','full') in ('full','scoped'),'contract','character_views 为 full/scoped')
     require(contract.get('context_mode','bounded') in ('bounded','legacy'),'contract','context_mode 为 bounded/legacy')
-    require(type(contract.get('chapter_batch_size',5)) is int and 1<=contract.get('chapter_batch_size',5)<=5,'contract','chapter_batch_size 为 1~5')
+    require(type(contract.get('chapter_batch_size',3)) is int and 1<=contract.get('chapter_batch_size',3)<=5,'contract','chapter_batch_size 为 1~5')
     require(type(contract.get('writer_batch',10)) is int and 1<=contract.get('writer_batch',10)<=10,'contract','writer_batch 为 1~10 章的执笔会话上限')
     require(type(contract.get('review_chunk',3)) is int and 1<=contract.get('review_chunk',3)<=5,'contract','review_chunk 为 1~5 章的跨章复审粒度')
     style_anchor = validate_style(contract['style']) | {'source': 'author'} if isinstance(contract.get('style'), dict) else None
@@ -151,7 +151,7 @@ def initialize(project, contract):
         CREATE TABLE logs(id INTEGER PRIMARY KEY, created REAL, action TEXT, data TEXT);
         ''')
         with transaction(db):
-            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), 'writer_batch': contract.get('writer_batch',10), 'chapter_batch_size':contract.get('chapter_batch_size',5), 'review_chunk': contract.get('review_chunk',3), 'seq': 0}.items():
+            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), 'writer_batch': contract.get('writer_batch',10), 'chapter_batch_size':contract.get('chapter_batch_size',3), 'review_chunk': contract.get('review_chunk',3), 'seq': 0}.items():
                 put(db, k, v)
             if style_anchor is not None:
                 put(db, 'style_anchor', style_anchor)

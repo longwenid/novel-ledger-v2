@@ -108,7 +108,7 @@ def status(db, brief=False):
             'pilot_approved':get(db,'pilot_approved'), 'task':dict(task) if task else None,
             'reason':get(db,'pause_reason'),
             'review_mode':'combined','writer_batch':get(db,'writer_batch',10),
-            'chapter_batch_size':get(db,'chapter_batch_size',5),'batch_through':get(db,'batch_through',0),
+            'chapter_batch_size':get(db,'chapter_batch_size',3),'batch_through':get(db,'batch_through',0),
             'chapter_batch':get(db,'chapter_batch:'+work),
             'recovery':snapshot(db,task),
             'context_chars':get(db,'context_chars'),

@@ -80,7 +80,7 @@ character_index 须完整阅读档案和来源章，不能证明适用范围时�
 
 ## 五章执笔与整批独立审稿
 
-`chapter_batch_size` 默认 5、范围 1～5，设为 1 沿用逐章审稿。每批从现有计划取连续章节，遇卷末、终章、十章复核点、计划缺失或新人物准备边界提前结束；试章与历史修订保留逐章流程。`writer_batch` 仍是执笔会话最多处理 1～10 个不同章节的上限，也约束本批长度。已有 pending 与旧材料 bundle 按原协议完成后，新批次才采用此模式。
+`chapter_batch_size` 默认 3、范围 1～5，设为 1 沿用逐章审稿。批次越小连坐返修范围越小、派工次数越多，默认 3 平衡两者。每批从现有计划取连续章节，遇卷末、终章、十章复核点、计划缺失或新人物准备边界提前结束；试章与历史修订保留逐章流程。`writer_batch` 仍是执笔会话最多处理 1～10 个不同章节的上限，也约束本批长度。已有 pending 与旧材料 bundle 按原协议完成后，新批次才采用此模式。
 
 1. 主控将带 `chapter_session.role=writer` 的信封派给空历史执笔者。每次仍写一章，提交正文、实际摘要、带证据的 `candidate_events` 与非空具体 `self_check`。程序核验候选事件前态、证据、资源、时钟和到期承诺；候选状态仅服务下一章承接，不表示审稿通过。真实事实、导出、HTML 与审计只读取正式账本。
 2. `commands.submit` 带 `--continue-chapter-batch`，`action=continue_chapter_batch` 时直接处理响应 task，同一次执行内逐章推进；不是主控逐章 resume。批次完成、暂停、范围/依赖变化或上下文不足即停止，返回最后已提交 ID。不能 next/advance 或跨角色。公共资料在 `shared_materials` 的完整 JSON 文件中，只在同一 Worker 已读且版本未变时复用；新 Worker 须重新读。

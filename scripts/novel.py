@@ -289,7 +289,7 @@ def dispatch_raw(args):
             report={'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
                     'context_mode':get(db,'context_mode','bounded'),'preparation_policy':get(db,'preparation_policy','adaptive'),'character_limits_enforced':False,
                     'review_protocol':PROTOCOL,'review_verification':'order_and_evidence_coverage_only',
-                    'chapter_batch_size':get(db,'chapter_batch_size',5),'chapter_batch_protocol':'chapter-batch/1',
+                    'chapter_batch_size':get(db,'chapter_batch_size',3),'chapter_batch_protocol':'chapter-batch/1',
                     'candidate_ledger':'drafts_only; canonical_commit_requires_independent_review',
                     'material_structure':{'scan_units_per_page':SCAN_UNITS,'scan_layout':'multi-document/1','direct_material_units':DIRECT_UNITS,
                                           'exact_record_units':EXACT_UNITS,'preparation_session':SESSION_PROTOCOL,
@@ -374,8 +374,8 @@ def dispatch_raw(args):
                     return engine.status(db)
                 return engine.begin_revision(db,args.from_chapter,args.reason,style_only=args.style_only)
         if cmd=='config':
-            if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'preparation_policy':get(db,'preparation_policy','adaptive'),'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full'),'writer_batch':get(db,'writer_batch',10),'chapter_batch_size':get(db,'chapter_batch_size',5),'batch_through':get(db,'batch_through',0)}
-            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key,{'preparation_policy':'adaptive','writer_batch':10,'chapter_batch_size':5,'batch_through':0,'revision_chain_limit':2}.get(args.key))}
+            if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'preparation_policy':get(db,'preparation_policy','adaptive'),'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full'),'writer_batch':get(db,'writer_batch',10),'chapter_batch_size':get(db,'chapter_batch_size',3),'batch_through':get(db,'batch_through',0)}
+            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key,{'preparation_policy':'adaptive','writer_batch':10,'chapter_batch_size':3,'batch_through':0,'revision_chain_limit':2}.get(args.key))}
             if args.key=='style_anchor':
                 try:
                     from novel_core.store import validate_style

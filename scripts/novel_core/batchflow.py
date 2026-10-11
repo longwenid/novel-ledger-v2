@@ -123,7 +123,7 @@ def choose(db,single,allow_new_batch=True):
     limit=get(db,'batch_through',0)
     if limit and committed>=limit and get(db,'pilot_approved'):
         return 'target_reached',committed,{'through':limit,'reason':'达到主控指定范围；继续须更新范围。'}
-    size=min(get(db,'chapter_batch_size',5),get(db,'writer_batch',10))
+    size=min(get(db,'chapter_batch_size',3),get(db,'writer_batch',10))
     if not allow_new_batch:return job
     rev=db.execute('SELECT status FROM branches WHERE id=?',(branch,)).fetchone()
     if stage!='draft' or size<=1 or n<=1 or not get(db,'pilot_approved') or rev['status']!='active' or (saved and not saved.get('candidate_invalidated')):return job
