@@ -312,4 +312,21 @@ class StandaloneNumericTests(unittest.TestCase):
         self.assertIn('--task',body['message'])
 
 
+    def test_settlement_reports_every_event_defect_at_once(self):
+        from novel_core.settlement import evaluate
+        text='第二天周行付账。'
+        events=[
+            {'op':'state','entity':'hero','key':'route','before':None,'after':'2','evidence':{'quote':'不在正文的引文'}},
+            {'entity':'hero','key':'route'},                                   # missing op -> KeyError path
+            {'op':'state','entity':'hero','key':'route','before':'wrong','after':'3','evidence':ev(text,2,'付账')},
+        ]
+        with self.assertRaises(Error) as caught:evaluate(self.db,'main',2,text,events)
+        details=caught.exception.details
+        self.assertEqual(details['count'],3)
+        self.assertEqual([i['event_index'] for i in details['issues']],[0,1,2])
+        self.assertNotIn('cascade',details['issues'][0])        # independent defects
+        self.assertNotIn('cascade',details['issues'][1])
+        self.assertTrue(details['issues'][2].get('cascade'))    # may only reflect event 0 not applying
+
+
 if __name__=='__main__':unittest.main()

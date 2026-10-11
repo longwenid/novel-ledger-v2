@@ -23,7 +23,7 @@ context_mode=bounded 表示按任务和来源组织材料。context_chars/contex
 
 ## 结构上的消耗控制
 
-输入去重优先按 `shared_read_rule`：人物/设计及较大的账本/连续性字段有 parts 时读取全部完整记录分片，后续同一 Worker 只重读变化的版本；selected.material、候选前缀 events_material 仍须读取。首次接手或上下文不足时重新恢复必要全文，不把其他人的已读记录当作自己阅读。完整字段文件与全部分片是等价读法，选一即可，语义材料不截断。
+输入去重优先按 `shared_read_rule`：人物/设计及较大的账本/连续性字段有 parts 时读取全部完整分片（碎片条目在基础分片内），后续同一 Worker 只重读变化的版本；selected.material、候选前缀 events_material 仍须读取。首次接手或上下文不足时重新恢复必要全文，不把其他人的已读记录当作自己阅读。完整字段文件与全部分片是等价读法，选一即可，语义材料不截断。
 
 输出去重用生成的简洁提交命令；主控 `advance --compact`，Worker 按返回 task_path 恢复完整信封。审稿和候选事件可在 evidence_catalog 登记重复引文，各检查仅引用编号，但判断、具体理由和所需证据覆盖逐项完成；程序展开后执行原有全部校验，精确定义见 [协议](protocol.md)。正式 reader.first_read_ref 只引用已冻结的原首读；恢复时如未保留体验，从 first_read_receipt_path 完整读取。以上只减少重复传输，不改变准备路径、审稿覆盖或首读门禁。
 

@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.40.0'
+VERSION = '1.41.0'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -66,14 +66,17 @@ class Batch:
         return ok
 
     def capture(self, error, **details):
-        """Adopt a raised row-level Error, adding the surrounding context."""
-        self.add(error.code, str(error), **details, **(error.details or {}))
+        """Adopt a raised row-level Error; surrounding context wins on clashes."""
+        self.add(error.code, str(error), **{**(error.details or {}), **details})
 
     def raise_if_any(self):
         if self.issues:
             first = self.issues[0]
+            # First-issue fields also sit at top level so single-defect errors
+            # keep their established consumers (event_index, obligation_id...).
             raise Error(first['code'], first['message'],
-                        {'issues': self.issues, 'count': len(self.issues),
+                        {**{k: v for k, v in first.items() if k not in ('code', 'message')},
+                         'issues': self.issues, 'count': len(self.issues),
                          'recover': '一次修正全部列出项后重提，不再逐项试探'})
 
 

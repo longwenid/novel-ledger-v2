@@ -197,7 +197,7 @@ class ChapterBatchTests(unittest.TestCase):
         self.assertNotIn('contract',view);self.assertIn('contract',view['shared_materials'])
         ref=view['shared_materials']['contract'];path=self.path/ref['path']
         self.assertEqual(json.loads(path.read_text()),get(self.db,'contract'))
-        full=digest(json.loads(path.read_text()));self.assertTrue(full.startswith(ref['hash']));self.assertTrue(ref['path'].endswith(full+'.json'))
+        full=digest(json.loads(path.read_text()));self.assertTrue(full.startswith(ref['hash']));self.assertTrue(ref['path'].endswith(full[:16]+'.json'))
         a=self.submit(t,self.write(t));self.assertEqual(self.work(a['task'])['shared_materials']['contract'],ref)
         path.write_bytes(b'\xff\xfe');self.cli('advance')
         self.assertTrue(digest(json.loads(path.read_text())).startswith(ref['hash']))

@@ -1,7 +1,7 @@
 """Deterministic event settlement shared by preflight, drafts and review."""
 import copy
 import json
-from .store import Error, digest, require
+from .store import Batch, Error, digest, require
 from .ledger import apply, replay
 
 
@@ -44,6 +44,13 @@ def evaluate(db, branch, chapter, prose, events, candidate=False, initial_state=
     before = initial_state if initial_state is not None else (candidate_state(db, branch, chapter - 1) if candidate else replay(db, branch))
     state = copy.deepcopy(before)
     steps = []
+    # One rejection answers every event: each retry costs a full-context model
+    # call. Failed events skip (their op checks run before mutating state).
+    # Only order-dependent failures are flagged cascade — they may merely
+    # reflect an earlier skipped event; evidence and shape checks are absolute.
+    ORDER_DEPENDENT = frozenset(('precondition', 'time_conflict', 'time_schedule', 'overdue_hook', 'event_accounting'))
+    batch = Batch()
+    broken = False
     for index, event in enumerate(events):
         context = {'event_index': index, 'chapter': chapter}
         try:
@@ -57,16 +64,23 @@ def evaluate(db, branch, chapter, prose, events, candidate=False, initial_state=
             resources = dict(state['resources']); clock = state['clock'];threads=dict(state['clock_threads'])
             apply(state, event, prose, chapter)
         except KeyError as error:
-            raise Error('event_fields', '事件缺少字段；按 event_contract_path 补齐，不查源码猜格式',
-                        {**context, 'op': event.get('op'), 'missing': error.args[0]}) from error
+            batch.add('event_fields', '事件缺少字段；按 event_contract_path 补齐，不查源码猜格式',
+                      **context,
+                      **{'op': event.get('op') if isinstance(event, dict) else None,
+                         'missing': error.args[0]})
+            broken = True
         except Error as error:
-            raise Error(error.code, str(error), {**context, **(error.details or {}),
-                        'recover': '按本任务 state、commands.state 与事件契约修正正式 result，再运行 commands.preflight；两轮仍失败交回主控'}) from error
-        delta = changes(resources, state['resources'])
-        thread_delta=changes(threads,state['clock_threads'])
-        if delta or clock != state['clock'] or thread_delta:
-            steps.append({'event_index': index, 'op': event['op'], 'resources': delta,
-                          'clock': {'before': clock, 'after': state['clock']},'clock_threads':thread_delta})
+            batch.capture(error, **context,
+                          **({'cascade': True} if broken and error.code in ORDER_DEPENDENT else {}),
+                          **{'recover': '按本任务 state、commands.state 与事件契约修正正式 result，再运行 commands.preflight；两轮仍失败交回主控'})
+            broken = True
+        else:
+            delta = changes(resources, state['resources'])
+            thread_delta=changes(threads,state['clock_threads'])
+            if delta or clock != state['clock'] or thread_delta:
+                steps.append({'event_index': index, 'op': event['op'], 'resources': delta,
+                              'clock': {'before': clock, 'after': state['clock']},'clock_threads':thread_delta})
+    batch.raise_if_any()
     engine.validate_hook_deadlines(state, chapter)
     row = db.execute('SELECT data FROM plans WHERE branch=? AND number=?', (branch, chapter)).fetchone()
     plan = json.loads(row[0]) if row else {}

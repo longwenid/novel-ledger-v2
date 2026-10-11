@@ -39,10 +39,23 @@ def shared_delivery(project,work):
     if not (work.get('chapter_session') or work.get('review_session')):return work
     view=copy.deepcopy(work);materials={}
     def shared(value):
-        hashed=digest(value);rel='work/shared/'+hashed+'.json';path=Path(project).resolve()/rel
-        expected=json.dumps(value,ensure_ascii=False,indent=2,allow_nan=False)+'\n'
-        if not path.exists() or path.read_bytes()!=expected.encode('utf-8'):write_json(path,value)
+        hashed=digest(value)
+        # 16-hex names follow the proven prose/ convention: workers transcribe
+        # them reliably, while 64-hex paths caused failed reads plus
+        # glob-recovery loops (sess-3a04: 47 failed reads, 2/3 of worker tool
+        # calls). Mismatched bytes heal in place, as they always did; a real
+        # 64-bit prefix collision (~1e-11 for thousands of parts) stays visible
+        # through the full-digest hash field. write_json emits CRLF on Windows
+        # text mode, so compare LF-normalized.
+        expected=(json.dumps(value,ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode('utf-8')
+        rel='work/shared/'+hashed[:16]+'.json';path=Path(project).resolve()/rel
+        stored=path.read_bytes().replace(b'\r\n',b'\n') if path.exists() else None
+        if stored!=expected:write_json(path,value)
         return {'path':rel,'hash':hashed[:12],'encoding':'json'}
+    def shardable(item):
+        # Debris-sized entries cost more as files (manifest row + failed-read
+        # risk) than inline inside the base part; only real records shard.
+        return len(json.dumps(item,ensure_ascii=False))>=1024
     fields=('contract','style_anchor','character_context','design_context','guide','state','continuity')
     if work.get('review_session'):fields+=('revision_context','volume_budget')
     for field in fields:
@@ -56,17 +69,20 @@ def shared_delivery(project,work):
             if field=='character_context':
                 for collection in ('profiles','developments'):
                     entries=rest.get(collection)
-                    if isinstance(entries,dict) and entries:
-                        for key,item in entries.items():parts.append({'pointer':[collection,key],**shared(item)})
-                        rest[collection]={}
+                    if isinstance(entries,dict):
+                        big={k:v for k,v in entries.items() if shardable(v)}
+                        rest[collection]={k:v for k,v in entries.items() if k not in big}
+                        for key,item in big.items():parts.append({'pointer':[collection,key],**shared(item)})
             elif field=='design_context':
                 for key in ('world','volume'):
-                    if isinstance(rest.get(key),dict):parts.append({'pointer':[key],**shared(rest.pop(key))})
+                    if isinstance(rest.get(key),dict) and shardable(rest[key]):
+                        parts.append({'pointer':[key],**shared(rest.pop(key))})
             else:
                 # Whole named collections keep arbitrary nested fact values
                 # intact; changing the clock does not resend every claim/map.
                 for key in list(rest):
-                    if isinstance(rest[key],dict) and rest[key]:parts.append({'pointer':[key],**shared(rest.pop(key))})
+                    if isinstance(rest[key],dict) and rest[key] and shardable(rest[key]):
+                        parts.append({'pointer':[key],**shared(rest.pop(key))})
             if parts:materials[field]['parts']=[{'pointer':[],**shared(rest)},*parts]
     # Individual historical events remain byte-complete and independently
     # versioned; a sliding chapter window does not force rereading old events.
@@ -123,7 +139,8 @@ def delivery(db, project, task, work, envelope):
     cli = str(Path(__file__).resolve().parents[1] / 'novel.py')
     def command(name, *args):
         return shlex.join(['python3', cli, name, '--project', str(base), *map(str, args)])
-    envelope['worker_prompt'] = ('只完成当前任务，读取 '+str(root/'task.json')+'。路径相对 PROJECT=' + str(base)
+    envelope['worker_prompt'] = ('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references；只在字段说明不足或报错时查本文件引用的对应指南。'
+                                 '只完成当前任务，读取 '+str(root/'task.json')+'。路径相对 PROJECT=' + str(base)
         + '。以 guide 和 result.template.json 为契约；不可复制旧审稿回执或查库猜协议。'
         + '必要补读用任务内 commands；空模板不代表 pass。成功提交后只返回 task_id/stage/状态，结束，不 next。')
     streaming=work.get('preparation_session',{}).get('protocol')=='same-bundle/1'

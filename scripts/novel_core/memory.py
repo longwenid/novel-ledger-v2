@@ -384,7 +384,7 @@ def pack(db, branch, chapter, stage, payload):
     if 'writer_brief' in base:
         base['plan'] = {k: v for k, v in base['plan'].items() if k not in WRITER_BRIEF_FIELDS}
     if chapter_session and chapter_session['role']=='writer':
-        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。返修模板有 reuse_candidate_events=true 时可续算证据句语境未变的冻结事件，语境改变则完整重报 candidate_events，不混用。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
+        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] 正文整章一次写入 output_path，不用多次小步编辑拼装；篇幅以提交时程序校验为准，measure 仅在确需提前计数时用。data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。返修模板有 reuse_candidate_events=true 时可续算证据句语境未变的冻结事件，语境改变则完整重报 candidate_events，不混用。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
     attach_prose(db, base)
     if stage == 'chapter_review':
         from .reviewflow import PROTOCOL, obligations

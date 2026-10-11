@@ -31,6 +31,8 @@ def catalog_receipt(data):
 
 
 def rebuild_parts(project,ref):
+    if 'parts' not in ref:                      # whole-field file is the equivalent read
+        return json.loads((Path(project)/ref['path']).read_text())
     result={}
     for part in ref['parts']:
         value=json.loads((Path(project)/part['path']).read_text())
@@ -126,13 +128,20 @@ class ContextIOTests(unittest.TestCase):
         self.assertEqual(self.f.snapshot(),before)
 
     def test_profile_parts_reconstruct_exact_values_and_reuse_unchanged_profiles(self):
-        profile={'hash':'profile-v1','data':{'name':'宋禾','story':'完整经历。'*100}}
+        profile={'hash':'profile-v1','data':{'name':'宋禾','story':'完整经历。'*300}}
         full={'chapter_session':{'role':'writer'},'character_context':{'status':'design',
-              'profiles':{'hero':profile},'developments':{'hero':[]},'validity':{'hero':True}},
-              'design_context':{'status':'proposal_not_canon','world':{'data':'世界规则。'*100},'volume':{'data':'卷任务'}}}
+              'profiles':{'hero':profile,'guard':{'name':'门房','story':'短档案。'}},'developments':{'hero':[]},'validity':{'hero':True}},
+              'design_context':{'status':'proposal_not_canon','world':{'data':'世界规则。'*300},'volume':{'data':'卷任务'}}}
         view=shared_delivery(self.path,full)
+        import re
+        refs=[view['shared_materials'][f] for f in ('character_context','design_context')]
+        refs=refs+[p for r in refs for p in r.get('parts',[])]
+        for ref in refs:self.assertRegex(ref['path'],r'work/shared/[0-9a-f]{16}\.json$')
         for field in ('character_context','design_context'):
             self.assertEqual(rebuild_parts(self.path,view['shared_materials'][field]),full[field])
+        pointers=[tuple(p['pointer']) for p in view['shared_materials']['character_context']['parts']]
+        self.assertIn(('profiles','hero'),pointers)
+        self.assertNotIn(('profiles','guard'),pointers)  # debris-sized entries stay in the base part
         before=view['shared_materials']['character_context'];changed=copy.deepcopy(full)
         changed['character_context']['validity']['hero']=False;changed['character_context']['developments']['hero']=[{'change':'见证选择'}]
         after=shared_delivery(self.path,changed)['shared_materials']['character_context']
@@ -141,6 +150,17 @@ class ContextIOTests(unittest.TestCase):
         self.assertEqual(a,b);self.assertNotEqual(before['hash'],after['hash'])
         (self.path/a['path']).write_bytes(b'broken');restored=shared_delivery(self.path,full)
         self.assertEqual(rebuild_parts(self.path,restored['shared_materials']['character_context']),full['character_context'])
+
+    def test_shared_prefix_name_heals_foreign_bytes_in_place(self):
+        from novel_core.store import digest
+        full={'chapter_session':{'role':'writer'},'contract':{'title':'自愈用契约'}}
+        prefix=digest(full['contract'])[:16]
+        occupied=self.path/'work/shared';occupied.mkdir(parents=True,exist_ok=True)
+        (occupied/(prefix+'.json')).write_text('{"别的":"过期或损坏字节"}',encoding='utf-8')
+        view=shared_delivery(self.path,full)
+        ref=view['shared_materials']['contract']
+        self.assertEqual(ref['path'],'work/shared/'+prefix+'.json')
+        self.assertEqual(json.loads((self.path/ref['path']).read_text()),full['contract'])
 
     def test_frozen_first_read_reference_roundtrips_and_commits_numeric_patch(self):
         t,base,corrected,data=self.f.numeric_task();wire=catalog_receipt(data)
@@ -201,7 +221,7 @@ class ContextIOTests(unittest.TestCase):
             self.assertNotIn(key,old);self.assertEqual(rebuild_parts(self.path,old['shared_materials'][key]),full[key])
         changed=copy.deepcopy(full);changed['state']['clock']=3;changed['state']['resources']['cash']='99'
         new=shared_delivery(self.path,changed)
-        for key in ('facts','knowledge','entities'):
+        for key in ('facts','knowledge'):
             a=next(p for p in old['shared_materials']['state']['parts'] if p['pointer']==[key])
             b=next(p for p in new['shared_materials']['state']['parts'] if p['pointer']==[key])
             self.assertEqual(a,b)
@@ -209,5 +229,7 @@ class ContextIOTests(unittest.TestCase):
         restored=shared_delivery(self.path,changed)
         self.assertEqual(rebuild_parts(self.path,restored['shared_materials']['state']),changed['state'])
         self.assertEqual(new['shared_materials']['continuity'],old['shared_materials']['continuity'])
+        base=next(p for p in new['shared_materials']['state']['parts'] if p['pointer']==[])
+        self.assertIn('entities',json.loads((self.path/base['path']).read_text()))  # debris stays with the base
         small={'chapter_session':{'role':'writer'},'state':{'clock':0,'facts':{}}}
         self.assertEqual(shared_delivery(self.path,small)['state'],small['state'])
