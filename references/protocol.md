@@ -90,7 +90,9 @@ submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果�
 
 未带该协议的已有 pending 沿用冻结格式。同版本正文不重复加载。input.payload.facts_checks 与 reader_checks 分别列出两类必查项，事实输入同时提供账本、人物、连续性及前序事件。
 
-批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；后续章任务直接绑定同一批次已冻结的对应首读，仍校验当前 input/prose 版本、作者约定、证据与前态。前章返修/正式事件改变或依赖失效时，新批次重新首读。
+批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；后续章任务直接绑定同一批次已冻结的对应首读，仍校验当前 input/prose 版本、作者约定、证据与前态。
+
+某章审稿通过入库后，引擎把后章候选链重排（rebind）到新正式账本：`state`/`relation`/`knowledge` 的自由文本前件按正式措辞自动对齐（候选稿标记 `candidate_rebound`，日志记 `chapter_batch_rebound`），数值余额、时钟、实体等硬前件保持严格。只有硬前件矛盾（如正式结算余额与后章候选假设不符）才作废后章、重开新批次重新首读；审稿者改写措辞、合并或重组认知话题不再触发重开。后章自身的密封审稿仍是唯一入库闸门，重排不替后章签审。前章返修须重核承接时，同样按硬前件边界作废。
 
 结果 data={facts:{verdict,checks,findings,events,summary,...},reader:{verdict,checks,findings,first_read,...}}，两类子回执格式见下面审稿字段。
 

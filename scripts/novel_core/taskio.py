@@ -105,9 +105,10 @@ def template(task, work, saved=None):
         for category in ('facts', 'reader'):
             data[category] = {'verdict': '', 'checks': check_rows(work['payload'][category+'_checks']), 'findings': []}
             if reviewflow.enabled(work):
+                hint = {'chapter': task['chapter'], 'start': 0, 'quote': '<替换为本章原文引句>'}
                 data[category]['obligations'] = [
-                    {'id': row['id'], 'result': '', 'reason': '', 'evidence': [],
-                     'challenge': {'disposition': '', 'reason': '', 'evidence': {}}}
+                    {'id': row['id'], 'result': 'pass|fix', 'reason': '', 'evidence': [dict(hint)],
+                     'challenge': {'disposition': 'satisfied|violated', 'reason': '', 'evidence': dict(hint)}}
                     for row in work['review_obligations'] if row['category'] == category]
         data['facts'].update(events=[], summary='')
         if saved:data['reader']['first_read_ref']=saved['hash']
@@ -143,7 +144,7 @@ def delivery(db, project, task, work, envelope):
     # verbatim-commands discipline the envelopes are built around.
     def command(name, *args):
         return shlex.join(['python' if os.name == 'nt' else 'python3', cli, name, '--project', str(base), *map(str, args)])
-    envelope['worker_prompt'] = ('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references；只在字段说明不足或报错时查本文件引用的对应指南。'
+    envelope['worker_prompt'] = ('本信封与 task.json 自含执行所需：宿主强制加载 skill 时不冲突，以本信封为准，不通读 references；只在字段说明不足或报错时查本文件引用的对应指南。'
                                  '只完成当前任务，读取 '+str(root/'task.json')+'。路径相对 PROJECT=' + str(base)
         + '。以 guide 和 result.template.json 为契约；不可复制旧审稿回执或查库猜协议。'
         + '必要补读用任务内 commands；空模板不代表 pass。成功提交后只返回 task_id/stage/状态，结束，不 next。')
@@ -153,7 +154,7 @@ def delivery(db, project, task, work, envelope):
     if streaming:
         commands['submit']+=' --continue-preparation'
         envelope['preparation_session']=copy.deepcopy(work['preparation_session'])
-        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references。'
+        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：宿主强制加载 skill 时不冲突，以本信封为准，不通读 references。'
             '只处理当前 preparation_session.bundle 材料批次，读取 '+str(root/'task.json')
             +'。PROJECT='+str(base)+'。按 guide 逐页核验全部来源并写模板，执行 commands.submit；'
             'action=continue_preparation 时直接使用响应 task 继续同一批次，不重复派工或重读已交付来源。'
@@ -163,7 +164,7 @@ def delivery(db, project, task, work, envelope):
         envelope['chapter_session']=copy.deepcopy(work['chapter_session'])
         commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact','--continue-chapter-batch')
         role=work['chapter_session']['role']
-        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references。'
+        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：宿主强制加载 skill 时不冲突，以本信封为准，不通读 references。'
             '只完成 chapter_session 绑定的当前批次与 '+role+' 角色，读取 '+str(root/'task.json')
             +'。PROJECT='+str(base)+'。逐章读取最新输入和模板，按 commands.submit 提交；action=continue_chapter_batch 时直接处理响应 task。'
             '其余 action 或上下文不足时结束，返回最后已提交 task_id、批次与状态，不 next/advance，不跨角色或批次。'
@@ -174,7 +175,7 @@ def delivery(db, project, task, work, envelope):
     if work.get('review_session'):
         envelope['review_session']=copy.deepcopy(work['review_session'])
         commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact','--continue-review')
-        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references。'
+        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：宿主强制加载 skill 时不冲突，以本信封为准，不通读 references。'
             '只完成 review_session 绑定的独立复审，读取 '+str(root/'task.json')
             +'。PROJECT='+str(base)+'。按每次返回任务的 scope/first/through 与检查项举证并分别提交，不套用旧 pass。'
             'action=continue_review 时直接处理响应 task，包括本次复审材料准备；其余 action 或上下文不足时结束，返回最后已提交 task_id。'

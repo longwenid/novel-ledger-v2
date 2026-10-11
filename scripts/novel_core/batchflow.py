@@ -74,7 +74,7 @@ def invalidate(db,batch,start,reason):
         put(db,'candidate_archive:'+batch['id']+':'+str(n),draft)
         if draft['stage'] not in ('repair','redesign'):draft['stage']='draft'
         draft['candidate_invalidated']={'from':start,'reason':reason}
-        for field in ('candidate_events','candidate_prefix_hash','facts_review','reader_review','facts_context_hash','reader_context_hash'):
+        for field in ('candidate_events','candidate_prefix_hash','facts_review','reader_review','facts_context_hash','reader_context_hash','candidate_rebound'):
             draft.pop(field,None)
         engine.save_draft(db,branch,n,draft)
     batch.update(id=uuid.uuid4().hex,first=head(db,branch)+1,phase='writing')
@@ -181,7 +181,8 @@ def accept_candidate(db,branch,n,draft,data,work=None):
     if held and held['chapter']==n:
         batch.pop('local_repair')
         engine.save_draft(db,branch,n,draft)
-        if held['after_state_hash']==state_hash(state) and rebind_suffix(db,batch,n+1,state):
+        failed,_=rebind_suffix(db,batch,n+1,state)
+        if held['after_state_hash']==state_hash(state) and failed is None:
             batch['phase']='review';put(db,key(branch),batch)
             log(db,'local_repair_suffix_retained',{'batch':batch['id'],'chapter':n,'last':batch['last']})
         else:
@@ -189,21 +190,80 @@ def accept_candidate(db,branch,n,draft,data,work=None):
     return settled
 
 
-def rebind_suffix(db,batch,start,state):
-    """Recompute exact prefixes; this never creates or reuses a review pass."""
+def _committed_precondition(event,state):
+    """Current committed value of a free-text precondition, or None.
+
+    `state`, `relation` and `knowledge` carry prose wording; sealed review
+    re-derives that wording independently, so a candidate's `before` text
+    records the writer's phrasing, never the committed one. Numeric, clock,
+    hook and structural preconditions are strict and are not read here."""
+    from .ledger import relation_key
+    op=event.get('op')
+    if op=='state':return state['facts'].get(event.get('entity')+':'+str(event.get('key')))
+    if op=='knowledge':
+        old=state['knowledge'].get(event.get('entity')+':'+str(event.get('topic')))
+        return old['claim'] if old else None
+    if op=='relation':
+        return state.get('relations',{}).get(relation_key(event.get('from'),event.get('to'),event.get('key')))
+    return None
+
+
+def _align_candidate_events(events,base_state,prose,chapter):
+    """Re-derive free-text preconditions from the live chain, event by event.
+
+    Raises the ledger's own Error on strict breaks (numeric balances, clock,
+    entity existence, evidence context); those are real contradictions. Any
+    suffix chapter still faces its own sealed review before committing."""
+    from .ledger import apply
+    probe=copy.deepcopy(base_state);notes=[]
+    for event in events:
+        if event.get('op') in ('state','relation','knowledge'):
+            current=_committed_precondition(event,probe)
+            if event.get('before')!=current:
+                event['before']=current
+                notes.append({'op':event['op'],'key':_precondition_key(event)})
+        apply(probe,event,prose,chapter)
+    return notes
+
+
+def _precondition_key(event):
+    op=event.get('op')
+    if op=='knowledge':return str(event.get('entity'))+':'+str(event.get('topic'))
+    if op=='state':return str(event.get('entity'))+':'+str(event.get('key'))
+    if op=='relation':return str(event.get('from'))+'>'+str(event.get('to'))+':'+str(event.get('key'))
+    return op or '?'
+
+
+def rebind_suffix(db,batch,start,state,base=None):
+    """Rebase the suffix candidate chain onto the committed ledger.
+
+    Free-text preconditions are aligned to the committed wording; strict
+    preconditions stay exact. Returns (first chapter that cannot be rebased
+    or None, {chapter: alignment notes}). Successfully rebound chapters are
+    saved even when a later chapter fails. This never creates or reuses a
+    review pass."""
     from . import engine
     from .settlement import evaluate
-    revised=[]
-    try:
-        for number,draft in rows(db,batch['branch'],batch['last']):
-            if number<start:continue
-            if draft.get('stage')!='chapter_review' or not isinstance(draft.get('candidate_events'),list):return False
+    revised=[];aligned={};failed=None
+    for number,draft in rows(db,batch['branch'],batch['last']):
+        if number<start:continue
+        if draft.get('stage')!='chapter_review' or not isinstance(draft.get('candidate_events'),list):
+            failed=number;break
+        events=copy.deepcopy(draft['candidate_events'])
+        try:
+            notes=_align_candidate_events(events,state,draft['prose'],number)
             prefix=digest(state)
-            state,_=evaluate(db,batch['branch'],number,draft['prose'],draft['candidate_events'],candidate=True,initial_state=state)
-            draft['candidate_prefix_hash']=prefix;revised.append((number,draft))
-    except Error:return False
+            state,_=evaluate(db,batch['branch'],number,draft['prose'],events,candidate=True,initial_state=state)
+        except Error:
+            failed=number;break
+        draft['candidate_events']=events;draft['candidate_prefix_hash']=prefix
+        draft.pop('candidate_rebound',None)
+        if notes:
+            draft['candidate_rebound']={'base_chapter':base if base is not None else start-1,'aligned':notes}
+            aligned[number]=notes
+        revised.append((number,draft))
     for number,draft in revised:engine.save_draft(db,batch['branch'],number,draft)
-    return True
+    return failed,aligned
 
 
 def after_review(db,branch,n,proposed,accepted_events,passed,proposed_state=None,scope='chapter'):
@@ -223,8 +283,11 @@ def after_review(db,branch,n,proposed,accepted_events,passed,proposed_state=None
         put(db,key(branch),None);log(db,'chapter_batch_complete',{'batch':batch['id'],'through':n});return
     from .settlement import state_hash
     actual=replay(db,branch)
-    if proposed_state is None or state_hash(proposed_state)!=state_hash(actual) or not rebind_suffix(db,batch,n+1,actual):
-        invalidate(db,batch,n+1,'正式事件与候选提案不同，后续前态失效')
+    failed,aligned=rebind_suffix(db,batch,n+1,actual,base=n)
+    if failed is not None:
+        invalidate(db,batch,failed,'后续章候选事件与新正式账本硬前件矛盾，须重核承接')
+    elif aligned or (proposed_state is not None and state_hash(proposed_state)!=state_hash(actual)):
+        log(db,'chapter_batch_rebound',{'branch':branch,'after':n,'last':batch['last'],'chapters':sorted(aligned)})
 
 
 def prefix_material(db,branch,n):

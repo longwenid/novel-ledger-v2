@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 from support import contract, initialize, connect, get, put, dump, ev, plan, result, respond, combined_review, fixture_first_read
 from novel_core import engine, batchflow, reviewflow
-from novel_core.ledger import replay
+from novel_core.ledger import replay, resource_key
 from novel_core.store import digest, Error, head
 import novel
 
@@ -81,16 +81,69 @@ class ChapterBatchTests(unittest.TestCase):
         with self.assertRaises(Error):self.submit(t,r)
         self.assertEqual(head(self.db,'main'),1)
 
-    def test_changed_actual_events_preserve_suffix_but_require_rebase(self):
-        out,tasks=self.writer_batch();old=engine.load_draft(self.db,'main',3)['prose']
-        t=self.seal(self.cli('advance','--after',out['task_id'])['task']);report=self.submit(t,self.review(t,events=[]))
+    def _write_batch(self,events_for):
+        t=self.cli('advance')['task'];tasks=[]
+        for _ in range(12):
+            tasks.append(t);n=t['chapter']
+            out=self.submit(t,self.write(t,events=events_for(n,t)))
+            if out['action']!='continue_chapter_batch':return out,tasks
+            t=out['task']
+        self.fail('writing did not stop at batch boundary')
+
+    def test_restructured_actual_events_rebind_suffix_without_new_batch(self):
+        prose2=f'第2章，周行把收据交给宋禾。她在凭证上写下第2次交接的去向。'
+        prose3=f'第3章，周行把收据交给宋禾。她在凭证上写下第3次交接的去向。'
+        def events_for(n,_t):
+            if n==2:return [{'op':'state','entity':'hero','key':'route','before':None,'after':'step2','evidence':ev(prose2,2)},
+                            {'op':'knowledge','entity':'hero','topic':'去向','before':None,'claim':'宋禾记录了去向。',
+                             'stance':'knows','source':'凭证','evidence':ev(prose2,2)}]
+            if n==3:return [{'op':'state','entity':'hero','key':'route','before':'step2','after':'step3','evidence':ev(prose3,3)},
+                            {'op':'knowledge','entity':'hero','topic':'去向','before':'宋禾记录了去向。','claim':'去向核对无误。',
+                             'stance':'knows','source':'核对','evidence':ev(prose3,3)}]
+            return None
+        out,tasks=self._write_batch(events_for);batch=tasks[0]['chapter_session']['batch']
+        t=self.seal(self.cli('advance','--after',out['task_id'])['task'])
+        restructured=[
+            {'op':'state','entity':'hero','key':'route','before':None,'after':'第二步','evidence':ev(prose2,2)},
+            {'op':'knowledge','entity':'hero','topic':'交接认知','before':None,'claim':'宋禾按凭证记下两次去向并开始核对。',
+             'stance':'knows','source':'凭证','evidence':ev(prose2,2)}]
+        report=self.submit(t,self.review(t,events=restructured))
+        self.assertEqual(report['action'],'continue_chapter_batch');self.assertEqual(head(self.db,'main'),2)
+        self.assertEqual(report['task']['chapter_session']['batch'],batch)
+        suffix=engine.load_draft(self.db,'main',3)
+        self.assertEqual(suffix['stage'],'chapter_review')
+        events={e['op']:e for e in suffix['candidate_events']}
+        self.assertEqual(events['state']['before'],'第二步')
+        self.assertIsNone(events['knowledge']['before'])
+        self.assertEqual(suffix['candidate_rebound']['base_chapter'],2)
+        self.assertTrue(self.db.execute("SELECT 1 FROM logs WHERE action='chapter_batch_rebound'").fetchone())
+        following=self.submit(report['task'],self.review(report['task']))
+        self.assertEqual(following['action'],'continue_chapter_batch');self.assertEqual(head(self.db,'main'),3)
+        self.assertEqual(following['task']['chapter_session']['batch'],batch)
+        self.assertTrue(engine.audit(self.db)['ok'])
+
+    def test_hard_precondition_break_invalidates_only_the_broken_suffix(self):
+        prose2=f'第2章，周行把收据交给宋禾。她在凭证上写下第2次交接的去向。'
+        prose3=f'第3章，周行把收据交给宋禾。她在凭证上写下第3次交接的去向。'
+        def events_for(n,_t):
+            if n==2:return [{'op':'resource','asset':'cash','unit':'文','from':'hero','to':None,
+                             'from_before':'100','quantity':'40','reason':'交付凭证的费用','evidence':ev(prose2,2)}]
+            if n==3:return [{'op':'resource','asset':'cash','unit':'文','from':'hero','to':None,
+                             'from_before':'60','quantity':'10','reason':'继续核对的开销','evidence':ev(prose3,3)}]
+            return None
+        out,tasks=self._write_batch(events_for)
+        t=self.seal(self.cli('advance','--after',out['task_id'])['task'])
+        settled_more=[{'op':'resource','asset':'cash','unit':'文','from':'hero','to':None,
+                       'from_before':'100','quantity':'70','reason':'交付凭证的费用远超预期','evidence':ev(prose2,2)}]
+        report=self.submit(t,self.review(t,events=settled_more))
         self.assertEqual(report['action'],'chapter_batch_done');self.assertEqual(head(self.db,'main'),2)
-        suffix=engine.load_draft(self.db,'main',3);self.assertEqual(suffix['prose'],old)
+        self.assertEqual(replay(self.db,'main')['resources'][resource_key('hero','cash','文')],'30')
+        suffix=engine.load_draft(self.db,'main',3)
         self.assertEqual(suffix['stage'],'draft');self.assertNotIn('candidate_events',suffix)
-        next_task=self.cli('advance','--after',report['task_id'])['task'];self.assertEqual(next_task['chapter'],3)
-        self.assertEqual(next_task['chapter_session']['role'],'writer');self.assertNotEqual(next_task['chapter_session']['batch'],tasks[0]['chapter_session']['batch'])
-        self.assertNotIn('hero:route',self.work(next_task)['state']['facts'])
-        self.assertNotIn('candidate_events',dump(self.work(t)))
+        next_task=self.cli('advance','--after',report['task_id'])['task']
+        self.assertEqual(next_task['chapter'],3);self.assertEqual(next_task['chapter_session']['role'],'writer')
+        self.assertNotEqual(next_task['chapter_session']['batch'],tasks[0]['chapter_session']['batch'])
+        self.assertEqual(self.work(next_task)['state']['resources'][resource_key('hero','cash','文')],'30')
 
     def test_review_fix_keeps_attempt_limit_and_invalidates_unreviewed_suffix(self):
         out,_=self.writer_batch();t=self.seal(self.cli('advance','--after',out['task_id'])['task']);r=self.review(t)

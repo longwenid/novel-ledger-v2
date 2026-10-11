@@ -159,7 +159,8 @@ def guide(stage, instruction=None):
         lines.append('[纪律] ' + DISCIPLINE[key])
     lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的账本为准。')
     helpers='信封提供时用 commands.patch 定位补丁、commands.preflight 只读验证完整回执；' if stage in ('draft','repair','redesign','chapter_review') else ''
-    lines.append('[纠错] '+helpers+'错误定位按 message/details 修正，details.issues 一次列出全部不合格项，逐项修完再重提，不逐条试探。结算以前后值和 settlement 为准，不从自评推算余额；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
+    lines.append('[纠错] '+helpers+'回执/result 文件用 Python 脚本 UTF-8 无 BOM 整体写入，不在命令行内联 JSON（弯引号与转义易错，PowerShell 写文件会带 BOM）。'
+                 '错误定位按 message/details 修正，details.issues 一次列出全部不合格项，逐项修完再重提，不逐条试探。结算以前后值和 settlement 为准，不从自评推算余额；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
     lines.append('[观测] 协议字符仅观测，不是配额；缺项可用 recall/material 定向补读，未选入不表示不存在。')
     return '\n'.join(lines)
 
@@ -386,7 +387,7 @@ def pack(db, branch, chapter, stage, payload):
     if 'writer_brief' in base:
         base['plan'] = {k: v for k, v in base['plan'].items() if k not in WRITER_BRIEF_FIELDS}
     if chapter_session and chapter_session['role']=='writer':
-        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] 正文整章一次写入 output_path，不用多次小步编辑拼装；篇幅以提交时程序校验为准，measure 仅在确需提前计数时用。data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。返修模板有 reuse_candidate_events=true 时可续算证据句语境未变的冻结事件，语境改变则完整重报 candidate_events，不混用。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
+        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] 正文整章一次写入 output_path，不用多次小步编辑拼装；篇幅门槛是精确线：shortfall_han 必须为 0（汉字数 ≥ target_han 才 ready），没有九成达标的区间，初写按 target 上浮约百分之五落笔可避免反复补写；measure 仅在确需提前计数时用。data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。返修模板有 reuse_candidate_events=true 时可续算证据句语境未变的冻结事件，语境改变则完整重报 candidate_events，不混用。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
     attach_prose(db, base)
     if stage == 'chapter_review':
         from .reviewflow import PROTOCOL, obligations
@@ -394,7 +395,7 @@ def pack(db, branch, chapter, stage, payload):
         base['review_obligations'] = obligations(contract, base.get('style_anchor'))
         base['guide'] += ('\n[审稿门禁] 首读由 first-read 持久冻结；正式 reader.first_read_ref 按模板引用本任务首读哈希，程序恢复原记录，亦可原样交 first_read 全文，二者不混用。'
                           'facts/reader.obligations 按 review_obligations 本类别 ID 穷尽回应；'
-                          '每条含 result/reason/evidence 和 challenge={disposition:satisfied|violated,reason,evidence}；'
+                          '每条含 result(pass|fix)/reason 与 evidence 数组 [{chapter,start,quote}]，challenge 为单对象 {disposition:satisfied|violated,reason,evidence:{chapter,start,quote}}；'
                           '约定对象本章未触及时判 pass：reason 说明对象未出现，evidence 引任一正文句作未触及佐证。'
                           'challenge 选最可能违反该约定的原文并解释为何可保留或必须返修；violated 必须 fix，'
                           '对应 world_rules/voice_match/language 检查同步 fix，并给标有 obligation_id 的 quality/blocker findings。'

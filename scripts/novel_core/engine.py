@@ -603,7 +603,7 @@ def next_task(db,project,after=None,brief=False,preparation_bundle=None,chapter_
             from .batchflow import active
             batch=active(db)
             if not batch or batch['id']!=chapter_session['batch']:
-                return {'stage':'chapter_batch_done','reason':'批次已结束或依赖失效，主控接手；不启动下一批。'}
+                return {'stage':'chapter_batch_done','reason':'批次已结束或后续硬前件失效，主控接手；不启动下一批。'}
         pending = db.execute("SELECT * FROM tasks WHERE state='pending'").fetchone()
         if pending:
             if review_session is not None and not allowed(json.loads(pending['input']),review_session):

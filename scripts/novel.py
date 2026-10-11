@@ -9,6 +9,15 @@ from novel_core import engine
 from novel_core.store import Error, VERSION, connect, initialize, get, put, transaction, chapters, write_json, log, require
 from novel_core.memory import recall
 
+# Windows consoles default to a legacy code page; captured CJK output then
+# arrives mojibake in host shells. Emit UTF-8 and let the reader decode it.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        try:
+            _stream.reconfigure(encoding='utf-8')
+        except (ValueError, OSError):
+            pass
+
 
 def read(path):
     return json.loads(Path(path).read_text(encoding='utf-8'))
