@@ -71,7 +71,7 @@ profiled 模式的整体复核增加 voice_evolution，检查声音同质化、�
 
 候选链嵌套默认不超过两层（`revision_chain_limit`，config 可调）：第三层 `begin_revision` 返回 `revision_chain_limit` 并附链摘要与出路；连续 fix 或触顶触发的暂停带链摘要与发现，升级作者裁决，自主会话不得绕过。事实/数字/清单类发现先对账再动笔——列出该口径在全部耦合章的出现位置一次改平，对齐结论写进 repair_note；修订整体复审对只改被点名章而其他章残留旧口径的判 fix 并指认残留位置。
 
-整体发现标 repair_route：表达类用 patch 定点修改，事实/因果/认知/时间类用 revise 重验受影响后缀。reuse_original 与免审条件见 [protocol](protocol.md)。表达补丁仍核对否定、说话人、来源、时间和因果；自动续算的事件若语义已变，用 prior_dispositions 替换或删除。
+整体发现用 `repair_route` 声明问题类别：表达类用 patch 定点修改，事实/因果/认知/时间类用 revise 重验受影响后缀；要指定从哪一章改起用 `target_chapter`，两者都不给时默认在最新章就地修订。**引文的位置不决定修订起点**——引用早期章原文举证不会把修订拖回去，回溯必须显式声明（字段与优先级见 [protocol](protocol.md)，判据见 [架构契约](architecture.md) INV-11）。reuse_original 与免审条件见 [protocol](protocol.md)。表达补丁仍核对否定、说话人、来源、时间和因果；自动续算的事件若语义已变，用 prior_dispositions 替换或删除。
 
 ## 完本和覆盖边界
 

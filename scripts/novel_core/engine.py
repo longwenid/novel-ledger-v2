@@ -399,7 +399,7 @@ def review_job(db,branch,scope,first,n):
         chapter=end+1
     receipts = [{'chapter':r['through'],'input_hash':r['input_hash']} for r in db.execute('SELECT through,input_hash FROM reviews WHERE branch=? AND scope=? AND through BETWEEN ? AND ? ORDER BY through',(branch,scopekey,first,n))]
     payload={'scope':scope,'first':first,'through':n,'coverage_receipts':{'count':len(receipts),'first':first,'through':n,'scope':scopekey,'hash':digest(receipts)},
-             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。发现须分流:表达类(重复/收束/节奏/声线)在 finding 上加 repair_route:"patch" 并指向可定位的单章证据——修订时定点改被点名章,其余章可原文复用以省去重传;免逐章审稿须本章及全部前文版本未变。事实/因果/认知/时间类标 revise 或省略,从最早受影响章修订。',
+             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。修订起点由 finding 决定，证据位置不等于修订位置：evidence 只用于举证，可以引用任意章（含与问题章冲突的早期章）；要指定从哪一章开始改，用 target_chapter。表达类(重复/收束/节奏/声线)标 repair_route:"patch"：定点改被点名章，其余章可原文复用省去重传。事实/因果/认知/时间类标 repair_route:"revise"：从最早受影响章重验后缀。两者都不声明时默认在本次范围的最新章就地修订——回溯重写没被点名的章代价高，且可能把已正确的正文改坏，只在确有必要时才声明。免逐章审稿须本章及全部前文版本未变。',
              'checks':checks + ('repetition',) + (('ending','length','core_promises') if scope=='book' else ())}
     if scope=='volume':
         payload['checks']+=('volume_development',)
@@ -864,6 +864,12 @@ def validate_review(data,checks,sources):
         where={'finding_index':index}
         batch.require(item.get('impact') and item.get('goal') and item.get('severity') in ('blocker','quality','note'),
                 'finding','发现须含读者影响、修订目标和级别',**where)
+        if 'target_chapter' in item:
+            batch.require(type(item['target_chapter']) is int and item['target_chapter'] in sources,
+                    'finding','target_chapter 须为本次审稿范围内的章号；它指定修订起点，与举证位置无关',**where)
+        if 'repair_route' in item:
+            batch.require(item['repair_route'] in transitions.REPAIR_ROUTES,
+                    'finding','repair_route 取 patch（表达类定点改）或 revise（事实类回溯重验后缀）',**where)
         ref=item.get('evidence',{})
         if not isinstance(ref,dict) or ref.get('chapter') not in sources:
             batch.add('finding','发现须定位具体正文',**where);continue
@@ -1270,7 +1276,10 @@ def submit(db, result, brief=False, preview=False):
             if data['verdict']=='fix':
                 # End current task before branching; new branch re-reviews the dependent suffix.
                 db.execute("UPDATE tasks SET state='done',result_hash=?,receipt=? WHERE id=?",(hashed,dump(result),task['id']))
-                start=min(f['evidence']['chapter'] for f in data['findings'] if f['severity']!='note')
+                # INV-11: the revision start is a repair directive, derived by
+                # transitions.revision_start — never inferred from where the
+                # reviewer happened to quote evidence.
+                start=transitions.revision_start(data['findings'],through)
                 limit=get(db,'revision_chain_limit',2)
                 if get(db,'revision_failures',0)>=2 or _chain_depth(db)+1>limit:
                     from .recovery import revision_context

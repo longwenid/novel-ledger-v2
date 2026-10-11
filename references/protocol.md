@@ -173,6 +173,13 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 
 发现格式：`{"severity":"quality", "impact":"读者受何影响", "goal":"修订要实现什么", "evidence":{...}}`。severity 为 blocker/quality/note，前两者必须给 fix。检查项 fix 也必须有具体发现，不能只有判词。
 
+**修订起点**（跨章复审 fix 后引擎据此建立修订分支，判据见 [架构契约](architecture.md) INV-11）：
+
+- `evidence` **只用于举证**，可引用任意章——包括与问题章冲突的早期章。它**不决定**从哪一章开始改。
+- 要指定起点，用 `target_chapter`（本次审稿范围内的章号）。
+- 或用 `repair_route` 声明类别：`"patch"` 表达类（重复/收束/节奏/声线）、`"revise"` 事实/因果/认知/时间类；两者都把起点定在该发现证据所在章。
+- 两者都不声明时，默认在本次范围**最新章就地修订**。回溯会重写没被点名的章，代价高且可能把已正确的正文改坏，所以必须显式声明，不能由证据位置推断。
+
 - facts 的 pass 另需 `events: []`、`summary`（完整覆盖本章核心变化，不设字符限额）。没有变化可空事件，但必须核对计划外重要变化。
 - **返修/重设计后的 facts 复审**：payload 会附 `prior_events`（改动前该章完整已登记事件，包含自动续算项，空快照也有效）与 `prior_events_note`。
 - 仅全部本章证据的完整句语境未变时可进入 auto_carry；其余事件在 events 中原样重报即自动视为 kept（引擎按内容一致核对，不需要 prior_dispositions 条目）。正文不再支持的事件须在 prior_dispositions 逐项声明 dropped/replaced 并说明实际变化；既不重报也不声明会被拒绝。也可用该声明覆盖 auto_carry，不能重复提交自动续算项。

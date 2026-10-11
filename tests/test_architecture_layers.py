@@ -209,6 +209,46 @@ class DraftLadderTests(unittest.TestCase):
                          ['quality', 'chapter_development'])
 
 
+class RevisionStartTests(unittest.TestCase):
+    """INV-11：修订起点是修复指令，不是举证位置。"""
+
+    @staticmethod
+    def finding(**extra):
+        base = {'severity': 'quality', 'evidence': {'chapter': 2}}
+        base.update(extra)
+        return base
+
+    def test_undeclared_fix_stays_in_the_newest_chapter(self):
+        """回溯重写未被点名的章代价高且可能改坏已正确的正文；默认就地修。"""
+        self.assertEqual(transitions.revision_start([self.finding()], through=7), 7)
+
+    def test_notes_never_route(self):
+        self.assertEqual(
+            transitions.revision_start([{'severity': 'note', 'target_chapter': 1}], through=7), 7)
+
+    def test_target_chapter_outranks_a_declared_route(self):
+        self.assertEqual(transitions.revision_start(
+            [self.finding(target_chapter=3),
+             self.finding(repair_route='revise', evidence={'chapter': 1})], through=7), 3)
+
+    def test_a_declared_route_routes_to_its_own_chapter(self):
+        for route in transitions.REPAIR_ROUTES:
+            with self.subTest(route=route):
+                self.assertEqual(transitions.revision_start(
+                    [self.finding(repair_route=route)], through=7), 2)
+
+    def test_the_earliest_declared_target_wins(self):
+        self.assertEqual(transitions.revision_start(
+            [self.finding(target_chapter=5), self.finding(target_chapter=4)], through=7), 4)
+
+    def test_malformed_entries_never_route(self):
+        self.assertEqual(transitions.revision_start(
+            [None, 'x', 7,
+             {'severity': 'quality', 'target_chapter': '1'},
+             {'severity': 'quality', 'repair_route': 'revise', 'evidence': 'nope'}],
+            through=7), 7)
+
+
 class BatchGenerationTests(unittest.TestCase):
     """INV-5 + P1：batch 的换代只有一个权威。"""
 

@@ -44,3 +44,43 @@ def resolve_stage(quality_rounds=0, length_rounds=0):
     if length_rounds > EXHAUST_AFTER:
         exhausted.append('chapter_development')
     return stage, exhausted
+
+
+REPAIR_ROUTES = ('patch', 'revise')
+
+
+def revision_start(findings, through):
+    """Which chapter a revision starts from — the repair directive.
+
+    Deliberately NOT the same question as "where is the evidence". A reviewer
+    quotes prose to prove a finding, and proof often lives in an EARLIER
+    chapter (the one the newest chapter contradicts). Deriving the start from
+    `min(evidence.chapter)` therefore pulled the whole suffix backwards and
+    re-drafted chapters that were correct — and `repair_route`, promised by the
+    protocol and by the review instruction, was never read at all.
+
+    Precedence:
+      1. an explicit `target_chapter` on any non-note finding — the reviewer
+         saying where the fix belongs;
+      2. otherwise, findings that declared a `repair_route` are routed to the
+         chapter they name (patch = expression-level in place, revise =
+         fact-level, re-verify the suffix from the earliest affected chapter);
+      3. otherwise the NEWEST chapter in range. Repairing in place is cheap and
+         recoverable — a rejected fix simply returns to repair. Reaching
+         backwards re-drafts chapters nobody implicated, and rewriting correct
+         prose can break it. Backtracking must be declared, never inferred.
+    """
+    live = [f for f in findings if isinstance(f, dict) and f.get('severity') != 'note']
+    declared = [f['target_chapter'] for f in live if type(f.get('target_chapter')) is int]
+    if declared:
+        return min(declared)
+    routed = []
+    for finding in live:
+        if finding.get('repair_route') not in REPAIR_ROUTES:
+            continue
+        ref = finding.get('evidence')
+        if isinstance(ref, dict) and type(ref.get('chapter')) is int:
+            routed.append(ref['chapter'])
+    if routed:
+        return min(routed)
+    return through

@@ -28,7 +28,12 @@ class RevisionChainLimits(unittest.TestCase):
         return project, db
 
     def _fix_review(self, db, task):
-        """Submit an aggregate review verdict=fix anchored at the chunk's first chapter."""
+        """Submit an aggregate review verdict=fix routed to the chunk's first chapter.
+
+        The route is declared explicitly. Evidence only proves the finding, and
+        the engine no longer infers the revision start from where the quote
+        happens to live — an undeclared fix repairs the newest chapter in range.
+        """
         payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
         first = payload['first']
         prose = db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
@@ -37,7 +42,8 @@ class RevisionChainLimits(unittest.TestCase):
         data['verdict'] = 'fix'
         data['checks'][0]['result'] = 'fix'
         data['findings'] = [{'severity': 'quality', 'impact': '口径在章间漂移',
-                             'goal': '对齐耦合章口径', 'evidence': ev(prose, first)}]
+                             'goal': '对齐耦合章口径', 'target_chapter': first,
+                             'evidence': ev(prose, first)}]
         submit_review(db, task, data)
 
     def _sink_chapter(self, db, project):
