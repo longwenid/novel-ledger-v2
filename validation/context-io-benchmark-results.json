@@ -1,0 +1,40 @@
+{
+  "scope": "synthetic five-chapter input material reuse, one real engine handoff and review-receipt fixture; identical logical source values and evidence; excludes system/host prompts, reasoning, chat history, cache billing and actual literary quality",
+  "lossless_roundtrip": true,
+  "real_preflight_passed": true,
+  "comparisons": {
+    "inputs": {
+      "before_chars": 24394,
+      "after_chars": 20102,
+      "char_reduction_percent": 17.59,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 19129,
+        "after": 10233,
+        "reduction_percent": 46.51
+      }
+    },
+    "handoff_output": {
+      "before_chars": 4322,
+      "after_chars": 1403,
+      "char_reduction_percent": 67.54,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 1608,
+        "after": 515,
+        "reduction_percent": 67.97
+      }
+    },
+    "review_receipt_output": {
+      "before_chars": 2795,
+      "after_chars": 2020,
+      "char_reduction_percent": 27.73,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 1264,
+        "after": 760,
+        "reduction_percent": 39.87
+      }
+    }
+  }
+}

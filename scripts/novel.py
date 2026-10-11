@@ -14,11 +14,25 @@ def read(path):
     return json.loads(Path(path).read_text(encoding='utf-8'))
 
 
+def read_receipt(db, project, given, record=True):
+    """Bind task-directory outputs to their original frozen task, even on retry."""
+    path=Path(given)
+    path=(path if path.is_absolute() else Path(project).resolve()/path).resolve()
+    envelope_path=path.parent/'task.json';bound_task=None
+    if envelope_path.is_file():
+        envelope=read(envelope_path)
+        if isinstance(envelope,dict):
+            row=db.execute('SELECT * FROM tasks WHERE id=?',(envelope.get('task_id'),)).fetchone()
+            if row and path.parent==(Path(project).resolve()/engine.work_rel(row)).resolve():
+                bound_task=row['id']
+    return engine.normalize_receipt(db,read(path),record=record,bound_task=bound_task)
+
+
 def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','advance','submit','measure','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot','first-read','evidence','checkpoint'):
+    for name in ('init','status','next','advance','submit','measure','preflight','patch','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot','first-read','evidence','checkpoint'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
@@ -27,12 +41,15 @@ def parser():
         if name=='material':
             s.add_argument('--task',required=True);s.add_argument('--bundle',required=True);s.add_argument('--document',required=True);s.add_argument('--start',type=int,default=0)
         if name=='init': s.add_argument('--contract',required=True)
-        if name in ('submit','measure','first-read'): s.add_argument('--result',required=True)
+        if name in ('submit','measure','preflight','first-read'): s.add_argument('--result',required=True)
         if name in ('status','submit'): s.add_argument('--brief',action='store_true')
+        if name in ('advance','status','submit','first-read','preflight'):s.add_argument('--compact',action='store_true')
         if name=='submit':
             s.add_argument('--continue-preparation',action='store_true');s.add_argument('--continue-chapter-batch',action='store_true')
             s.add_argument('--continue-review',action='store_true')
-        if name in ('first-read','evidence'): s.add_argument('--task',required=True)
+        if name in ('first-read','evidence','patch'): s.add_argument('--task',required=True)
+        if name=='patch':
+            s.add_argument('--old',required=True);s.add_argument('--new',required=True);s.add_argument('--start',type=int)
         if name=='evidence':
             s.add_argument('--quote',required=True);s.add_argument('--chapter',type=int);s.add_argument('--document')
         if name=='checkpoint':
@@ -73,11 +90,16 @@ def parser():
 
 def dispatch(args):
     value=dispatch_raw(args)
+    if args.command in ('advance','next') and value.get('action',value.get('stage'))=='revision_promoted':
+        _auto_render_html(args.project)
     if args.command in ('submit','approve','pause','resume','revise','complete','replan','pilot'):
         from novel_core.taskio import checkpoint
         db=connect(args.project)
         try:checkpoint(db,args.project)
         finally:db.close()
+    if getattr(args,'compact',False):
+        from novel_core.wire import compact_response
+        return compact_response(args.project,value)
     if args.command not in ('recall','map','design','character','candidate','material','impact'):return value
     db=connect(args.project)
     try:
@@ -129,7 +151,7 @@ def dispatch_raw(args):
         return res
     db=connect(args.project)
     try:
-        if cmd in ('recall','map','design','character','candidate','material','impact') or (cmd=='config' and args.value is None):
+        if cmd in ('recall','map','design','character','candidate','material','impact','patch') or (cmd=='config' and args.value is None):
             from novel_core.reviewflow import require_material_access
             require_material_access(db)
         if cmd=='first-read':
@@ -139,6 +161,21 @@ def dispatch_raw(args):
         if cmd=='evidence':
             from novel_core.taskio import locate
             return locate(db,args.task,args.quote,args.chapter,args.document)
+        if cmd=='patch':
+            from novel_core.patches import locate_patch
+            task=db.execute('SELECT * FROM tasks WHERE id=?',(args.task,)).fetchone()
+            require(task and task['state']=='pending' and task['branch']==get(db,'work_branch'),'task','补丁定位只用于当前有效 pending')
+            return locate_patch(db,task,args.old,args.new,args.start)
+        if cmd=='preflight':
+            receipt=read_receipt(db,args.project,args.result,record=False)
+            task=db.execute('SELECT * FROM tasks WHERE id=?',(receipt.get('task_id') if isinstance(receipt,dict) else None,)).fetchone()
+            require(task and task['state']=='pending' and task['stage'] in ('draft','repair','redesign','chapter_review'),
+                    'preflight','预检只用于当前有效执笔或审稿任务')
+            before=engine.head(db,task['branch'])
+            checked=engine.submit(db,receipt,brief=True,preview=True)
+            return {'schema':'novel-ledger-v2.preflight/1','task_id':task['id'],'checked':True,'submitted':False,
+                    'would_commit':checked.get('work_committed',before)>before,
+                    **{k:checked[k] for k in ('settlement','numeric_correction') if k in checked}}
         if cmd=='checkpoint':
             from novel_core.taskio import checkpoint
             return checkpoint(db,args.project,args.goal,args.writer_session,args.handled_chapter)
@@ -204,8 +241,7 @@ def dispatch_raw(args):
             swept=engine.sweep_legacy(args.project)
             return {'removed':len(removed),'directories':removed,'legacy_removed':swept['removed'],'legacy_kept':swept['kept']}
         if cmd=='submit':
-            given=Path(args.result)
-            receipt=engine.normalize_receipt(db,read(given if given.is_absolute() else Path(args.project).resolve()/given))
+            receipt=read_receipt(db,args.project,args.result)
             task=db.execute('SELECT * FROM tasks WHERE id=?',(receipt.get('task_id') if isinstance(receipt,dict) else None,)).fetchone()
             require(sum((args.continue_preparation,args.continue_chapter_batch,args.continue_review))<=1,'chapter_session','连续处理选项只能选一个')
             if args.continue_review:
@@ -230,7 +266,7 @@ def dispatch_raw(args):
                 _auto_render_html(args.project, db)
             if args.continue_chapter_batch:
                 from novel_core.batchflow import continue_session
-                return continue_session(db,args.project,task)
+                return {**continue_session(db,args.project,task),**{k:res[k] for k in ('settlement','numeric_correction') if k in res}}
             if args.continue_review:
                 from novel_core.reviewrun import continue_session
                 return continue_session(db,args.project,task)
@@ -238,7 +274,7 @@ def dispatch_raw(args):
                 from novel_core.taskio import continue_preparation
                 return continue_preparation(db,args.project,task)
             if args.brief:
-                return {**engine.status(db,brief=True), **{k:res[k] for k in ('accepted','idempotent','task_id','review_recheck_required','fast_committed','chapter') if k in res}}
+                return {**engine.status(db,brief=True), **{k:res[k] for k in ('accepted','idempotent','task_id','review_recheck_required','fast_committed','chapter','settlement','numeric_correction') if k in res}}
             return res
         if cmd=='measure':
             from novel_core.budget import han_count
@@ -421,6 +457,11 @@ def dispatch_raw(args):
                     require(scope in ['world']+[v['id'] for v in get(db,'contract')['volumes']],'design','分卷重设计须提供有效 --volume')
                     design.invalidate(db,branch,scope,args.reason)
                 db.execute('DELETE FROM plans WHERE branch=? AND number>?',(branch,n))
+                from novel_core.batchflow import active, key
+                batch=active(db,branch)
+                if batch:
+                    put(db,'chapter_batch_archive:'+batch['id'],{**batch,'cancelled_by':'replan','reason':args.reason})
+                    put(db,key(branch),None)
                 put(db,'status','ready');log(db,'replan',{'branch':branch,'reason':args.reason,'scope':args.scope})
             return engine.status(db)
         if cmd=='html':

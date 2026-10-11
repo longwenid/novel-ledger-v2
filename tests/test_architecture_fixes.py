@@ -73,6 +73,23 @@ class ArchitectureTests(unittest.TestCase):
             engine.submit(self.db,{'schema':'novel-ledger-v2.result/1','task_id':'missing','data':{'chapters':[plan(2)]}})
         self.assertEqual(exc.exception.code,'task')
 
+    def test_known_task_missing_fields_uses_its_own_version_after_handoff(self):
+        t=self.task();data={'chapters':[plan(1)]}
+        engine.submit(self.db,result(t,data));following=self.task()
+        raw={**data,'task_id':t['task_id']}
+        self.assertTrue(engine.submit(self.db,raw)['idempotent'])
+        self.assertEqual(self.task()['task_id'],following['task_id'])
+
+    def test_cancelled_unscoped_raw_binding_cannot_advance_replacement(self):
+        t=self.task();raw={'chapters':[]}
+        with self.assertRaises(Error):engine.submit(self.db,raw)
+        engine.pause(self.db,'取消失败尝试',True);engine.resume(self.db)
+        fresh=self.task()
+        with self.assertRaises(Error) as caught:engine.submit(self.db,raw)
+        self.assertEqual(caught.exception.code,'stale_task')
+        self.assertEqual(self.task()['task_id'],fresh['task_id'])
+        self.assertNotEqual(t['task_id'],fresh['task_id'])
+
     def _draft_with_events(self):
         respond(self.db,self.path,self.task())                     # plan
         t=self.task();respond(self.db,self.path,t)                 # draft

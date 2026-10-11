@@ -27,7 +27,11 @@ def simulate(size):
         source=project/task['input_path']
         if source.exists():
             text=source.read_text();texts.append(text);view=json.loads(text)
-            paths.update(ref['path'] for ref in view.get('shared_materials',{}).values())
+            paths.update(part['path'] for ref in view.get('shared_materials',{}).values()
+                         for part in ref.get('parts',[ref]))
+            paths.update(row['material']['path'] for row in view.get('selected',[]) if row.get('material'))
+            paths.update(row['events_material']['path'] for row in view.get('candidate_ledger',{}).get('prefix',[])
+                         if row.get('events_material'))
         seen=loaded.setdefault(worker,set())
         for path in sorted(paths-seen):texts.append((project/path).read_text())
         seen.update(paths)

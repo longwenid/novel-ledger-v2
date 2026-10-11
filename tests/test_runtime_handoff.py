@@ -167,5 +167,45 @@ class RuntimeHandoffTests(unittest.TestCase):
         self.assertEqual(out['action'],'resync');self.assertEqual(out['transition']['handoff_reason'],'branch_changed')
         self.assertEqual(self.count(),1)
 
+    def run_authorized_range(self,through,ending=False):
+        following=self.cli('advance','--through',str(through));stages=[]
+        for _ in range(150):
+            action=following['action']
+            if action in ('target_reached','completed'):return following,stages
+            if action=='await_author':
+                self.cli('approve');following=self.cli('advance');continue
+            if action=='revision_promoted':
+                stages.append(action);following=self.cli('advance');continue
+            self.assertEqual(action,'task_ready',following)
+            task=following['task'];stages.append(task['stage'])
+            respond(self.db,self.path,task,ending=ending and task['chapter']==through)
+            following=self.cli('advance','--after',task['task_id'])
+        self.fail('authorized range did not finish')
+
+    def test_author_range_finishes_due_ten_chapter_review_before_stopping(self):
+        following,stages=self.run_authorized_range(10)
+        self.assertEqual(following['action'],'target_reached')
+        self.assertIn('batch_review',stages)
+        self.assertTrue(engine.reviewed(self.db,'main','batch',10))
+        self.assertEqual(head(self.db,'main'),10)
+        self.assertFalse(self.db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone())
+
+    def test_author_range_allows_final_acceptance_and_completion(self):
+        following,stages=self.run_authorized_range(2,ending=True)
+        self.assertEqual(following['action'],'completed')
+        self.assertIn('volume_review',stages);self.assertIn('book_review',stages)
+        self.assertTrue(engine.reviewed(self.db,'main','volume',2))
+        self.assertTrue(engine.reviewed(self.db,'main','book',2))
+
+    def test_saved_range_does_not_stop_revision_before_review_and_promotion(self):
+        self.run_authorized_range(3)
+        branch=self.cli('revise','--from-chapter','1','--reason','核对历史章节')['branch']
+        following,stages=self.run_authorized_range(3)
+        self.assertEqual(following['action'],'target_reached')
+        self.assertIn('revision_review',stages);self.assertIn('revision_promoted',stages)
+        self.assertEqual(get(self.db,'active_branch'),branch)
+        self.assertEqual(get(self.db,'work_branch'),branch)
+        self.assertTrue(engine.reviewed(self.db,branch,'revision',3))
+
 
 if __name__=='__main__':unittest.main()

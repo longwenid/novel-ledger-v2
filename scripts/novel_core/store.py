@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.35.0'
+VERSION = '1.39.0'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -82,11 +82,11 @@ def ensure_derived_schema(db):
 
 
 @contextlib.contextmanager
-def transaction(db):
+def transaction(db, rollback=False):
     db.execute('BEGIN IMMEDIATE')
     try:
         yield
-        db.execute('COMMIT')
+        db.execute('ROLLBACK' if rollback else 'COMMIT')
     except BaseException:
         db.execute('ROLLBACK')
         raise

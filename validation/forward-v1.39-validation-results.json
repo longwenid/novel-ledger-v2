@@ -1,0 +1,367 @@
+{
+  "forward": {
+    "candidate_vs_formal": "Resource payment same80->68, clocks same. Formal review omitted candidate receipt_copy state plus two knowledge records; substantive state change, suffix rebase expected.",
+    "comparison": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/chapter2-candidate-formal-comparison.json",
+    "conclusion": "No newly reproducible product safety defect in evaluated paths.",
+    "limitations": [
+      "Real pilot used independent writer and text-first reader before formal materials. Batch reviewer remained separate from writer but supervisor received writer resource summary before its first read; batch does not establish wholly fresh blind literary review.",
+      "Real batch chapters3/4 received frozen first-read but formal review stopped after chapter2 rebase per requested budget; numeric continuation engineering fixture is synthetic and makes no literary quality claim."
+    ],
+    "numeric_report": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-validation-report.json",
+    "positive_checks": [
+      "current formal template complete facts/reader checks and obligations; first_read_ref expands original exact receipt",
+      "preseal full materials gated; sealed first_read_receipt_path restores complete recorded experience",
+      "shared_materials.parts reconstruct full shared JSON; shared file corruption regenerated exact bytes",
+      "compact task references usable for continuing/recovery; same task_id/input_hash",
+      "wrong task/input/ref, mixed full/ref, missing check/obligation, and event precondition rejected; attempted invalid submit leaves chapters/events/drafts unchanged",
+      "numeric 100->99 same review submission cash100->99; no writer rework, next reviewer chapter3; original frozen first read unchanged",
+      "numeric state-change, stale hash, missing evidence catalog ref rejected; preflight no writes; audit/idempotence pass"
+    ],
+    "real_project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc",
+    "real_scope": {
+      "audit": {
+        "branch": "main",
+        "chapters": 2,
+        "han_characters": 1044,
+        "ok": true,
+        "open_important_hooks": [],
+        "problems": [],
+        "state_hash": "3245255507bc05218c9b7b7d4954014c12f59a7b64bd62ac4d5b1d536e0aab8f"
+      },
+      "formal_review_completed": [
+        1,
+        2
+      ],
+      "frozen_batch_first_read": [
+        2,
+        3,
+        4
+      ],
+      "preserved_pending_stage": "draft chapter 3 after valid state-change rebase",
+      "written_chapters": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  },
+  "numeric": {
+    "audit_ok": true,
+    "canonical_first_read_unchanged": true,
+    "formal_head": 2,
+    "idempotent": true,
+    "input_hash": "bf971441f0f7cd27fae1f0218295c383fed3dd37613fe8af66724a8146db2a68",
+    "numeric_patch": {
+      "base_hash": "9211b8c6001c44f76f04592fdc809e389caff6b4e510a50cb74d325334aac318",
+      "patch": {
+        "new": "九十九",
+        "old": "一百",
+        "start": 20
+      },
+      "submitted": false,
+      "task_id": "eae870ec49dd47eea609d0fae75a7c88"
+    },
+    "preflight": {
+      "checked": true,
+      "numeric_correction": {
+        "after_state_hash": "04043c79d521944910a181fb3ef69b58c5809685b3564d70cf41b5ee360eb1b6",
+        "base_hash": "9211b8c6001c44f76f04592fdc809e389caff6b4e510a50cb74d325334aac318",
+        "corrected_prose_hash": "1ca4ab76a5fe9a4898b5b287a148f9a2f2f58b400b3c24fb62d8fff2b699feb6",
+        "original_prose_hash": "9211b8c6001c44f76f04592fdc809e389caff6b4e510a50cb74d325334aac318",
+        "patch_count": 1,
+        "protocol": "numeric-patch/1",
+        "repair_note": "100文支付1文，按原事件修正余额为99文，保留原首读。"
+      },
+      "response_view": "compact/1",
+      "schema": "novel-ledger-v2.preflight/1",
+      "settlement": {
+        "after_state_hash": "04043c79d521944910a181fb3ef69b58c5809685b3564d70cf41b5ee360eb1b6",
+        "before_state_hash": "77002dddf92a2365ae6cccdc44d0139bc2cc046849632007e00072f41d9ba254",
+        "clock": {
+          "after": 0,
+          "before": 0
+        },
+        "clock_threads": [],
+        "resources": [
+          {
+            "after": "99",
+            "before": "100",
+            "key": "[\"hero\",\"cash\",\"文\"]"
+          }
+        ],
+        "schema": "novel-ledger-v2.settlement/1",
+        "status": "computed_not_semantic_pass",
+        "step_count": 1
+      },
+      "submitted": false,
+      "task_id": "eae870ec49dd47eea609d0fae75a7c88",
+      "would_commit": true
+    },
+    "project": "/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture",
+    "recovery": {
+      "frozen_receipt_byte_identical": true,
+      "same_input_hash": true,
+      "same_task": true
+    },
+    "rejections": [
+      {
+        "code": "first_read_version",
+        "name": "cross_task_first_read"
+      },
+      {
+        "code": "numeric_correction_state",
+        "name": "numeric_changes_effect"
+      },
+      {
+        "code": "review",
+        "name": "missing_fact_check"
+      },
+      {
+        "code": "patch_base",
+        "name": "stale_patch"
+      },
+      {
+        "code": "evidence_catalog",
+        "name": "missing_proof_ref"
+      },
+      {
+        "code": "review_obligations",
+        "name": "actual_submit_missing_obligation"
+      }
+    ],
+    "submission": {
+      "accepted": true,
+      "action": "continue_chapter_batch",
+      "numeric_correction": {
+        "after_state_hash": "04043c79d521944910a181fb3ef69b58c5809685b3564d70cf41b5ee360eb1b6",
+        "base_hash": "9211b8c6001c44f76f04592fdc809e389caff6b4e510a50cb74d325334aac318",
+        "corrected_prose_hash": "1ca4ab76a5fe9a4898b5b287a148f9a2f2f58b400b3c24fb62d8fff2b699feb6",
+        "original_prose_hash": "9211b8c6001c44f76f04592fdc809e389caff6b4e510a50cb74d325334aac318",
+        "patches": [
+          {
+            "new": "九十九",
+            "old": "一百",
+            "start": 20
+          }
+        ],
+        "protocol": "numeric-patch/1",
+        "repair_note": "100文支付1文，按原事件修正余额为99文，保留原首读。"
+      },
+      "schema": "novel-ledger-v2.chapter-batch/1",
+      "session": {
+        "batch": "3b6692b0b39c45978cffd648f66fb32c",
+        "first": 2,
+        "last": 4,
+        "protocol": "chapter-batch/1",
+        "role": "reviewer"
+      },
+      "settlement": {
+        "after_state_hash": "04043c79d521944910a181fb3ef69b58c5809685b3564d70cf41b5ee360eb1b6",
+        "before_state_hash": "77002dddf92a2365ae6cccdc44d0139bc2cc046849632007e00072f41d9ba254",
+        "clock": {
+          "after": 0,
+          "before": 0
+        },
+        "clock_threads": [],
+        "resources": [
+          {
+            "after": "99",
+            "before": "100",
+            "key": "[\"hero\",\"cash\",\"文\"]"
+          }
+        ],
+        "schema": "novel-ledger-v2.settlement/1",
+        "status": "computed_not_semantic_pass",
+        "steps": [
+          {
+            "clock": {
+              "after": 0,
+              "before": 0
+            },
+            "clock_threads": [],
+            "event_index": 0,
+            "op": "resource",
+            "resources": [
+              {
+                "after": "99",
+                "before": "100",
+                "key": "[\"hero\",\"cash\",\"文\"]"
+              }
+            ]
+          }
+        ]
+      },
+      "task": {
+        "branch": "main",
+        "chapter": 3,
+        "chapter_session": {
+          "batch": "3b6692b0b39c45978cffd648f66fb32c",
+          "first": 2,
+          "last": 4,
+          "protocol": "chapter-batch/1",
+          "role": "reviewer"
+        },
+        "commands": {
+          "evidence": "python3 /Users/longwen/AndroidStudioProjects/skills/novel-ledger-v2/scripts/novel.py evidence --project /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture --task 8b3d68d83d63425b817b844794032f26 --quote '替换为精确原文'",
+          "patch": "python3 /Users/longwen/AndroidStudioProjects/skills/novel-ledger-v2/scripts/novel.py patch --project /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture --task 8b3d68d83d63425b817b844794032f26 --old '替换为完整原文' --new '替换为修改文字'",
+          "preflight": "python3 /Users/longwen/AndroidStudioProjects/skills/novel-ledger-v2/scripts/novel.py preflight --project /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture --result /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture/work/ch0003/chapter_review-8b3d68d8/result.json --compact",
+          "state": "python3 /Users/longwen/AndroidStudioProjects/skills/novel-ledger-v2/scripts/novel.py recall --project /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture --task 8b3d68d83d63425b817b844794032f26 --state --entity '替换为实体ID'",
+          "submit": "python3 /Users/longwen/AndroidStudioProjects/skills/novel-ledger-v2/scripts/novel.py submit --project /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture --result /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture/work/ch0003/chapter_review-8b3d68d8/result.json --brief --compact --continue-chapter-batch"
+        },
+        "delivery_phase": "review",
+        "event_contract_path": "work/ch0003/chapter_review-8b3d68d8/events.json",
+        "first_read_hash": "242ebed4e3809d4bb8bb25d6e6bd3f8a0d63fbc3ee6e29b693bbad4f510affee",
+        "first_read_path": "work/prose/242ebed4e3809d4b.txt",
+        "first_read_receipt_hash": "56ab5914bde7238d245c4111b4e2d0aa25b6a65b721a90203fa7bb161a2b21e4",
+        "first_read_receipt_path": "work/ch0003/chapter_review-8b3d68d8/frozen_first_read.json",
+        "input_hash": "10d413815a9ad554246fe74d1c95baa1b8e84b27d2c04ef656960a73b9b158d9",
+        "input_path": "work/ch0003/chapter_review-8b3d68d8/input.json",
+        "numeric_correction": {
+          "base_hash": "242ebed4e3809d4bb8bb25d6e6bd3f8a0d63fbc3ee6e29b693bbad4f510affee",
+          "instruction": "仅数字字面笔误可在 data.numeric_correction 交 base_hash/patches/repair_note；每项只替换完整数字（阿拉伯或中文），两类审稿须针对合成稿完整举证并 pass。保持冻结首读，不改账本事件效果、人物、情节、单位或日程；其他问题判 fix。",
+          "protocol": "numeric-patch/1"
+        },
+        "output_path": "work/ch0003/chapter_review-8b3d68d8/result.json",
+        "path_base": "routes are relative to project; join with project before reading/writing",
+        "project": "/private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture",
+        "prose_files": [
+          "work/prose/242ebed4e3809d4b.txt"
+        ],
+        "schema": "novel-ledger-v2.task/1",
+        "stage": "chapter_review",
+        "state": "pending",
+        "task_id": "8b3d68d83d63425b817b844794032f26",
+        "task_path": "work/ch0003/chapter_review-8b3d68d8/task.json",
+        "template_path": "work/ch0003/chapter_review-8b3d68d8/result.template.json",
+        "worker_prompt": "只完成 chapter_session 绑定的当前批次与 reviewer 角色，读取 /private/var/folders/th/18knh75n0v52mdyvgzpt21fh0000gn/T/novel-forward-kj_24gqc/evaluation/numeric-fixture/work/ch0003/chapter_review-8b3d68d8/task.json。逐章读取最新输入和模板，按 commands.submit 提交；action=continue_chapter_batch 时直接处理响应 task。其余 action 或上下文不足时结束，返回最后已提交 task_id、批次与状态，不 next/advance，不跨角色或批次。执笔逐章保留正文、candidate_events 和具体 self_check；候选事件仅用于承接，不自审入库。资料按 shared_read_rule 读取；有 parts 时逐份读取完整资料，同一 Worker 只复用自己已读且未变的文件。独立审稿：信封带 first_read_files 时只读整批正文，读到每章即记录首读，随后一次冻结；后续沿用已冻结首读，不读执笔自评，逐章举证。读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。响应 task 有 task_path 时读该文件取得完整信封。若当前上下文未保留自己已读的本章冻结首读，读取 first_read_receipt_path 恢复原体验；不据补读资料改写。明确数值笔误可按 numeric_correction 修正，针对合成稿完成两类全部检查后同次提交；账本效果改变或其他缺陷仍判 fix。"
+      },
+      "task_id": "eae870ec49dd47eea609d0fae75a7c88"
+    },
+    "suffix_kept": true,
+    "task_id": "eae870ec49dd47eea609d0fae75a7c88"
+  },
+  "event_difference": {
+    "candidate_events": [
+      {
+        "asset": "cash",
+        "evidence": {
+          "chapter": 2,
+          "quote": "沈舟才从八十文中取出十二文支付收讫联检索费，袋里剩六十八文。",
+          "start": 309
+        },
+        "from": "shen",
+        "from_before": "80",
+        "op": "resource",
+        "quantity": "12",
+        "reason": "支付收讫联检索费",
+        "to": null,
+        "unit": "文"
+      },
+      {
+        "after": "持有丁二十船次六包米的收讫联核验副联，并已填申请第一格",
+        "before": null,
+        "entity": "shen",
+        "evidence": {
+          "chapter": 2,
+          "quote": "看柜的人按原编号给了他们一份核验副联，沈舟握住副联，先将编号填进复核申请的第一格",
+          "start": 396
+        },
+        "key": "receipt_copy",
+        "op": "state"
+      },
+      {
+        "before": null,
+        "claim": "丁二十船次六包米原收运费八十文，副联证明收款而非扣费去向",
+        "entity": "shen",
+        "evidence": {
+          "chapter": 2,
+          "quote": "收讫联上载明丁二十船次、六包米，原收运费八十文。",
+          "start": 372
+        },
+        "op": "knowledge",
+        "source": "收讫联与现场核对",
+        "stance": "knows",
+        "topic": "freight_receipt"
+      },
+      {
+        "before": null,
+        "claim": "该船次结算条只结给沈舟五十文，与原收八十文差三十文",
+        "entity": "shen",
+        "evidence": {
+          "chapter": 2,
+          "quote": "“收了八十，结给我的只有五十。”",
+          "start": 452
+        },
+        "op": "knowledge",
+        "source": "旧结算条对照收讫联",
+        "stance": "knows",
+        "topic": "freight_settlement"
+      }
+    ],
+    "formal_events": [
+      {
+        "asset": "cash",
+        "evidence": {
+          "chapter": 2,
+          "quote": "两处相符后，沈舟才从八十文中取出十二文支付收讫联检索费，袋里剩六十八文。",
+          "start": 303
+        },
+        "from": "shen",
+        "from_before": "80",
+        "op": "resource",
+        "quantity": "12",
+        "reason": "收讫联检索费",
+        "to": null,
+        "unit": "文"
+      }
+    ],
+    "state_differences": {
+      "facts": {
+        "candidate": {
+          "shen:receipt_copy": "持有丁二十船次六包米的收讫联核验副联，并已填申请第一格"
+        },
+        "review": {}
+      },
+      "knowledge": {
+        "candidate": {
+          "shen:review_documents": {
+            "claim": "复核需要收讫联与码头留底两份凭据号码",
+            "stance": "knows",
+            "source": "账房申请纸与现场说明"
+          },
+          "shen:withheld_fee": {
+            "claim": "旧结算扣费三十文，原因栏空白，领款去向尚未查明",
+            "stance": "knows",
+            "source": "旧条及原簿逐行核对"
+          },
+          "shen:freight_receipt": {
+            "claim": "丁二十船次六包米原收运费八十文，副联证明收款而非扣费去向",
+            "stance": "knows",
+            "source": "收讫联与现场核对"
+          },
+          "shen:freight_settlement": {
+            "claim": "该船次结算条只结给沈舟五十文，与原收八十文差三十文",
+            "stance": "knows",
+            "source": "旧结算条对照收讫联"
+          }
+        },
+        "review": {
+          "shen:review_documents": {
+            "claim": "复核需要收讫联与码头留底两份凭据号码",
+            "stance": "knows",
+            "source": "账房申请纸与现场说明"
+          },
+          "shen:withheld_fee": {
+            "claim": "旧结算扣费三十文，原因栏空白，领款去向尚未查明",
+            "stance": "knows",
+            "source": "旧条及原簿逐行核对"
+          }
+        }
+      }
+    },
+    "resources_equal": true,
+    "clock_equal": true
+  },
+  "scope_note": "Real first chapter and chapter 2 reviewed; chapters 3 and 4 first impressions frozen, no completion claim. Batch reviewer had received writer settlement summary, so batch evaluation is not wholly blind. Numeric fixture verifies protocol safety, not literary quality."
+}

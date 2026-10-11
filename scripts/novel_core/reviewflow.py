@@ -123,13 +123,13 @@ def require_material_access(db):
                 '先只读正文并执行 first-read，之后才可补读约定、账本或历史')
 
 
-def validate(db, task, work, facts, reader, prose):
+def validate(db, task, work, facts, reader, prose, first_read_prose=None):
     if not enabled(work):
         return
     saved = record(db, task['id'])
     require(saved is not None, 'first_read_required', '缺少持久首读记录；先执行 first-read')
     require(saved['receipt']['input_hash'] == task['input_hash']
-            and saved['receipt']['prose_hash'] == digest(prose), 'first_read_version', '首读版本失效')
+            and saved['receipt']['prose_hash'] == digest(prose if first_read_prose is None else first_read_prose), 'first_read_version', '首读版本失效')
     first = reader.get('first_read')
     require(isinstance(first, dict) and all(isinstance(first.get(k), str) and first[k].strip() for k in FIRST_FIELDS),
             'first_read', '首读需要四项非空文字体验')

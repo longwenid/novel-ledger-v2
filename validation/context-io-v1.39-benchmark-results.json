@@ -1,0 +1,64 @@
+{
+  "scope": "synthetic five-chapter input material reuse, one real engine handoff and review-receipt fixture; identical logical source values and evidence; excludes system/host prompts, reasoning, chat history, cache billing and actual literary quality",
+  "lossless_roundtrip": true,
+  "real_preflight_passed": true,
+  "comparisons": {
+    "inputs": {
+      "before_chars": 24394,
+      "after_chars": 20102,
+      "char_reduction_percent": 17.59,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 19129,
+        "after": 10233,
+        "reduction_percent": 46.51
+      }
+    },
+    "handoff_output": {
+      "before_chars": 4322,
+      "after_chars": 1403,
+      "char_reduction_percent": 67.54,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 1616,
+        "after": 523,
+        "reduction_percent": 67.64
+      }
+    },
+    "review_receipt_output": {
+      "before_chars": 3698,
+      "after_chars": 2923,
+      "char_reduction_percent": 20.96,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 1960,
+        "after": 1456,
+        "reduction_percent": 25.71
+      }
+    }
+  },
+  "incremental_from_v1_38": {
+    "state_and_continuity_inputs": {
+      "before_chars": 40410,
+      "after_chars": 19751,
+      "char_reduction_percent": 51.12,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 30065,
+        "after": 10290,
+        "reduction_percent": 65.77
+      }
+    },
+    "review_output_with_first_read_ref": {
+      "before_chars": 2923,
+      "after_chars": 2022,
+      "char_reduction_percent": 30.82,
+      "tokens": {
+        "tokenizer": "o200k_base comparison only",
+        "before": 1456,
+        "after": 775,
+        "reduction_percent": 46.77
+      }
+    }
+  }
+}

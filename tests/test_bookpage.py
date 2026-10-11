@@ -53,5 +53,31 @@ class BookPageTests(unittest.TestCase):
         self.assertIn('创作约定',page)
         self.assertTrue('（无）' in page or '尚无' in page)
 
+    def check_promotion_refreshes_page(self,entry):
+        drive(self.db,self.path,count=2)
+        def cli(*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
+        cli('html')
+        branch=cli('revise','--from-chapter','1','--reason','修正表达')['branch']
+        marker='修订后的独有正文标记。'
+        for _ in range(40):
+            response=cli(entry)
+            if response.get('action',response.get('stage'))=='revision_promoted':break
+            task=response['task'] if entry=='advance' else response
+            if task['stage']=='draft':
+                data={'prose':f'第{task["chapter"]}章。周行交付凭证。宋禾签名。'+marker}
+                path=self.path/task['output_path'];path.write_text(dump(result(task,data)))
+                cli('submit','--result',str(path),'--brief')
+            else:respond(self.db,self.path,task)
+            self.assertNotIn(marker,(self.path/'book.html').read_text())
+        else:self.fail('revision did not promote')
+        self.assertEqual(get(self.db,'active_branch'),branch)
+        self.assertIn(marker,(self.path/'book.html').read_text())
+
+    def test_advance_promotion_refreshes_formal_book_page(self):
+        self.check_promotion_refreshes_page('advance')
+
+    def test_next_promotion_refreshes_formal_book_page(self):
+        self.check_promotion_refreshes_page('next')
+
 
 if __name__=='__main__':unittest.main()

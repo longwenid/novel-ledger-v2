@@ -136,6 +136,55 @@ class ChapterBatchTests(unittest.TestCase):
         with self.assertRaises(Error):self.submit(t,data)
         self.assertIsNone(engine.load_draft(self.db,'main',2));self.assertEqual(self.cli('advance')['task']['task_id'],t['task_id'])
 
+    def test_cancel_then_replan_retires_batch_before_removing_its_plans(self):
+        t=self.cli('advance')['task'];old=batchflow.active(self.db)
+        self.cli('pause','--reason','重新规划未来章节','--cancel-task')
+        self.cli('replan','--reason','更换未来章节安排')
+        self.assertIsNone(batchflow.active(self.db))
+        self.assertEqual(get(self.db,'chapter_batch_archive:'+old['id'])['cancelled_by'],'replan')
+        fresh=self.cli('advance')['task']
+        self.assertEqual(fresh['stage'],'plan');self.assertEqual(fresh['chapter'],2)
+        engine.submit(self.db,result(fresh,{'chapters':[plan(n) for n in range(2,5)]}))
+        restarted=self.cli('advance','--after',fresh['task_id'])['task']
+        self.assertEqual(restarted['stage'],'draft');self.assertEqual(restarted['chapter'],2)
+        self.assertNotEqual(restarted['chapter_session']['batch'],old['id'])
+        self.assertEqual(self.db.execute('SELECT state FROM tasks WHERE id=?',(t['task_id'],)).fetchone()[0],'cancelled')
+
+    def test_raw_output_retry_and_changed_retry_stay_bound_to_original_task(self):
+        t=self.cli('advance')['task'];data=self.write(t,events=[])
+        path=self.path/t['output_path'];path.write_text(dump(data))
+        first=self.cli('submit','--result',str(path),'--brief','--continue-chapter-batch')
+        replayed=self.cli('submit','--result',str(path),'--brief','--continue-chapter-batch')
+        self.assertEqual(first['task_id'],replayed['task_id'])
+        self.assertEqual(first['task']['task_id'],replayed['task']['task_id'])
+        self.assertIsNone(engine.load_draft(self.db,'main',3))
+        changed={**data,'prose':data['prose']+'周行重新核对。'};path.write_text(dump(changed))
+        with self.assertRaises(Error) as caught:
+            self.cli('submit','--result',str(path),'--brief','--continue-chapter-batch')
+        self.assertEqual(caught.exception.code,'replay_conflict')
+        with self.assertRaises(Error):self.cli('preflight','--result',str(path))
+        self.assertEqual(self.cli('advance')['task']['task_id'],first['task']['task_id'])
+        self.assertIsNone(engine.load_draft(self.db,'main',3))
+
+    def test_unscoped_raw_retry_keeps_binding_after_restart(self):
+        t=self.cli('advance')['task'];data=self.write(t,events=[])
+        engine.submit(self.db,data)
+        following=self.cli('advance','--after',t['task_id'])['task']
+        self.db.close();self.db=connect(self.path)
+        self.assertTrue(engine.submit(self.db,data)['idempotent'])
+        self.assertEqual(self.cli('advance')['task']['task_id'],following['task_id'])
+        self.assertIsNone(engine.load_draft(self.db,'main',3))
+
+    def test_cancelled_output_cannot_be_retargeted_when_raw_content_changes(self):
+        t=self.cli('advance')['task'];data=self.write(t,events=[])
+        self.cli('pause','--reason','取消旧执行','--cancel-task');self.cli('resume')
+        fresh=self.cli('advance')['task']
+        path=self.path/t['output_path'];path.write_text(dump(data))
+        with self.assertRaises(Error) as caught:self.cli('submit','--result',str(path))
+        self.assertEqual(caught.exception.code,'stale_task')
+        self.assertEqual(self.cli('advance')['task']['task_id'],fresh['task_id'])
+        self.assertIsNone(engine.load_draft(self.db,'main',2))
+
     def test_changed_plan_cancels_pending_and_rechecks_saved_prose(self):
         t=self.cli('advance')['task'];a=self.submit(t,self.write(t));pending=a['task']
         p=json.loads(self.db.execute('SELECT data FROM plans WHERE number=2').fetchone()[0]);p['goal']='核对新承诺'

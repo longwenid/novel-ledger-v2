@@ -15,8 +15,8 @@ description: >-
 ## 核心操作流
 
 - **开书**：读 [creation](references/creation.md) 与 [hatch-ideas](references/hatch-ideas.md)。每步给 2～3 个候选，含至少一个可落地的高概念脑爆项；换组时切换透镜。确定约定后 `init --project "$PROJECT" --contract contract.json`，试写首章，由作者定调 `approve`。
-- **续写 / 无人值守 / 恢复**：读 [runtime](references/runtime.md)，用 `advance` 一次取得任务、短状态和恢复点；Worker 结束后用 `advance --after 任务ID` 核实提交并接续，沿用当前模型。默认每批连写 3 章并自查，再派新的独立审稿者逐章核验整批；旧任务与历史修订沿用逐章流程；跨章复审由新的独立审稿者在同次执行内连续处理分块与综合判断，按需查 [材料准备](references/context-runtime.md)。本版本只支持新建的 v2 项目及其续接，不迁移旧版项目。
-- **局部返修与修订**：局部问题读 [局部修订](references/repairs.md) 提交版本补丁；历史大修读 [记忆与修订](references/continuity.md) 建候选分支。
+- **续写 / 无人值守 / 恢复**：读 [runtime](references/runtime.md)，用 `advance --compact` 一次取得任务、短状态和恢复点；Worker 结束后用 `advance --compact --after 任务ID` 核实提交并接续，沿用当前模型。默认每批连写 3 章并自查，再派新的独立审稿者逐章核验整批；旧任务与历史修订沿用逐章流程；跨章复审由新的独立审稿者在同次执行内连续处理分块与综合判断，按需查 [材料准备](references/context-runtime.md)。本版本只支持新建的 v2 项目及其续接，不迁移旧版项目。
+- **局部返修与修订**：局部问题读 [局部修订](references/repairs.md) 提交版本补丁；简单数字字面笔误可在支持的独立审稿任务内定点修正并完成两类核验。历史大修读 [记忆与修订](references/continuity.md) 建候选分支。
 - **验收与审计**：读 [审稿与完本](references/editorial.md)；执行 `audit --project "$PROJECT"` 复核全书账本，`complete` 进行完本验证。
 
 ## 核心规则
@@ -30,13 +30,13 @@ description: >-
 
 ## 任务执行流水线
 
-恢复与汇报以 `status.recovery` 和 `advance` 真实任务为准，分别注明正式稿与候选工作稿的章号、卷次；存在修订链时先完成修订，不根据旧版 book.html、卷末标记或传播范围宣称已进入下一卷。父级未完成的结构目标不因后加文风修订而撤销。
+恢复与汇报以完整 `status.recovery` 或 controller 快照及 `advance` 真实任务为准，分别注明正式稿与候选工作稿的章号、卷次；存在修订链时先完成修订，不根据旧版 book.html、卷末标记或传播范围宣称已进入下一卷。父级未完成的结构目标不因后加文风修订而撤销。
 
-1. 主控 `advance --project "$PROJECT"` 取 `task` 信封，使用程序生成的 `worker_prompt` 调用宿主委派工具；此命令本身不启动 agent。已有 pending 就恢复同一任务。
-2. `chapter_review` Worker 先只读信封 `first_read_files`（批次存在时）或 `first_read_path` 正文，填写 `first_read.template.json` 并执行 `commands.first_read` 持久冻结首读，直接使用成功响应的 `task` 信封取得 `input_path` 与正式模板；其他阶段先读 `input_path`。包内 `shared_materials` 是完整文件引用，同一 Worker 只复用已读且哈希未变的资料，新 Worker 重新读取。以 `guide` 为执行入口，只在字段说明不足、报错或有疑问时查对应指南。正文按 `prose_path`/`prose_files` 阅读，同版本不重复加载；brief 为替代视图。
-3. 规划说明篇幅承载和压力变化；执笔按 `writer_brief` 写入 `output_path`，自查选择、阻力、后果与重复表达。程序在提交时校验合成全文的实际篇幅；需提前查看计数时可选 `commands.measure`。审稿保留必要语境与因果，逐条回应 `review_obligations` 并核对最可能违约的语段；pass 的 `findings=[]`。
-4. Worker 按信封 `commands.submit` 提交（默认 `--brief`）；按真实报错修正。有 `chapter_session` 时按 `action=continue_chapter_batch` 直接处理响应 task，直到批次或角色结束；执笔与独立审稿不共用会话。有 `review_session` 时按 `action=continue_review` 连续处理同次独立复审的分块、材料和各范围综合判断；同版本正文只复用该 Worker 自己已读的内容，各范围仍分别举证。无连续标记的正式阶段成功后返回任务 ID 与短状态并结束。材料信封带 `preparation_session` 时，提交响应的 `action=continue_preparation` 允许同一 Worker 直接处理返回的同批次材料任务，直到批次结束或上下文不足；返回最后已提交任务 ID，不进入正式阶段。完整原记录可直接交付，详见 [材料准备](references/context-runtime.md)。
-5. 主控等待 Worker 结束后执行 `advance --project "$PROJECT" --after 最后已提交任务ID`；按返回 `action` 接续，直到已授权目标完成、作者暂停或出现无法自行解决的阻碍。复用、恢复与宿主降级按 [runtime](references/runtime.md) 执行。
+1. 主控 `advance --project "$PROJECT" --compact` 取 `task` 信封，使用程序生成的 `worker_prompt` 调用宿主委派工具；此命令本身不启动 agent。已有 pending 就恢复同一任务。
+2. 简洁响应先按 `task.task_path` 读取完整信封，连续响应和首读解锁后也一样。`chapter_review` Worker 先只读信封 `first_read_files`（批次存在时）或 `first_read_path` 正文，填写 `first_read.template.json` 并执行 `commands.first_read` 持久冻结首读，按成功响应恢复完整 `task` 信封取得 `input_path` 与正式模板，reader 用模板 first_read_ref 引用原首读；恢复时如未保留原体验，读 first_read_receipt_path；其他阶段先读 `input_path`。包内 `shared_materials` 是完整文件引用；有 `parts` 时可改读全部完整分片，勿再重复读整文件。同一 Worker 只复用自己已读且哈希未变的记录，新 Worker 完整读取。重复证据可用 `evidence_catalog` 定义一次、逐项引用；具体理由和检查仍逐条填写。以 `guide` 为执行入口，只在字段说明不足、报错或有疑问时查对应指南。正文按 `prose_path`/`prose_files` 阅读，同版本不重复加载；brief 为替代视图。
+3. 规划说明篇幅承载和压力变化；执笔按 `writer_brief` 写入 `output_path`，自查选择、阻力、后果与重复表达。程序在提交时校验合成全文的实际篇幅；计数可选 `commands.measure`，完整提交校验和资源/时钟结算用只读 `commands.preflight`，补丁位置用 `commands.patch`。主控传递程序实际结算，不凭 Worker 的口算摘要指定后章前态。审稿保留必要语境与因果，逐条回应 `review_obligations` 并核对最可能违约的语段；pass 的 `findings=[]`。
+4. Worker 按信封 `commands.submit` 提交（默认 `--brief --compact`）；按真实报错修正。有 `chapter_session` 时按 `action=continue_chapter_batch` 直接处理响应 task，直到批次或角色结束；执笔与独立审稿不共用会话。有 `review_session` 时按 `action=continue_review` 连续处理同次独立复审的分块、材料和各范围综合判断；同版本正文只复用该 Worker 自己已读的内容，各范围仍分别举证。无连续标记的正式阶段成功后返回任务 ID 与短状态并结束。材料信封带 `preparation_session` 时，提交响应的 `action=continue_preparation` 允许同一 Worker 直接处理返回的同批次材料任务，直到批次结束或上下文不足；返回最后已提交任务 ID，不进入正式阶段。完整原记录可直接交付，详见 [材料准备](references/context-runtime.md)。
+5. 主控等待 Worker 结束后执行 `advance --project "$PROJECT" --compact --after 最后已提交任务ID`；按返回 `action` 接续，直到已授权目标完成、作者暂停或出现无法自行解决的阻碍。复用、恢复与宿主降级按 [runtime](references/runtime.md) 执行。
 
 ## 资料索引
 

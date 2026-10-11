@@ -156,7 +156,9 @@ def apply(state, event, prose, chapter):
         src, dst = event.get('from'), event.get('to')
         require(isinstance(asset, str) and asset and isinstance(unit, str) and unit, 'resource', '资产和单位必填')
         require(src != dst and (src is not None or dst is not None), 'resource', '资源来源和去向不能相同')
-        require(all(h is None or h in state['entities'] for h in (src, dst)), 'resource', '资源归属实体不存在')
+        require(all(h is None or h in state['entities'] for h in (src, dst)), 'resource', '资源归属实体不存在',
+                {'missing_entities': [h for h in (src, dst) if h is not None and h not in state['entities']],
+                 'recover': '先登记有正文证据的 entity，再登记该实体的 resource；不要凭空补实体'})
         require(bool(event.get('reason')), 'resource', '资源流动需要原因，外部获得与消耗也必须说明')
         qty = amount(event['quantity'])
         require(qty > 0, 'resource', '资源流水必须大于零')
@@ -168,7 +170,9 @@ def apply(state, event, prose, chapter):
                 raise Error('precondition', f'{holder} 名下没有已登记的 {asset}（{unit}）；未入账道具不补记非零流水，先在正文成立取得/清点，或删除该 resource 事件')
             old = amount(state['resources'].get(key, '0'))
             require(field in event and amount(event[field]) == old, 'precondition',
-                    f'{holder} 当前 {asset}={old}（{unit}），事件 {field}={event.get(field)!r} 与账本期初不符；以账本为准照抄')
+                    f'{holder} 当前 {asset}={old}（{unit}），事件 {field}={event.get(field)!r} 与账本期初不符；以账本为准照抄',
+                    {'holder': holder, 'asset': asset, 'unit': unit, 'field': field,
+                     'current': str(old), 'submitted': event.get(field)})
             with localcontext() as ctx:
                 ctx.prec = 512
                 value = old + sign * qty
@@ -206,11 +210,13 @@ def apply(state, event, prose, chapter):
             require(isinstance(thread, str) and thread.strip(), 'time_conflict', 'thread 为非空字符串')
             threads = state.setdefault('clock_threads', {})
             current = threads.get(thread, state['clock'])
-            require(event.get('before') == current and type(event.get('after')) is int and event['after'] >= current,
-                    'time_conflict', f'支线时钟 {thread} 前值不匹配或倒退；同步点须显式登记')
+            require(type(event.get('before')) is int and event.get('before') == current and type(event.get('after')) is int and event['after'] >= current,
+                    'time_conflict', f'支线时钟 {thread} 前值不匹配或倒退；同步点须显式登记',
+                    {'thread':thread,'current':current,'submitted_before':event.get('before'),'submitted_after':event.get('after'),'type':'before/after 均用 JSON 整数'})
             threads[thread] = event['after']
         else:
-            require(event.get('before') == state['clock'] and type(event.get('after')) is int and event['after'] >= state['clock'], 'time_conflict', '故事全局时钟不能倒退；倒叙单独标注，不改变当前时钟')
+            require(type(event.get('before')) is int and event.get('before') == state['clock'] and type(event.get('after')) is int and event['after'] >= state['clock'], 'time_conflict', '故事全局时钟不能倒退；倒叙单独标注，不改变当前时钟',
+                    {'current':state['clock'],'submitted_before':event.get('before'),'submitted_after':event.get('after'),'type':'before/after 均用 JSON 整数'})
             state['clock'] = event['after']
     else:
         raise Error('event_op', f'未知事件类型：{op}')

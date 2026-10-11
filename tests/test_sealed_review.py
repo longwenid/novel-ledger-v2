@@ -70,7 +70,7 @@ class SealedReviewTests(unittest.TestCase):
         self.task=engine.next_task(self.db,self.path)
         work=json.loads(self.path_for('input_path').read_text())
         self.assertEqual([r['id'] for r in work['review_obligations']],['language','world:0','style:0','style:1'])
-        self.assertEqual(self.receipt()['data']['reader']['first_read'],receipt['first_read'])
+        self.assertEqual(self.receipt()['data']['reader']['first_read_ref'],accepted['first_read_hash'])
         self.assertEqual(len(dependencies.read_set(self.db,self.task['task_id'])['entries']),2)
         self.assertEqual(self.cli('first-read','--task',self.task['task_id'],'--result',str(path)),accepted)
         self.db.close();self.db=connect(self.path)
@@ -115,7 +115,7 @@ class SealedReviewTests(unittest.TestCase):
             (lambda r:r['data']['reader']['obligations'].pop(),'review_obligations'),
             (lambda r:r['data']['facts']['obligations'][0].update(id='world:unknown'),'review_obligations'),
             (lambda r:r['data']['reader']['obligations'][0]['challenge']['evidence'].update(quote='不存在'),'evidence'),
-            (lambda r:r['data']['reader']['first_read'].update(change='补读后合理化'),'first_read_conflict'),
+            (lambda r:r['data']['reader'].update(first_read={'change':'补读后合理化'}),'first_read_conflict'),
             (lambda r:r['data']['reader']['obligations'][0]['challenge'].update(disposition='violated'),'review_challenge')):
             r=copy.deepcopy(original);change(r)
             self.assert_error(code,lambda:engine.submit(self.db,r))

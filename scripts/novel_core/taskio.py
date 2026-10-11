@@ -15,7 +15,7 @@ EVENT_FIELDS = {
     'knowledge': ['entity', 'topic', 'before:旧claim或null', 'claim', 'stance:knows|believes|suspects|disproved', 'source'],
     'resource': ['asset', 'unit', 'from', 'to', 'quantity:十进制字符串', 'reason', 'from_before:非null来源时必填', 'to_before:非null去向时必填'],
     'hook': ['id', 'before', 'status:open|paid|closed', 'text:首次必填', 'due:首次必填', 'reason:延期或关闭必填'],
-    'clock': ['before', 'after:非负整数', 'thread?:支线时钟'],
+    'clock': ['before:非负整数', 'after:非负整数', 'thread?:支线时钟'],
     'anchor': ['entity', 'key', 'value', 'policy?:fixed|eventful'],
     'anchor_assert': ['entity', 'key', 'value'],
     'anchor_change': ['entity', 'key', 'before', 'after', 'reason', 'change_evidence'],
@@ -38,23 +38,53 @@ def shared_delivery(project,work):
     """Exact files shared within a role session; no cross-worker read exemption."""
     if not (work.get('chapter_session') or work.get('review_session')):return work
     view=copy.deepcopy(work);materials={}
-    fields=('contract','style_anchor','character_context','design_context','guide')
+    def shared(value):
+        hashed=digest(value);rel='work/shared/'+hashed+'.json';path=Path(project).resolve()/rel
+        expected=json.dumps(value,ensure_ascii=False,indent=2,allow_nan=False)+'\n'
+        if not path.exists() or path.read_bytes()!=expected.encode('utf-8'):write_json(path,value)
+        return {'path':rel,'hash':hashed[:12],'encoding':'json'}
+    fields=('contract','style_anchor','character_context','design_context','guide','state','continuity')
     if work.get('review_session'):fields+=('revision_context','volume_budget')
     for field in fields:
         if field not in view:continue
-        value=view.pop(field);hashed=digest(value);rel='work/shared/'+hashed+'.json'
-        path=Path(project).resolve()/rel
-        expected=json.dumps(value,ensure_ascii=False,indent=2,allow_nan=False)+'\n'
-        if not path.exists() or path.read_bytes()!=expected.encode('utf-8'):write_json(path,value)
-        materials[field]={'path':rel,'hash':hashed[:12],'encoding':'json'}
+        # Small snapshots cost less inline than an extra manifest/file read.
+        # This selects a lossless delivery route, never caps source content.
+        if field in ('state','continuity') and len(json.dumps(view[field],ensure_ascii=False))<2048:continue
+        value=view.pop(field);materials[field]=shared(value)
+        if field in ('character_context','design_context','state','continuity') and isinstance(value,dict):
+            rest=copy.deepcopy(value);parts=[]
+            if field=='character_context':
+                for collection in ('profiles','developments'):
+                    entries=rest.get(collection)
+                    if isinstance(entries,dict) and entries:
+                        for key,item in entries.items():parts.append({'pointer':[collection,key],**shared(item)})
+                        rest[collection]={}
+            elif field=='design_context':
+                for key in ('world','volume'):
+                    if isinstance(rest.get(key),dict):parts.append({'pointer':[key],**shared(rest.pop(key))})
+            else:
+                # Whole named collections keep arbitrary nested fact values
+                # intact; changing the clock does not resend every claim/map.
+                for key in list(rest):
+                    if isinstance(rest[key],dict) and rest[key]:parts.append({'pointer':[key],**shared(rest.pop(key))})
+            if parts:materials[field]['parts']=[{'pointer':[],**shared(rest)},*parts]
+    # Individual historical events remain byte-complete and independently
+    # versioned; a sliding chapter window does not force rereading old events.
+    for index,record in enumerate(view.get('selected',[])):
+        if record.get('kind')=='history':
+            view['selected'][index]={k:record[k] for k in ('kind','chapter','index','event_hash') if k in record}
+            view['selected'][index]['material']=shared(record)
+    for record in view.get('candidate_ledger',{}).get('prefix',[]):
+        record['events_material']=shared(record.pop('events'))
     view['shared_materials']=materials
-    view['shared_read_rule']='首次接手须读取所需完整文件；同一 Worker 只在已读且哈希未变时复用。新 Worker、哈希改变或上下文不足均重新读；这不是审稿通过。'
+    view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 和 candidate_ledger.prefix.events_material 也须读取。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
     return view
 
 
 def template(task, work, saved=None):
     data = {}
     if task['stage'] == 'chapter_review':
+        data['evidence_catalog']={}
         for category in ('facts', 'reader'):
             data[category] = {'verdict': '', 'checks': check_rows(work['payload'][category+'_checks']), 'findings': []}
             if reviewflow.enabled(work):
@@ -63,7 +93,8 @@ def template(task, work, saved=None):
                      'challenge': {'disposition': '', 'reason': '', 'evidence': {}}}
                     for row in work['review_obligations'] if row['category'] == category]
         data['facts'].update(events=[], summary='')
-        data['reader']['first_read'] = copy.deepcopy(saved['receipt']['first_read']) if saved else {k: '' for k in reviewflow.FIRST_FIELDS}
+        if saved:data['reader']['first_read_ref']=saved['hash']
+        else:data['reader']['first_read']={k: '' for k in reviewflow.FIRST_FIELDS}
     elif task['stage'] == 'context_scan':
         p = work['payload']; pages = p.get('pages', [p])
         coverage = [{k: page[k] for k in ('document', 'document_hash', 'start', 'end')} for page in pages]
@@ -71,7 +102,7 @@ def template(task, work, saved=None):
     elif task['stage'] == 'context_reduce':
         data = {'notes': [], 'accounting': [{'input_id': n['id'], 'disposition': '', 'reason': ''} for n in work['payload']['inputs']]}
     elif task['stage'] in ('batch_review','volume_review','revision_review','book_review'):
-        data = {'verdict':'','checks':check_rows(work['payload']['checks']),'findings':[]}
+        data = {'evidence_catalog':{},'verdict':'','checks':check_rows(work['payload']['checks']),'findings':[]}
         if not work['payload']['scope'].endswith('_chunk'):data['memory']={'text':'','sources':[]}
     elif task['stage'] in ('draft', 'redesign'):
         data = {'prose': '', 'summary': ''}
@@ -79,7 +110,9 @@ def template(task, work, saved=None):
     elif task['stage'] == 'repair':
         data = {'base_hash':work['payload']['base_hash'], 'patches':[], 'repair_note':''}
     if work.get('chapter_session',{}).get('role')=='writer' and task['stage'] in ('draft','repair','redesign'):
-        data.update(candidate_events=[],summary='',self_check='')
+        data.update(evidence_catalog={},candidate_events=[],summary='',self_check='')
+        if 'candidate_events_snapshot' in work['payload']:
+            data.pop('candidate_events');data['reuse_candidate_events']=True
     return {'schema': 'novel-ledger-v2.result/1', 'task_id': task['id'], 'input_hash': task['input_hash'], 'data': data}
 
 
@@ -94,7 +127,7 @@ def delivery(db, project, task, work, envelope):
         + '。以 guide 和 result.template.json 为契约；不可复制旧审稿回执或查库猜协议。'
         + '必要补读用任务内 commands；空模板不代表 pass。成功提交后只返回 task_id/stage/状态，结束，不 next。')
     streaming=work.get('preparation_session',{}).get('protocol')=='same-bundle/1'
-    commands = {'submit': command('submit', '--result', base/envelope['output_path'], '--brief'),
+    commands = {'submit': command('submit', '--result', base/envelope['output_path'], '--brief','--compact'),
                 'evidence': command('evidence', '--task', task['id'], '--quote', '替换为精确原文')}
     if streaming:
         commands['submit']+=' --continue-preparation'
@@ -106,18 +139,18 @@ def delivery(db, project, task, work, envelope):
             '不能进入执笔、审稿或不同批次，不调用 next/advance；取舍和来源仍逐页核验，不能套用旧回执。')
     if work.get('chapter_session'):
         envelope['chapter_session']=copy.deepcopy(work['chapter_session'])
-        commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--continue-chapter-batch')
+        commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact','--continue-chapter-batch')
         role=work['chapter_session']['role']
         envelope['worker_prompt']=('只完成 chapter_session 绑定的当前批次与 '+role+' 角色，读取 '+str(root/'task.json')
             +'。逐章读取最新输入和模板，按 commands.submit 提交；action=continue_chapter_batch 时直接处理响应 task。'
             '其余 action 或上下文不足时结束，返回最后已提交 task_id、批次与状态，不 next/advance，不跨角色或批次。'
             '执笔逐章保留正文、candidate_events 和具体 self_check；候选事件仅用于承接，不自审入库。'
-            '输入 shared_materials 按字段引用完整 JSON 文件，先读 guide 与所需资料；同一 Worker 已读且哈希未变时复用，换 Worker 须重新读。'
+            '资料按 shared_read_rule 读取；有 parts 时逐份读取完整资料，同一 Worker 只复用自己已读且未变的文件。'
             '独立审稿：信封带 first_read_files 时只读整批正文，读到每章即记录首读，随后一次冻结；'
             '后续沿用已冻结首读，不读执笔自评，逐章举证。')
     if work.get('review_session'):
         envelope['review_session']=copy.deepcopy(work['review_session'])
-        commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--continue-review')
+        commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact','--continue-review')
         envelope['worker_prompt']=('只完成 review_session 绑定的独立复审，读取 '+str(root/'task.json')
             +'。PROJECT='+str(base)+'。按每次返回任务的 scope/first/through 与检查项举证并分别提交，不套用旧 pass。'
             'action=continue_review 时直接处理响应 task，包括本次复审材料准备；其余 action 或上下文不足时结束，返回最后已提交 task_id。'
@@ -138,10 +171,14 @@ def delivery(db, project, task, work, envelope):
                 'first_read':{k:'' for k in reviewflow.FIRST_FIELDS}} for r in envelope['first_read_files']]
         write_json(root/'first_read.template.json', first)
         envelope['first_read_template_path'] = str((root/'first_read.template.json').relative_to(base))
-        commands['first_read'] = command('first-read', '--task', task['id'], '--result', root/'first_read.json')
-        envelope['worker_prompt'] += '先只读 first_read_files（存在时为整批）或 first_read_path，填写 first_read.template.json 到 first_read_result_path，执行 commands.first_read；直接使用成功响应的 task 信封，取得 input_path 与正式模板。'
+        commands['first_read'] = command('first-read', '--task', task['id'], '--result', root/'first_read.json','--compact')
+        envelope['worker_prompt'] += '先只读 first_read_files（存在时为整批）或 first_read_path，填写 first_read.template.json 到 first_read_result_path，执行 commands.first_read；成功后读响应 task.task_path 取得已解锁完整信封、input_path 与正式模板。'
     else:
         envelope['delivery_phase'] = 'review' if reviewflow.enabled(work) else 'task'
+        if task['stage'] in ('draft','repair','redesign','chapter_review'):
+            commands['preflight']=command('preflight','--result',base/envelope['output_path'],'--compact')
+        if work['payload'].get('base_hash') or task['stage']=='chapter_review':
+            commands['patch']=command('patch','--task',task['id'],'--old','替换为完整原文','--new','替换为修改文字')
         from .recovery import revision_context
         revision = revision_context(db, task['branch'])
         if revision:
@@ -151,7 +188,7 @@ def delivery(db, project, task, work, envelope):
             envelope['worker_prompt'] += '核对信封 revision_context 的全部未完成父子修订目标，后加文风目标不撤销父级结构目标。'
         envelope['template_path'] = str((root/'result.template.json').relative_to(base))
         write_json(root/'result.template.json', template(task, work, saved))
-        envelope['worker_prompt'] += '读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。'
+        envelope['worker_prompt'] += '读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。响应 task 有 task_path 时读该文件取得完整信封。'
         if task['stage'] in ('draft', 'repair', 'redesign'):
             envelope['worker_prompt'] += '程序校验合成全文及篇幅；需在提交前查看计数时可用 commands.measure。'
         if task['stage'] == 'chapter_review':
@@ -160,7 +197,14 @@ def delivery(db, project, task, work, envelope):
                 'operations': EVENT_FIELDS, 'before_source': '包内 state；缺项用 recall --state --entity ID --topic TOPIC。准备结论与旧回执不作前态。',
                 'references': [str(Path(cli).parents[1]/'references'/name) for name in ('protocol.md','spatial-continuity.md','characters.md')]})
             commands['state'] = command('recall', '--task', task['id'], '--state', '--entity', '替换为实体ID')
-        if saved: envelope['first_read_receipt_hash'] = saved['hash']
+        if saved:
+            envelope['first_read_receipt_hash']=saved['hash']
+            envelope['first_read_receipt_path']=str((root/'frozen_first_read.json').relative_to(base))
+            write_json(root/'frozen_first_read.json',saved['receipt'])
+            envelope['worker_prompt']+='若当前上下文未保留自己已读的本章冻结首读，读取 first_read_receipt_path 恢复原体验；不据补读资料改写。'
+        if work['payload'].get('numeric_correction'):
+            envelope['numeric_correction']=copy.deepcopy(work['payload']['numeric_correction'])
+            envelope['worker_prompt']+='明确数值笔误可按 numeric_correction 修正，针对合成稿完成两类全部检查后同次提交；账本效果改变或其他缺陷仍判 fix。'
     envelope['commands'] = commands
     return envelope
 

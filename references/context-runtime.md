@@ -19,9 +19,13 @@ context_mode=bounded 表示按任务和来源组织材料。context_chars/contex
 
 直读输入的 `context_delivery.mode=exact-records/1` 列出字段、来源版本与哈希；完整记录位于对应字段，不能把索引当作内容，也不能把来源复用当作审稿通过。执笔者和独立审稿者分别阅读本任务实际资料，不共享前者的理解结论。可用 `config --key preparation_policy --value semantic` 保留全量模型提炼用于对照；有 pending 时不改配置。
 
-带 `chapter_session` 时优先按生成的批内连续提交命令执行，章节/角色边界见 [runtime](runtime.md)；审稿批次未冻结整批首读前，材料者不能复用为正式审稿者。其余新准备信封带 `preparation_session.protocol=same-bundle/1`。按生成的 `commands.submit` 提交即可；返回 `action=continue_preparation` 时直接阅读响应 `task` 的输入与模板，继续同一批次。其他 action 时结束，并报告最后已提交 task_id。不得自行 next/advance、进入正式阶段或跨批次。上下文不足时保留已提交页与 pending，由主控换新 Worker 恢复；无需重扫已提交页。旧信封没有此标记时仍单任务交接。
+带 `chapter_session` 时优先按生成的批内连续提交命令执行，章节/角色边界见 [runtime](runtime.md)；审稿批次未冻结整批首读前，材料者不能复用为正式审稿者。其余新准备信封带 `preparation_session.protocol=same-bundle/1`。按生成的 `commands.submit` 提交即可；返回 `action=continue_preparation` 时按 task_path 恢复完整信封，阅读输入与模板，继续同一批次。其他 action 时结束，并报告最后已提交 task_id。不得自行 next/advance、进入正式阶段或跨批次。上下文不足时保留已提交页与 pending，由主控换新 Worker 恢复；无需重扫已提交页。旧信封没有此标记时仍单任务交接。
 
 ## 结构上的消耗控制
+
+输入去重优先按 `shared_read_rule`：人物/设计及较大的账本/连续性字段有 parts 时读取全部完整记录分片，后续同一 Worker 只重读变化的版本；selected.material、候选前缀 events_material 仍须读取。首次接手或上下文不足时重新恢复必要全文，不把其他人的已读记录当作自己阅读。完整字段文件与全部分片是等价读法，选一即可，语义材料不截断。
+
+输出去重用生成的简洁提交命令；主控 `advance --compact`，Worker 按返回 task_path 恢复完整信封。审稿和候选事件可在 evidence_catalog 登记重复引文，各检查仅引用编号，但判断、具体理由和所需证据覆盖逐项完成；程序展开后执行原有全部校验，精确定义见 [协议](protocol.md)。正式 reader.first_read_ref 只引用已冻结的原首读；恢复时如未保留体验，从 first_read_receipt_path 完整读取。以上只减少重复传输，不改变准备路径、审稿覆盖或首读门禁。
 
 - **定向取材**：按实体、话题、场景和依赖章获取材料，拒绝无目标全历史倾倒；近期摘要和最新事件是导航视图，不代表完整历史。
 - **完整单元分页**：依赖原文按完整章节记录、账本按对象/事件组、人物按档案与成长、设计按卷/节拍分读。candidate 支持按自然段余文或明确原稿范围读取；recall --chapter 当前返回整章，不声称已有章内段落分页。所有页绑定来源版本与游标；已读范围不能混用不同版本。

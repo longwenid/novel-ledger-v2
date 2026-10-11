@@ -158,7 +158,8 @@ def guide(stage, instruction=None):
     for key in stage_discipline(stage):
         lines.append('[纪律] ' + DISCIPLINE[key])
     lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的账本为准。')
-    lines.append('[纠错] 报错按字面修正后重提，message/details 自带账本答案与恢复指引；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
+    helpers='信封提供时用 commands.patch 定位补丁、commands.preflight 只读验证完整回执；' if stage in ('draft','repair','redesign','chapter_review') else ''
+    lines.append('[纠错] '+helpers+'错误定位按 message/details 修正。结算以前后值和 settlement 为准，不从自评推算余额；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
     lines.append('[观测] 协议字符仅观测，不是配额；缺项可用 recall/material 定向补读，未选入不表示不存在。')
     return '\n'.join(lines)
 
@@ -383,19 +384,23 @@ def pack(db, branch, chapter, stage, payload):
     if 'writer_brief' in base:
         base['plan'] = {k: v for k, v in base['plan'].items() if k not in WRITER_BRIEF_FIELDS}
     if chapter_session and chapter_session['role']=='writer':
-        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
+        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。返修模板有 reuse_candidate_events=true 时可续算证据句语境未变的冻结事件，语境改变则完整重报 candidate_events，不混用。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
     attach_prose(db, base)
     if stage == 'chapter_review':
         from .reviewflow import PROTOCOL, obligations
         base['review_protocol'] = PROTOCOL
         base['review_obligations'] = obligations(contract, base.get('style_anchor'))
-        base['guide'] += ('\n[审稿门禁] 首读由 first-read 持久冻结，正式 reader.first_read 原样保留。'
+        base['guide'] += ('\n[审稿门禁] 首读由 first-read 持久冻结；正式 reader.first_read_ref 按模板引用本任务首读哈希，程序恢复原记录，亦可原样交 first_read 全文，二者不混用。'
                           'facts/reader.obligations 按 review_obligations 本类别 ID 穷尽回应；'
                           '每条含 result/reason/evidence 和 challenge={disposition:satisfied|violated,reason,evidence}。'
                           'challenge 选最可能违反该约定的原文并解释为何可保留或必须返修；violated 必须 fix，'
                           '对应 world_rules/voice_match/language 检查同步 fix，并给标有 obligation_id 的 quality/blocker findings。'
                           '技术名词、字数、格式通过不证明语义质量；不读旧审稿判词来补写首读或替自己判断。'
                           '事件字段见 task.json 的 event_contract_path，证据位置用 commands.evidence。')
+    if stage=='chapter_review' and payload.get('numeric_correction'):
+        base['guide']+='\n[数值定点修正] '+payload['numeric_correction']['instruction']+' 用 commands.patch 取得 Python 字符位置；正式检查、义务与事件证据均引用合成稿的坐标。commands.preflight 验证两类全额检查、原首读、精确补丁与结算不变，失败用普通 fix，不重写首读。'
+    if stage.endswith('_review') or (chapter_session and chapter_session['role']=='writer'):
+        base['guide']+='\n[证据复用] data.evidence_catalog 可把精确 chapter/start/quote 一次登记为编号；检查、义务、发现、事件的证据位置用 {ref:编号} 引用，同一引文不重复输出。也可直接写完整证据。各项判断与理由仍独立填写，不生成总 pass 或套用理由。'
     if bounded:
         identity=digest({'branch':branch,'chapter':chapter,'stage':stage,'payload':payload,'plan':plan})
         base['context_identity']=identity

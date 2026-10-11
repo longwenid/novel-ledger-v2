@@ -13,6 +13,10 @@ input.json 是多行缩进的交付视图（真源在库，逐行读取即可）
 
 ## 结果格式与提交
 
+审稿及候选事件的重复原文可用 `data.evidence_catalog` 无损去重：例如 `{"e1":{"chapter":12,"start":34,"quote":"完整原文语境"}}`，相应证据项写 `{"ref":"e1"}`。直接填写完整证据仍兼容；一个编号只代表本回执的一条原文，不能自动为所有检查选证据。
+
+引用只在既有证据位置展开：顶层或 facts/reader 的 checks/findings/obligations 中 evidence、challenge.evidence、memory.sources，以及 facts.events/candidate_events 中 evidence/cause_evidence/change_evidence。事件 before/after 等事实值不展开。引用只能含 ref，目录条目只能含 chapter/start/quote；未知编号、混入字段或嵌套引用拒绝。展开后照常核对正文版本、原文坐标、章节、具体理由、全部检查与约定义务，不补填判断或 pass。库中同时保留原始 wire 回执和展开后的审计回执；幂等重提须使用原始提交内容，不能拿展开的审计副本替换原文件重提。
+
 结果写入 output_path（建议多行缩进书写，便于主控与作者复查；submit 只程序化解析，格式不影响提交）：
 
 ```json
@@ -26,11 +30,13 @@ input.json 是多行缩进的交付视图（真源在库，逐行读取即可）
 
 重复提交同一完整结果是幂等操作；同任务不同内容会被拒绝。
 
-submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为最近任务的裸回执重试。只归一结构，不改内容，input_version 与重放哈希照常校验；显式错误 task_id 且无 pending 时报 task 错误。只使用本任务指定路径。
+submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果绑定该目录的原任务，不因下一任务已派发而改投。目录外的裸回执首次尝试按唯一 pending 绑定，后续相同内容沿用持久绑定；新任务应使用自己的指定目录或完整 task_id/input_hash。已知 task_id 的缺失字段从该任务补齐，不从当前 pending 借用。只归一结构，不改内容，input_version、取消状态与重放哈希照常校验；旧任务的改稿重提拒绝，显式错误 task_id 且无绑定或 pending 时报 task 错误。preflight 不写绑定或其他运行状态。
 
 ## 主控交接（advance）
 
 默认主控入口 `advance` 返回 `schema=novel-ledger-v2.handoff/1`、`action`、短 `status`，以及 `task` 信封或 `transition`；同时写恢复点。
+
+`advance/status/first-read/submit/preflight --compact` 返回 `response_view=compact/1`：状态省略预算、用量和详细恢复信息，任务省略已保存在完整 task.json 的模板与说明，以 task_path 交付；交接另给 controller_path。Worker 必须先从 task_path 恢复完整信封，再执行当前阶段 commands，包括连续会话和首读解锁后的响应。任务 ID/hash、会话绑定、实际阶段不变；完整 CLI 响应仍为默认。settlement 保留全部资源、时钟与状态哈希，steps 改为 step_count；numeric_correction 的 patches 改为 patch_count，完整修正仍保存在审计记录。
 
 启动或恢复可不带 after；宿主 Worker 结束后带 `--after 任务ID`，引擎在派工事务内核对该任务已真实提交且为当前分支最近完成任务。未提交返回 `wait_for_submit`，未知 ID 报 `handoff_task`，过时、取消或异分支返回 `resync`，均不生成下一任务；重复有效交接恢复同一 pending。
 
@@ -45,8 +51,14 @@ submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为�
 `chapter_session={protocol:"chapter-batch/1",batch:ID,role:writer|reviewer,first:N,last:M}` 绑定最多五章与单一角色。生成的 submit 命令带 `--continue-chapter-batch`；与其他连续处理选项互斥，只允许标记任务。响应 `schema=novel-ledger-v2.chapter-batch/1`，含刚提交 task_id/session；`continue_chapter_batch` 含同批同角色下一 task，`chapter_batch_done` 交回主控，其他 action 依暂停/过时回调边界处理。重复提交恢复同一 pending，不跨批次、角色或作者边界。主控 after 使用最后提交的 ID。
 
 批内写作/返修的 data 在原契约外必含 `summary`、`candidate_events` 数组和非空具体 `self_check`。临时事件按正式事件的坐标与前态校验，但仅保存 drafts；input 的 state/continuity 已叠加前章候选变化，`candidate_ledger` 标明未审前缀与来源。带当前 `--task` 的 recall --state / --chapter 可读候选前态与前章原文，不带 task 时始终读正式账本；普通事件检索仍查正式事件，候选事件完整列在 candidate_ledger。审稿者不读取执笔自评或候选事件提案，独立登记正式事件。
+返修冻结输入有 `payload.candidate_events_snapshot` 时，可选择 `reuse_candidate_events:true` 代替 candidate_events。程序仅续算全部本章证据的完整句语境未变的事件，并重定位、重验前态；其他情况完整重报，不同时使用两种字段。
 
 批内 input.json 为冻结输入的拆分交付视图：`shared_materials` 各字段含 `{path,hash,encoding:"json"}`，完整值在 PROJECT/work/shared/<哈希>.json。哈希按标准 dump 的逻辑值计算，真源仍在任务 input；恢复会重建缺失或损坏文件。guide 也可从该目录取得。首次接手须阅读全部所需来源，同一 Worker 只复用已读且未变的版本；新 Worker 不沿用别人的已读判断。
+
+人物、设计和较大的 state/continuity 字段另可含 `parts:[{pointer:[],path,hash,encoding},…]`，作为整文件的等价读法：pointer=[] 的完整对象为基础，其余完整记录按 pointer 的逐层键路径填回。人物档案与发展按实体分别寻址，设计按 world/volume 分片，账本与连续性按完整命名集合分片；跨章只有变化集合需要重读，未变记录仍须是当前 Worker 自己已读的版本。小型 state/continuity 直接交付，减少文件和目录开销；该路径选择不删减内容。首次读取选全部分片或完整字段文件之一，不两者重复读、不漏任一分片。拼回值与字段 hash 对应的冻结完整值一致，元数据也保留；新 Worker 或上下文不足须完整恢复必要资料。
+`selected` 的历史事件通过 `material` 引用完整原记录；候选前缀通过 `events_material` 引用完整事件数组。每份记录独立寻址，未变事件不会因窗口变化而重新打包；语义判断与审稿检查仍逐章执行。旧库内冻结输入保持不变，交付视图可恢复重建。
+
+批次审稿 `payload.numeric_correction` 是 `numeric-patch/1` 能力声明，只含基稿哈希与约束，不公开候选事件或执笔自评。综合审稿 data 可选同名对象，字段恰为 base_hash/patches/repair_note；每个补丁仅替换完整简单数字。两类检查及约定义务须针对合成稿全部通过，原首读保持不变；事件效果及章末账本状态须与原候选一致。正式章节留存原稿/改稿哈希及补丁审计记录；详见 [局部修订](repairs.md)。
 
 ### 材料准备 preparation_session
 
@@ -74,7 +86,7 @@ submit 可为顶层阶段字段补齐信封：须恰有一个 pending，或为�
 
 新 chapter_review 冻结 `review_protocol=sealed-review/1`。信封初始 `delivery_phase=first_read`，只有 first_read_path/first_read_hash、首读模板和命令；input_path 尚未生成。审稿者只读当前正文，将 first_read_template_path 填写到 first_read_result_path，执行 commands.first_read。
 
-首读文件为 `{task_id,input_hash,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}`，四项均非空文字。成功响应的 `task` 直接提供 input_path/template_path/event_contract_path，无须再次读取 task.json；正式 reader.first_read 原样保留。相同首读重试幂等，改写被拒；版本变化取新任务，不改旧记录。
+首读文件为 `{task_id,input_hash,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}`，四项均非空文字。成功后按 task.task_path 读取已解锁完整信封，取得 input_path/template_path/event_contract_path。正式 reader 可按模板提交 `first_read_ref:本任务持久首读哈希`，或原样保留 `first_read` 全文，二者只能选一。首读全文仍在 first_read_receipt_path，恢复或上下文未保留原体验时须读取；只复用自己实际读过的当前章首读。引用先核对本任务 input_hash/prose_hash 与记录完整性，再恢复原首读供原有校验和审计，不生成或改写体验，不补填其他审稿项。缺首读记录、跨任务/版本引用、同时给全文均拒绝；旧无持久门禁任务仍交原 first_read 全文。原始 wire 回执保存与幂等规则同证据目录。相同首读重试幂等，改写被拒；版本变化取新任务，不改旧记录。
 
 未带该协议的已有 pending 沿用冻结格式。同版本正文不重复加载。input.payload.facts_checks 与 reader_checks 分别列出两类必查项，事实输入同时提供账本、人物、连续性及前序事件。
 
@@ -209,6 +221,10 @@ status/doctor.usage 返回 task_input_chars、accepted_receipt_chars、attempted
 ## 错误与修正
 
 CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧凑格式最省 token；嵌入字符串（如 recall 的正文）pretty 化也不会换行，长文本阅读一律走文件通道（prose/prose_path 文件、material 页文件）加分页游标，不靠加宽 stdout。非零退出码返回 {ok:false,code,message,details}。格式、引用或前态错误按原文修正结果，任务保持 pending；阅读缺陷走 repair/redesign，不只改判词。context_scan/context_reduce/context_more 见 [上下文协议](context-runtime.md)，信封仍为 /1。
+
+`patch --task TASK --old 原文 --new 替换文 [--start N]` 返回完整 base_hash 与精确补丁，不写草稿。重复原文须指定目标坐标，错误 details.matches 为实际匹配位置；局部任务仍校验允许范围。
+
+`preflight --result 文件` 用于当前 pending 的 draft/repair/redesign/chapter_review，按真实 submit 完整验证后回滚，返回 checked/submitted:false/would_commit 与可用的 settlement；不修改任务、草稿、正式账本、用量或恢复点。settlement 含资源 before/after、主线与支线时钟和逐事件运算，不代表语义 pass。正常 submit 也返回结算，主控以程序实际值和任务 state 交接。事件错误 details 含 event_index/chapter、实际前态、类型或缺字段；据任务事件契约修正，两轮失败交回主控，不查全库或源码推测格式。
 
 `stale_task/input_version/lease` 表示结果不再属于有效任务，不能把旧结果的 ID/哈希改成新任务后重交；重新读任务和材料。无权限改约、核心设定无法调和、修订次数耗尽时，报告具体阻碍与可选处理。
 

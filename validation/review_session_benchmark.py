@@ -27,7 +27,9 @@ def simulate(streaming):
         nonlocal prose_chars
         text=(project/task['input_path']).read_text();texts.append(text);view=json.loads(text)
         paths=set(task.get('prose_files',[]))
-        paths.update(ref['path'] for ref in view.get('shared_materials',{}).values())
+        paths.update(part['path'] for ref in view.get('shared_materials',{}).values()
+                     for part in ref.get('parts',[ref]))
+        paths.update(row['material']['path'] for row in view.get('selected',[]) if row.get('material'))
         seen=loaded.setdefault(worker,set())
         for path in sorted(paths-seen):
             content=(project/path).read_text();texts.append(content)

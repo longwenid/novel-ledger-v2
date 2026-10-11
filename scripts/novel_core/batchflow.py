@@ -1,4 +1,4 @@
-"""Five-chapter writing sessions with a provisional ledger and fresh batch review.
+"""Bounded writing sessions with a provisional ledger and fresh batch review.
 
 Only drafts/meta hold provisional events. Canonical chapters/events are written
 by the existing chapter-review transaction, never by the writer's self-check.
@@ -6,7 +6,7 @@ by the existing chapter-review transaction, never by the writer's self-check.
 import copy
 import json
 import uuid
-from .store import get, put, digest, dump, require, head, log
+from .store import Error, get, put, digest, dump, require, head, log
 from .ledger import replay, apply
 
 PROTOCOL='chapter-batch/1'
@@ -121,7 +121,11 @@ def choose(db,single,allow_new_batch=True):
         if job:return job
     job=single(db);stage,n,_=job
     limit=get(db,'batch_through',0)
-    if limit and committed>=limit and get(db,'pilot_approved'):
+    # A chapter cap stops new writing, not acceptance of the saved range.
+    # Candidate branches must finish their reviews and promote first.
+    acceptance=('batch_review','volume_review','revision_review','book_review','promote','complete','await_author')
+    if (limit and committed>=limit and get(db,'pilot_approved')
+            and branch==get(db,'active_branch') and stage not in acceptance):
         return 'target_reached',committed,{'through':limit,'reason':'达到主控指定范围；继续须更新范围。'}
     size=min(get(db,'chapter_batch_size',3),get(db,'writer_batch',10))
     if not allow_new_batch:return job
@@ -146,37 +150,80 @@ def choose(db,single,allow_new_batch=True):
     return job
 
 
-def accept_candidate(db,branch,n,draft,data):
+def accept_candidate(db,branch,n,draft,data,work=None):
     from . import engine
     require(isinstance(data.get('self_check'),str) and data['self_check'].strip(),
             'candidate_self_check','批内执笔须说明具体自查结果，自查不替独立审稿')
-    events=copy.deepcopy(data.get('candidate_events'))
+    if data.get('reuse_candidate_events') is True:
+        require('candidate_events' not in data,'candidate_events','完整 candidate_events 与 reuse_candidate_events 只能选一种')
+        from .patches import source
+        snapshot=(work or {}).get('payload',{}).get('candidate_events_snapshot')
+        require(isinstance(snapshot,list),'candidate_events','此冻结任务没有可续算候选事件快照，须完整提交 candidate_events')
+        base=source(db,work);events=copy.deepcopy(snapshot)
+        for index,event in enumerate(events):
+            for field in engine.EVENT_EVIDENCE_FIELDS:
+                ref=event.get(field)
+                if not isinstance(ref,dict):continue
+                require(ref.get('chapter')==n and engine.event_sentence_context(base,ref) is not None
+                        and engine.event_sentence_context(base,ref)==engine.event_sentence_context(draft['prose'],ref),
+                        'candidate_events_changed','候选事件的证据语境已变；须核对后完整提交 candidate_events',{'event_index':index,'field':field})
+                ref['start']=draft['prose'].index(ref['quote'])
+    else:events=copy.deepcopy(data.get('candidate_events'))
     require(isinstance(events,list),'candidate_events','批内执笔须提交候选事件数组；无变化填 []')
-    state=candidate_state(db,branch,n-1);before=digest(state)
-    for event in events:
-        require(isinstance(event,dict),'candidate_events','候选事件须为对象')
-        if event.get('op')=='clock':
-            quote=(event.get('evidence') or {}).get('quote','')
-            require(any(w in quote for w in engine.TIME_TOKENS) or any(w in quote for w in engine.TIME_CHARS),'time_evidence','候选时钟也须有正文时间证据')
-        apply(state,event,draft['prose'],n)
-    engine.validate_hook_deadlines(state,n)
-    plan=json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
-    if 'day_span' in plan:
-        lo=plan['day_anchor']+plan['day_span'][0];hi=plan['day_anchor']+plan['day_span'][1]+1
-        require(lo<=state['clock']<=hi,'time_schedule','候选章末时钟超出已规划日程')
+    before=digest(candidate_state(db,branch,n-1))
+    from .settlement import evaluate,state_hash
+    state,settled=evaluate(db,branch,n,draft['prose'],events,candidate=True)
     require(isinstance(data.get('summary'),str) and data['summary'].strip(),'candidate_summary','候选章须提供实际正文摘要')
     draft.update(candidate_events=events,candidate_prefix_hash=before,candidate_summary=data['summary'],self_check=data['self_check'])
     draft.pop('candidate_invalidated',None)
+    batch=active(db,branch)
+    held=batch.get('local_repair') if batch else None
+    if held and held['chapter']==n:
+        batch.pop('local_repair')
+        engine.save_draft(db,branch,n,draft)
+        if held['after_state_hash']==state_hash(state) and rebind_suffix(db,batch,n+1,state):
+            batch['phase']='review';put(db,key(branch),batch)
+            log(db,'local_repair_suffix_retained',{'batch':batch['id'],'chapter':n,'last':batch['last']})
+        else:
+            invalidate(db,batch,n+1,'局部修订改变结算或后文事件不能续算，须重核承接')
+    return settled
 
 
-def after_review(db,branch,n,proposed,accepted_events,passed):
+def rebind_suffix(db,batch,start,state):
+    """Recompute exact prefixes; this never creates or reuses a review pass."""
+    from . import engine
+    from .settlement import evaluate
+    revised=[]
+    try:
+        for number,draft in rows(db,batch['branch'],batch['last']):
+            if number<start:continue
+            if draft.get('stage')!='chapter_review' or not isinstance(draft.get('candidate_events'),list):return False
+            prefix=digest(state)
+            state,_=evaluate(db,batch['branch'],number,draft['prose'],draft['candidate_events'],candidate=True,initial_state=state)
+            draft['candidate_prefix_hash']=prefix;revised.append((number,draft))
+    except Error:return False
+    for number,draft in revised:engine.save_draft(db,batch['branch'],number,draft)
+    return True
+
+
+def after_review(db,branch,n,proposed,accepted_events,passed,proposed_state=None,scope='chapter'):
     batch=active(db,branch)
     if not batch:return
     if not passed:
+        if scope=='local' and proposed_state is not None:
+            from .settlement import state_hash
+            put(db,'chapter_batch_archive:'+batch['id'],copy.deepcopy(batch))
+            batch.update(id=uuid.uuid4().hex,first=head(db,branch)+1,phase='writing',
+                         local_repair={'chapter':n,'after_state_hash':state_hash(proposed_state)})
+            put(db,key(branch),batch)
+            log(db,'local_repair_suffix_held',{'chapter':n,'last':batch['last']})
+            return
         invalidate(db,batch,n,'独立审稿要求返修，后文承接须重核');return
     if n>=batch['last']:
         put(db,key(branch),None);log(db,'chapter_batch_complete',{'batch':batch['id'],'through':n});return
-    if proposed!=accepted_events:
+    from .settlement import state_hash
+    actual=replay(db,branch)
+    if proposed_state is None or state_hash(proposed_state)!=state_hash(actual) or not rebind_suffix(db,batch,n+1,actual):
         invalidate(db,batch,n+1,'正式事件与候选提案不同，后续前态失效')
 
 
