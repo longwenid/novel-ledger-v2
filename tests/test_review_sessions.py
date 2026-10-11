@@ -124,12 +124,28 @@ class ReviewSessionTests(unittest.TestCase):
     def test_fix_returns_to_controller_and_never_dispatches_repair(self):
         self.prepare();t=self.cli('advance')['task'];r=self.receipt(t);d=r['data']
         d['verdict']='fix';d['checks'][0]['result']='fix'
-        e=d['checks'][0]['evidence'][0]
-        d['findings']=[{'severity':'quality','impact':'跨章选择缺乏承接','goal':'补充前因与代价','evidence':e}]
+        # 证据必须落在本次修订范围内，否则走的是另一条契约（范围外不建链，
+        # 见 outside_revision_scope）。
+        start=self.db.execute('SELECT start FROM branches WHERE id=?',(t['branch'],)).fetchone()['start']
+        prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(t['branch'],start)).fetchone()[0]
+        d['findings']=[{'severity':'quality','impact':'跨章选择缺乏承接','goal':'补充前因与代价','evidence':ev(prose,start)}]
         reply=self.submit(t,r)
         self.assertEqual(reply['action'],'resync')
         self.assertNotEqual(get(self.db,'work_branch'),t['branch'])
         self.assertFalse(self.db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone())
+
+    def test_fix_outside_the_revision_scope_pauses_instead_of_chaining(self):
+        """修订范围之外的发现不建链：它们不是本次修订引入的，为它们建链会把
+        已完成的修订整条拉回（实测：未修订章里的一个异体字重做了九章的活）。"""
+        self.prepare(start=3);t=self.cli('advance')['task'];r=self.receipt(t);d=r['data']
+        d['verdict']='fix';d['checks'][0]['result']='fix'
+        prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',(t['branch'],)).fetchone()[0]
+        d['findings']=[{'severity':'quality','impact':'旧章遗留的口径问题','goal':'由作者决定是否另开修订','evidence':ev(prose,1)}]
+        self.submit(t,r)
+        self.assertEqual(get(self.db,'status'),'paused')
+        self.assertEqual((get(self.db,'pause_reason') or {}).get('code'),'outside_revision_scope')
+        self.assertEqual(get(self.db,'work_branch'),t['branch'],'不建链：工作分支保持不变')
+        self.assertIsNone(self.db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone())
 
     def test_each_scope_requires_its_own_real_checks(self):
         self.prepare();t=self.cli('advance')['task']

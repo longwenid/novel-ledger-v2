@@ -113,7 +113,8 @@ class ContextStructureTests(unittest.TestCase):
         self.assertEqual(len({(h['chapter'],h['index'],h['event_hash']) for h in history}),20)
         omitted=next(o for o in omitted_rows if o['kind']=='history')
         self.assertEqual(omitted['by_entity']['hero'],4)
-        self.assertTrue(all(h['event']['claim'] for h in history))
+        # 单条历史事件按版本寻址交付；读回后仍是完整记录。
+        self.assertTrue(all(read_material(self.path,h['material'])['event']['claim'] for h in history))
 
     def test_memories_capped_at_two(self):
         self._commit_chapter(1)

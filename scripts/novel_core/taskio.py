@@ -35,11 +35,32 @@ def check_rows(ids):
     return [{'id': key, 'result': '', 'reason': '', 'evidence': []} for key in ids]
 
 
+# Material at or above this size ships as an addressable file instead of being
+# inlined in the envelope. The number exists to keep a one-shot input.json
+# inside a single host read; it routes delivery, it never caps content.
+INLINE_MATERIAL_CHARS = 4096
+
+
 def shared_delivery(project,work):
-    """Exact files shared within a role session; no cross-worker read exemption."""
-    if not (work.get('chapter_session') or work.get('review_session')):return work
+    """Exact-address delivery for every task, not only role sessions.
+
+    The role-session gate assumed sharing only pays off when one worker reads
+    the same material twice ("no cross-worker read exemption"). Measured
+    against a real book, that assumption is what broke: a ONE-SHOT envelope —
+    the common dispatch shape — reached 60–72K characters, of which
+    `design_context` and `character_context` were 44–51%. That exceeds the
+    host's single-read cap, so the worker read the envelope in two or three
+    pages and every page stayed in context for the rest of the run. Across 16
+    workers the same file was read repeatedly for 412K characters (28% of all
+    reads), and carried context inflated 10–59x.
+
+    Addressable delivery is not primarily about reuse; it is about the worker
+    reading once, and reading only what it needs.
+    """
     view=copy.deepcopy(work);materials={}
+    extracted=[]          # set whenever anything ships as a file; see the tail
     def shared(value):
+        extracted.append(1)
         hashed=digest(value)
         # 16-hex names follow the proven prose/ convention: workers transcribe
         # them reliably, while 64-hex paths caused failed reads plus
@@ -59,11 +80,21 @@ def shared_delivery(project,work):
         return len(json.dumps(item,ensure_ascii=False))>=1024
     fields=('contract','style_anchor','character_context','design_context','guide','state','continuity')
     if work.get('review_session'):fields+=('revision_context','volume_budget')
+    session=bool(work.get('chapter_session') or work.get('review_session'))
     for field in fields:
         if field not in view:continue
-        # Small snapshots cost less inline than an extra manifest/file read.
-        # This selects a lossless delivery route, never caps source content.
-        if field in ('state','continuity') and len(json.dumps(view[field],ensure_ascii=False))<2048:continue
+        size=len(json.dumps(view[field],ensure_ascii=False))
+        # Lossless routing, never a cap. The two dispatch shapes want opposite
+        # things: inside a role session the worker reads several tasks, so any
+        # sizeable snapshot pays to address out; a one-shot worker reads once
+        # and cannot reuse anything, so only the block materials that push the
+        # envelope past a single host read are worth the extra file. Contract,
+        # style anchor, guide, state and continuity stay inline either way —
+        # they are the readings a worker must not miss, and they are small.
+        if session:
+            if field in ('state','continuity') and size<2048:continue
+        elif field not in ('design_context','character_context') or size<INLINE_MATERIAL_CHARS:
+            continue
         value=view.pop(field);materials[field]=shared(value)
         if field in ('character_context','design_context','state','continuity') and isinstance(value,dict):
             rest=copy.deepcopy(value);parts=[]
@@ -93,8 +124,12 @@ def shared_delivery(project,work):
             view['selected'][index]['material']=shared(record)
     for record in view.get('candidate_ledger',{}).get('prefix',[]):
         record['events_material']=shared(record.pop('events'))
-    view['shared_materials']=materials
-    view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取；其余可先以摘要兜底，疑点用 commands 定向补读。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
+    # Only announce the addressable view when something actually shipped that
+    # way. Adding an empty manifest would change every envelope, including
+    # frozen ones whose input must stay byte-identical across re-materialisation.
+    if materials or extracted:
+        view['shared_materials']=materials
+        view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取；其余可先以摘要兜底，疑点用 commands 定向补读。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
     return view
 
 

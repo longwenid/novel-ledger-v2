@@ -54,6 +54,37 @@ def pack_prose(base, pack, key='prose'):
     return (Path(base)/pack['payload'][key+'_path']).read_text(encoding='utf-8')
 
 
+def restore_material(project, work, field):
+    """Read an addressed field back, the way a worker does.
+
+    `shared_materials[field]` is either one file or a base part plus pointered
+    parts; the pointer=[] part is the base object and the rest are filled back
+    along their paths, which together equal the field's complete value.
+    """
+    material = work['shared_materials'][field]
+    parts = material.get('parts')
+    if not parts:
+        return read_material(project, material)
+    base = None
+    for part in parts:
+        value = read_material(project, part)
+        if part['pointer'] == []:
+            base = value
+    assert base is not None, f'{field} 缺少 pointer=[] 的基础分片'
+    for part in parts:
+        if part['pointer'] == []:
+            continue
+        cursor = base
+        for key in part['pointer'][:-1]:
+            cursor = cursor[key]
+        cursor[part['pointer'][-1]] = read_material(project, part)
+    return base
+
+
+def read_material(project, material):
+    return json.loads((Path(project)/material['path']).read_text(encoding='utf-8'))
+
+
 def result(task,data,**extra):
     data=copy.deepcopy(data)
     if task.get('stage')=='chapter_review' and isinstance(data,dict):

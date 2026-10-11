@@ -103,9 +103,11 @@ class DesignTests(unittest.TestCase):
         self.submit(self.task(),{'chapters':[self.plan()]})
         task=self.task();self.assertEqual(task['stage'],'draft')
         work=json.loads(rpath(task,'input_path').read_text(encoding='utf-8'))
-        self.assertEqual(work['design_context']['world']['data'],world)
-        self.assertEqual(work['design_context']['volume']['data'],EXAMPLE['volume_plan'])
-        self.assertEqual(work['design_context']['status'],'proposal_not_canon')
+        # 大块设计材料按内容寻址交付，worker 读回后与完整值等价。
+        design=restore_material(self.path,work,'design_context')
+        self.assertEqual(design['world']['data'],world)
+        self.assertEqual(design['volume']['data'],EXAMPLE['volume_plan'])
+        self.assertEqual(design['status'],'proposal_not_canon')
         self.assertEqual(self.task()['input_hash'],task['input_hash'])
         self.assertFalse(replay(self.db,'main')['facts'])
     def test_volume_transition_prepares_next_volume_after_review(self):

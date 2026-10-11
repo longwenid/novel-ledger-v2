@@ -54,11 +54,13 @@ class CharacterTests(unittest.TestCase):
         # Older projects may still store this setting; it cannot cut off a required profile.
         put(self.db,'context_chars',4096)
         self.prepare(profiles);t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
-        self.assertEqual(set(w['character_context']['profiles']),{'hero','ally'})
-        self.assertEqual(w['character_context']['profiles']['hero']['data']['biography']['contradiction'],detail)
+        # 大块人物档案按内容寻址交付；worker 读回后与完整值等价，篇幅设置不能截断必读档案。
+        characters_context=restore_material(self.path,w,'character_context')
+        self.assertEqual(set(characters_context['profiles']),{'hero','ally'})
+        self.assertEqual(characters_context['profiles']['hero']['data']['biography']['contradiction'],detail)
         self.assertIn('人物小传',rpath(t, 'brief_path').read_text(encoding='utf-8'));self.assertIn('本场景',rpath(t, 'brief_path').read_text(encoding='utf-8'))
         again=pack(self.db,'main',1,'draft',{})
-        self.assertEqual(again['character_context']['profiles'],w['character_context']['profiles'])
+        self.assertEqual(again['character_context']['profiles'],characters_context['profiles'])
         self.submit(t,{'prose':'周行问：“最后谁签收？”宋禾说：“把范围写清楚。”'})
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['facts_checks'])
         self.assertIn('dialogue_identity',w['payload']['reader_checks'])
