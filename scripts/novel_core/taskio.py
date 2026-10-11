@@ -46,7 +46,7 @@ def shared_delivery(project,work):
         path=Path(project).resolve()/rel
         expected=json.dumps(value,ensure_ascii=False,indent=2,allow_nan=False)+'\n'
         if not path.exists() or path.read_bytes()!=expected.encode('utf-8'):write_json(path,value)
-        materials[field]={'path':rel,'hash':hashed,'encoding':'json'}
+        materials[field]={'path':rel,'hash':hashed[:12],'encoding':'json'}
     view['shared_materials']=materials
     view['shared_read_rule']='首次接手须读取所需完整文件；同一 Worker 只在已读且哈希未变时复用。新 Worker、哈希改变或上下文不足均重新读；这不是审稿通过。'
     return view

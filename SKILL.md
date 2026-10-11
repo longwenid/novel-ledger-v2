@@ -15,7 +15,7 @@ description: >-
 ## 核心操作流
 
 - **开书**：读 [creation](references/creation.md) 与 [hatch-ideas](references/hatch-ideas.md)。每步给 2～3 个候选，含至少一个可落地的高概念脑爆项；换组时切换透镜。确定约定后 `init --project "$PROJECT" --contract contract.json`，试写首章，由作者定调 `approve`。
-- **续写 / 无人值守 / 恢复**：读 [runtime](references/runtime.md)，用 `advance` 一次取得任务、短状态和恢复点；Worker 结束后用 `advance --after 任务ID` 核实提交并接续，沿用当前模型。默认每批连写最多 5 章并自查，再派新的独立审稿者逐章核验整批；旧任务与历史修订沿用逐章流程；跨章复审由新的独立审稿者在同次执行内连续处理分块与综合判断，按需查 [材料准备](references/context-runtime.md)。本版本只支持新建的 v2 项目及其续接，不迁移旧版项目。
+- **续写 / 无人值守 / 恢复**：读 [runtime](references/runtime.md)，用 `advance` 一次取得任务、短状态和恢复点；Worker 结束后用 `advance --after 任务ID` 核实提交并接续，沿用当前模型。默认每批连写 3 章并自查，再派新的独立审稿者逐章核验整批；旧任务与历史修订沿用逐章流程；跨章复审由新的独立审稿者在同次执行内连续处理分块与综合判断，按需查 [材料准备](references/context-runtime.md)。本版本只支持新建的 v2 项目及其续接，不迁移旧版项目。
 - **局部返修与修订**：局部问题读 [局部修订](references/repairs.md) 提交版本补丁；历史大修读 [记忆与修订](references/continuity.md) 建候选分支。
 - **验收与审计**：读 [审稿与完本](references/editorial.md)；执行 `audit --project "$PROJECT"` 复核全书账本，`complete` 进行完本验证。
 

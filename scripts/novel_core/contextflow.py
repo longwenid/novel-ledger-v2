@@ -112,6 +112,16 @@ def _unit_view(units,offset=0):
              'local_semantic_end':u['semantic_end']-offset} for u in units]
 
 
+def brief(value):
+    """Receipt digest for worker-facing views: 12 hex still eyeball-compares,
+    while every engine check keeps the full 64. Mirrors prose file naming."""
+    if isinstance(value,str) and value.startswith('material:') and len(value)==8+64:
+        return value[:8+12]
+    if isinstance(value,str) and len(value)==64:
+        return value[:12]
+    return value
+
+
 def _documents(base,db=None):
     core=copy.deepcopy(base);documents=[]
     def spill(container,key,path):
@@ -208,7 +218,7 @@ def _scan_page(db,doc,offset,limit=SCAN_UNITS):
         'document_hash':doc['hash'],'field':doc['field'],'start':start,'end':end,
         'total_chars':len(doc['text']),**prose_ref(db,doc['text'][start:end]),
         'units':_unit_view(units,start),'page_unit_count':len(units),'total_units':len(doc['units']),
-        **{k:doc[k] for k in ('source_id','version') if k in doc},
+        **({'source_id':brief(doc['source_id'])} if 'source_id' in doc else {}),
         'notes_max_chars':None,'complete_semantic_units':True}
 
 
@@ -330,8 +340,8 @@ def _direct_records(core,documents):
         path=doc['field'].split('.');container=core
         for key in path[:-1]:container=container.setdefault(key,{})
         container[path[-1]]=json.loads(doc['text'])
-        direct.append({'field':doc['field'],'hash':doc['hash'],'units':len(doc['units']),
-                       'source_id':doc['source_id'],'version':doc['version']})
+        direct.append({'field':doc['field'],'hash':brief(doc['hash']),'units':len(doc['units']),
+                       'source_id':brief(doc['source_id'])})
     if direct:
         core['context_delivery']={'mode':'exact-records/1','sources':direct,
             'instruction':'这些字段是完整冻结的原始记录，直接阅读核对，无须另派摘录；来源复用不代表理解或审稿通过。'}
@@ -356,8 +366,7 @@ def fit(db,base):
         core_document={'id':'core','field':'target_core','text':core_text,'hash':digest(core_text),'units':semantic_units(core_text)}
         core['context_materials']={'bundle':ident,'documents':len(documents),'status':'preparing',
             'index':[{'id':d['id'],'field':d['field'],'chars':len(d['text']),
-                      'units':len(d['units']),'hash':d['hash'],'source_id':d['source_id'],
-                      'source_version':d['version']} for d in documents]+[
+                      'units':len(d['units']),'hash':brief(d['hash']),'source_id':brief(d['source_id'])} for d in documents]+[
                       {'id':'core','field':'target_core','chars':len(core_text),'units':len(core_document['units']),
                        'hash':core_document['hash'],'scanned_as_history':False}],
             'retrieve':'material --task TASK_ID --bundle '+ident+' --document ID --start N',

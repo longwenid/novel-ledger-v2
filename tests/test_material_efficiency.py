@@ -64,7 +64,7 @@ class MaterialEfficiencyTests(unittest.TestCase):
         for field in ('state','character_context','design_context','selected'):
             self.assertEqual(out[field],base[field])
             source=next(s for s in out['context_delivery']['sources'] if s['field']==field)
-            self.assertEqual(source['hash'],digest(dump(base[field])))
+            self.assertTrue(digest(dump(base[field])).startswith(source['hash']));self.assertNotIn('version',source)
         self.assertEqual(sum(s['units'] for s in out['context_delivery']['sources']),58)
         review=copy.deepcopy(base);review['stage']='chapter_review';review.pop('design_context');review['selected']=review['selected'][:20]
         out=contextflow.fit(self.db,review);self.assertEqual(out['stage'],'chapter_review')
