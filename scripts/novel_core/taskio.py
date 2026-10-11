@@ -129,7 +129,7 @@ def shared_delivery(project,work):
     # frozen ones whose input must stay byte-identical across re-materialisation.
     if materials or extracted:
         view['shared_materials']=materials
-        view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取；其余可先以摘要兜底，疑点用 commands 定向补读。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
+        view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取；writer_brief.continuity_sources 点到的字段若出现在 shared_materials（例如 design_context、character_context），属于本章必读材料，先读它再动笔——外置只改变交付方式，不表示该材料可选；其余可先以摘要兜底，疑点用 commands 定向补读。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
     return view
 
 
