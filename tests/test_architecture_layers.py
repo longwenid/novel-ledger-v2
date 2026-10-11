@@ -271,6 +271,43 @@ class RevisionStartTests(unittest.TestCase):
             through=7), 7)
 
 
+class ReviewSeverityTests(unittest.TestCase):
+    """轻微缺陷必须有非返工的出口。
+
+    真实事故：批次复审在未修订的第 2 章发现一个异体字（執→执）。判 note 被
+    「返工须提供可执行发现」拒绝，而文档又写着「pass 的 findings=[]」，报告者
+    只能把它升格为 quality —— 于是一个字触发了从第 2 章重做整条修订链。出口
+    只有一个：note 随 pass。
+    """
+
+    QUOTE = '原文'
+
+    def receipt(self, severity, verdict='pass'):
+        ref = {'chapter': 1, 'quote': self.QUOTE, 'start': 0}
+        return {'verdict': verdict,
+                'checks': [{'id': 'language', 'result': 'pass', 'reason': '夹具。', 'evidence': [dict(ref)]}],
+                'findings': [{'severity': severity, 'impact': '读者影响', 'goal': '修订目标',
+                              'evidence': dict(ref)}]}
+
+    def validate(self, data):
+        return engine.validate_review(data, ['language'], {1: self.QUOTE})
+
+    def test_a_note_rides_along_with_pass(self):
+        """可记录、不返工——这是轻微缺陷唯一不需要触发链条的表达方式。"""
+        self.validate(self.receipt('note'))
+
+    def test_a_quality_finding_requires_fix(self):
+        with self.assertRaises(Error) as caught:
+            self.validate(self.receipt('quality'))
+        self.assertEqual(caught.exception.code, 'review')
+
+    def test_fix_still_needs_a_non_note_finding(self):
+        """反方向不变：不能拿 note 级观察当返工依据。"""
+        with self.assertRaises(Error) as caught:
+            self.validate(self.receipt('note', verdict='fix'))
+        self.assertEqual(caught.exception.code, 'review')
+
+
 class BatchGenerationTests(unittest.TestCase):
     """INV-5 + P1：batch 的换代只有一个权威。"""
 

@@ -399,7 +399,7 @@ def review_job(db,branch,scope,first,n):
         chapter=end+1
     receipts = [{'chapter':r['through'],'input_hash':r['input_hash']} for r in db.execute('SELECT through,input_hash FROM reviews WHERE branch=? AND scope=? AND through BETWEEN ? AND ? ORDER BY through',(branch,scopekey,first,n))]
     payload={'scope':scope,'first':first,'through':n,'coverage_receipts':{'count':len(receipts),'first':first,'through':n,'scope':scopekey,'hash':digest(receipts)},
-             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。修订起点由 finding 决定，证据位置不等于修订位置：evidence 只用于举证，可以引用任意章（含与问题章冲突的早期章）；要指定从哪一章开始改，用 target_chapter。表达类(重复/收束/节奏/声线)标 repair_route:"patch"：定点改被点名章，其余章可原文复用省去重传。事实/因果/认知/时间类标 repair_route:"revise"：从最早受影响章重验后缀。两者都不声明时默认在本次范围的最新章就地修订——回溯重写没被点名的章代价高，且可能把已正确的正文改坏，只在确有必要时才声明。免逐章审稿须本章及全部前文版本未变。',
+             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。修订起点由 finding 决定，证据位置不等于修订位置：evidence 只用于举证，可以引用任意章（含与问题章冲突的早期章）；要指定从哪一章开始改，用 target_chapter。表达类(重复/收束/节奏/声线)标 repair_route:"patch"：定点改被点名章，其余章可原文复用省去重传。事实/因果/认知/时间类标 repair_route:"revise"：从最早受影响章重验后缀。两者都不声明时默认在本次范围的最新章就地修订——回溯重写没被点名的章代价高，且可能把已正确的正文改坏，只在确有必要时才声明。轻微缺陷（异体字、错别字、标点、体例）记 note 级 finding 随 pass 提交，不要判 fix：fix 需要 blocker/quality 级发现作依据，为留下记录而升格会触发整条修订链。本次修订范围之外的历史遗留问题（例如修订 5–10 章时在 1–3 章读到的旧缺陷）同样记 note 并写进报告——修订分支只负责本次修订的传播正确性，范围外的问题由主控决定是否另开修订。免逐章审稿须本章及全部前文版本未变。',
              'checks':checks + ('repetition',) + (('ending','length','core_promises') if scope=='book' else ())}
     if scope=='volume':
         payload['checks']+=('volume_development',)

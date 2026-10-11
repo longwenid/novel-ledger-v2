@@ -31,7 +31,7 @@ profiled 模式增加 character_consistency，核对经历/认知/动机与成�
 
 ## reader 子回执：读者检查
 
-按 `payload.reader_checks` 逐项检查，reason 解释阅读影响，pass 的 findings=[]；first_read 保留读取 input 前记录的首读体验。
+按 `payload.reader_checks` 逐项检查，reason 解释阅读影响；轻微缺陷（异体字、错别字、标点、体例）记 `note` 级发现随 `pass` 提交，不判 `fix`；first_read 保留读取 input 前记录的首读体验。
 
 有篇幅目标时检查 substance：正文是否产生有效动作、信息、选择、关系或代价变化，是否以重复解释、标签或同义对话充数。不按字数达标或事件数量判质量。
 

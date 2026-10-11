@@ -169,7 +169,11 @@ submit 自动校验全文或补丁合成稿的实际篇幅。measure --result <o
 }
 ```
 
-要求的检查项各出现一次；不适用时 evidence=[] 并给 not_applicable 字符串理由，核心项不得绕过。pass 的 findings=[]。
+要求的检查项各出现一次；不适用时 evidence=[] 并给 not_applicable 字符串理由，核心项不得绕过。
+
+`pass` 不夹带要求返工的发现（blocker/quality）——那两级必须走 `fix`。但 **`note` 级可以随 `pass` 提交**，语义是「记录在案、不要求返工」：异体字、错别字、标点、体例这类轻微缺陷走这条通道，不要为了留下记录而判 `fix`。
+
+反过来，判 `fix` 需要至少一个 blocker/quality 级发现作依据，note 不构成返工依据。这条与上一条合起来只有一个出口：轻微缺陷记 note 随 pass，而不是升格成返工。
 
 fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的问题使用；其余用 chapter 或省略。
 
