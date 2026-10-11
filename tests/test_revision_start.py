@@ -68,6 +68,28 @@ class RevisionStartTests(unittest.TestCase):
                               (get(self.db, 'work_branch'),)).fetchone()
         return row
 
+    def test_a_minor_defect_ridden_along_with_pass_never_opens_a_revision(self):
+        """The measured incident, end to end.
+
+        A batch review found one mixed-script character in an UNREVISED chapter.
+        It could not report it as `note` — the contract said `pass` carries no
+        findings — so it escalated to `quality`, which opened a revision from
+        that chapter and re-drafted the entire suffix for one glyph. Recorded as
+        a note alongside `pass`, the same input must leave the branch untouched.
+        """
+        task = engine.next_task(self.db, self.path)
+        self.assertEqual(task['stage'], 'volume_review')
+        payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
+        prose = self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',
+                                (task['branch'],)).fetchone()[0]
+        data = review(payload['checks'], prose, 1)
+        data['findings'] = [{'severity': 'note', 'impact': '混入一个繁体字，读者会出戏',
+                             'goal': '统一为简体，不要求返工', 'evidence': ev(prose, 1)}]
+        engine.submit(self.db, result(task, data))          # verdict stays pass
+        self.assertEqual(get(self.db, 'work_branch'), 'main', '轻微缺陷不得触发修订链')
+        self.assertIsNone(self.db.execute(
+            'SELECT * FROM branches WHERE status=?', ('candidate',)).fetchone())
+
     def test_undeclared_fix_repairs_the_newest_chapter(self):
         """Regression: proof quoted from chapter 1 must not drag the revision
         back to chapter 1 when nothing says the fix belongs there."""
