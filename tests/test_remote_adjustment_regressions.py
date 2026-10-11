@@ -50,22 +50,22 @@ class RemoteAdjustmentTests(unittest.TestCase):
         prose = self.original_chapter()
         engine.begin_revision(self.db, 1, '调整文风', style_only=True)
         task = engine.next_task(self.db, self.project)
-        work = json.loads((self.project/task['input_path']).read_text())
+        work = json.loads((self.project/task['input_path']).read_text(encoding='utf-8'))
         path = self.project/work['payload']['original_prose_path']
-        self.assertEqual(path.read_text(), prose)
+        self.assertEqual(path.read_text(encoding='utf-8'), prose)
         self.assertIn(work['payload']['original_prose_path'], task['prose_files'])
         path.unlink()
         resumed = engine.next_task(self.db, self.project)
         self.assertEqual(resumed['task_id'], task['task_id'])
-        self.assertEqual(path.read_text(), prose)
+        self.assertEqual(path.read_text(encoding='utf-8'), prose)
 
     def test_both_prose_variants_are_materialized(self):
         work = {'payload': {'prose': '改稿。', 'original_prose': '原稿。'}}
         attach_prose(self.db, work)
         paths = engine.materialize_prose(self.db, self.project, work)
         self.assertEqual(len(paths), 2)
-        self.assertEqual((self.project/work['payload']['prose_path']).read_text(), '改稿。')
-        self.assertEqual((self.project/work['payload']['original_prose_path']).read_text(), '原稿。')
+        self.assertEqual((self.project/work['payload']['prose_path']).read_text(encoding='utf-8'), '改稿。')
+        self.assertEqual((self.project/work['payload']['original_prose_path']).read_text(encoding='utf-8'), '原稿。')
 
     def test_style_revision_keeps_source_bound_designs_usable(self):
         self.original_chapter(layered=True, canon=True)
@@ -97,10 +97,10 @@ class RemoteAdjustmentTests(unittest.TestCase):
 
         next_task = engine.next_task(self.db, self.project)
         self.assertEqual(next_task['stage'], 'plan')
-        work = json.loads((self.project/next_task['input_path']).read_text())
+        work = json.loads((self.project/next_task['input_path']).read_text(encoding='utf-8'))
         original = next(item for item in work['selected']
                         if item.get('kind') == 'required_chapter' and item.get('branch') == 'main')
-        self.assertEqual((self.project/original['prose_path']).read_text(), '周行把收据交给宋禾。')
+        self.assertEqual((self.project/original['prose_path']).read_text(encoding='utf-8'), '周行把收据交给宋禾。')
         reads = self.db.execute('SELECT sources FROM task_reads WHERE consumer_task=?',
                                 (next_task['task_id'],)).fetchall()
         refs = [ref for row in reads for ref in json.loads(row[0])]

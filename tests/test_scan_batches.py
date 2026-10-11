@@ -38,7 +38,7 @@ class ScanBatchTests(unittest.TestCase):
         self.assertIn('[提交契约]',work['guide']);self.assertIn('local_semantic_start',work['guide'])
         envelope=self.register(work)
         for page in pages:
-            text=(self.path/page['prose_path']).read_text();unit=page['units'][0]
+            text=(self.path/page['prose_path']).read_text(encoding='utf-8');unit=page['units'][0]
             quote=text[unit['local_semantic_start']:unit['local_semantic_end']]
             self.assertTrue(quote)
             self.assertEqual(unit['semantic_start'],page['start']+unit['local_semantic_start'])

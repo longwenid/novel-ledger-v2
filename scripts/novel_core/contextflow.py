@@ -446,11 +446,30 @@ def accept(db,work,data,task_id):
             require(isinstance(evidence,dict) and set(evidence)=={'document','start','quote'},'context_evidence','来源字段为 document/start/quote')
             doc=documents.get(evidence['document']);start=evidence['start'];quote=evidence['quote']
             require(doc and digest(doc['text'])==doc['hash'],'context_integrity','材料快照损坏')
-            require(type(start) is int and start>=0 and isinstance(quote,str) and quote and doc['text'][start:start+len(quote)]==quote,
-                'context_evidence','材料引文或位置不匹配')
+            if not (type(start) is int and start>=0 and isinstance(quote,str) and quote and doc['text'][start:start+len(quote)]==quote):
+                # The validator holds the document; hand the worker the fix
+                # instead of a bare mismatch (session 0077: one scan worker
+                # burned 107 steps on details:null rejections).
+                from .ledger import all_hits, closest_fragment
+                details={'document':evidence.get('document'),
+                         'page_hint':next(({'start':p['start'],'end':p['end'],'local_start':start-p['start']} for p in pages
+                                           if p['document']==evidence.get('document') and isinstance(start,int) and p['start']<=start<p['end']),None),
+                         'recover':'start 是文档绝对坐标=page.start+页内偏移；引文用原文逐字（含标点）'}
+                if isinstance(quote,str) and quote:
+                    hits=all_hits(doc['text'],quote)
+                    if len(hits)>1:
+                        details['matches']=[{'start':h,'excerpt':doc['text'][h:h+24]} for h in hits[:4]]
+                        details['match_count']=len(hits)
+                        details['recover']='引文多处命中：加长 quote 纳入语境或换 start 到目标命中处'
+                    else:
+                        closest=closest_fragment(doc['text'],quote)
+                        if closest:details['closest']=closest
+                require(False,'context_evidence','材料引文或位置不匹配',details)
             if work['stage']=='context_scan':
                 require(any(doc['id']==p['document'] and start>=p['start'] and start+len(quote)<=p['end'] for p in pages),
-                    'context_evidence','扫描结论只能引用本页完整材料')
+                    'context_evidence','扫描结论只能引用本页完整材料',
+                    {'document':doc['id'],'quote_start':start,'quote_end':start+len(quote),
+                     'pages':[{'start':p['start'],'end':p['end']} for p in pages if p['document']==doc['id']]})
             else:require(dump(evidence) in inherited,'context_evidence','归并不得捏造未审读的新来源')
     if work['stage']=='context_reduce':
         outgoing=[{dump(e) for e in note['evidence']} for note in notes]

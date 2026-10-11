@@ -7,7 +7,7 @@
 ```bash
 pytest
 # 或
-python3 -m unittest discover -s tests -v
+python -m pytest tests/ -q   # 部分测试文件不是 unittest.TestCase，unittest discover 收集不到
 ```
 
 工程测试使用临时 SQLite，不调用外部模型。

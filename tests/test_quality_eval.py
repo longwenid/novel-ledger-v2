@@ -26,7 +26,7 @@ class LiteraryEvaluationTests(unittest.TestCase):
         work=q.load(self.routes[1]['input'])
         self.assertEqual(work['chapters'][0]['prose'],'修改甲项。原始乙项。')
         self.assertNotIn('label',work);self.assertNotIn('edits',work);self.assertNotIn('expectations',work)
-        self.assertEqual((self.path/'source.txt').read_text(),'原始甲项。原始乙项。')
+        self.assertEqual((self.path/'source.txt').read_text(encoding='utf-8'),'原始甲项。原始乙项。')
     def test_seeded_detection_and_unknown_control_are_not_conflated(self):
         self.review(0,True);self.review(1,True);score=q.score(self.path/'eval')
         self.assertEqual(score['seeded']['true_positive'],1);self.assertEqual(score['seeded']['false_negative'],0)

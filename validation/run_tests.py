@@ -39,7 +39,7 @@ def main(argv):
     extra = [a for a in (argv or ['tests/']) if a != '-q']  # 进度条取代点号行
     total = collect_total(extra)
     print(f'已收集 {total} 个用例，开始执行…', flush=True)
-    env = {**os.environ, 'PYTHONUNBUFFERED': '1'}   # 管道下也要逐用例刷出
+    env = {**os.environ, 'PYTHONUNBUFFERED': '1', 'PYTHONUTF8': '1'}  # 逐用例刷出 + 中文 Windows 免编码坑
     proc = subprocess.Popen([sys.executable, '-m', 'pytest', '-q', '--tb=short', *extra],
                             cwd=ROOT, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, env=env)

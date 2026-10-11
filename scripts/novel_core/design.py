@@ -197,12 +197,20 @@ def save(db,branch,scope,chapter,data,task_id):
         name=ref['entity']+':'+ref['key']
         require(name in state['facts'] and state['facts'][name]==ref['value'],'design_canon_conflict','设计引用与当前事实不符，不能用预设覆盖正文')
     # A replaced design invalidates future chapter plans, not canonical prose.
+    # Plans behind an existing draft are load-bearing: commit_draft dereferences
+    # the row, and losing it wedges head advancement (QC session 233b, §二.3).
+    from .engine import load_draft
+    doomed=[row['number'] for row in db.execute(
+        'SELECT number FROM plans WHERE branch=? AND number>?',(branch,head(db,branch))).fetchall()
+        if scope=='world' or json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,row['number'])).fetchone()[0])['volume']==scope]
+    for n in doomed:
+        require(not load_draft(db,branch,n),'design',
+                '该章已有草稿，先按审稿流程处理或 replan 取消批次，不能由设计重存直接删除其章计划',
+                {'chapter': n})
+    for n in doomed:
+        db.execute('DELETE FROM plans WHERE branch=? AND number=?',(branch,n))
     if scope=='world':
         for volume in get(db,'contract')['volumes']:invalidate(db,branch,volume['id'],'全书设计版本更新')
-        db.execute('DELETE FROM plans WHERE branch=? AND number>?',(branch,head(db,branch)))
-    else:
-        for row in db.execute('SELECT number,data FROM plans WHERE branch=? AND number>?',(branch,head(db,branch))).fetchall():
-            if json.loads(row['data'])['volume']==scope:db.execute('DELETE FROM plans WHERE branch=? AND number=?',(branch,row['number']))
     previous=current(db,branch,scope)
     record={'scope':scope,'revision':previous['revision']+1 if previous else 1,'active':True,'status':'proposal_not_canon',
             'data':copy.deepcopy(data),'sources':sources,'world_hash':world_hash,'task_id':task_id,'based_on_chapter':head(db,branch)}

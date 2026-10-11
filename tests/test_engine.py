@@ -97,7 +97,7 @@ class BookTests(unittest.TestCase):
         summary='周行的选择使宋禾有权决定是否作证，双方仍须承担后果。'*200
         checks=[{'id':check,'result':'pass','reason':'合成工程样本验证完整正文与摘要的传递，不评价文学质量。',
                  'evidence':[ev(text,quote='她最终承担了作证的风险。')]} for check in work['payload']['facts_checks']]
-        first=rpath(facts,'first_read_path').read_text()
+        first=rpath(facts,'first_read_path').read_text(encoding='utf-8')
         self.assertEqual(first,text)
         for field in ('facts_review','writer_brief'):self.assertNotIn(field,work)
         submit_review(self.db,facts,{'verdict':'pass','checks':checks,'findings':[],'events':[],'summary':summary})

@@ -191,7 +191,8 @@ def apply(state, event, prose, chapter):
         key = eid + ':' + topic
         old = state['knowledge'].get(key)
         require('before' in event and event['before'] == (old['claim'] if old else None), 'precondition', '认知前值不匹配',
-                {'entity': eid, 'topic': topic, 'current_claim': old['claim'] if old else None, 'submitted': event.get('before')})
+                {'entity': eid, 'topic': topic, 'current_claim': old['claim'] if old else None, 'submitted': event.get('before'),
+                 'recover': '把 before 原样替换为 current_claim（该话题首次登记时为 null）；改写认知内容走 claim 新值，不要改 before'})
         state['knowledge'][key] = {k: event[k] for k in ('claim', 'stance', 'source', 'evidence')}
     elif op == 'resource':
         asset, unit = event['asset'], event['unit']

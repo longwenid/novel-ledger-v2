@@ -108,7 +108,7 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text()),prose)
+        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
         t=self.task();self.assertEqual(t['stage'],'repair')
@@ -126,7 +126,7 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text()),prose)
+        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
         t=self.task();pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
@@ -141,7 +141,7 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text()),prose)
+        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
         t=self.task();pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
@@ -188,7 +188,7 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'道具不实','goal':'换核心道具','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text()),prose)
+        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
         t=self.task();payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']

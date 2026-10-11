@@ -39,7 +39,7 @@ class ReviewSessionTests(unittest.TestCase):
         return branch
 
     def receipt(self,t):
-        w=json.loads((self.path/t['input_path']).read_text());p=w['payload']
+        w=json.loads((self.path/t['input_path']).read_text(encoding='utf-8'));p=w['payload']
         if t['stage'] in ('context_scan','context_reduce'):return result(t,{'cannot_compact':True,'reason':'工程夹具逐字保留全部来源。'})
         n=p['first'];prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(t['branch'],n)).fetchone()[0]
         data=review(p['checks'],prose,n)
@@ -47,13 +47,13 @@ class ReviewSessionTests(unittest.TestCase):
         return result(t,data)
 
     def submit(self,t,receipt=None):
-        f=self.path/t['output_path'];f.write_text(dump(receipt or self.receipt(t)))
+        f=self.path/t['output_path'];f.write_text(dump(receipt or self.receipt(t)), encoding='utf-8')
         return self.cli('submit','--result',str(f),'--brief','--continue-review')
 
     def stream(self,t):
         trace=[]
         for _ in range(80):
-            w=json.loads((self.path/t['input_path']).read_text());trace.append((t,w.get('payload',{}).get('scope')))
+            w=json.loads((self.path/t['input_path']).read_text(encoding='utf-8'));trace.append((t,w.get('payload',{}).get('scope')))
             reply=self.submit(t)
             if reply['action']!='continue_review':return reply,trace
             t=reply['task']
@@ -151,22 +151,22 @@ class ReviewSessionTests(unittest.TestCase):
         self.assertIn('review_session',self.cli('advance')['task'])
 
     def test_flags_cannot_be_combined_or_used_by_writer(self):
-        t=self.cli('advance')['task'];f=self.path/t['output_path'];f.write_text(dump(result(t,{'chapters':[plan(1)]})))
+        t=self.cli('advance')['task'];f=self.path/t['output_path'];f.write_text(dump(result(t,{'chapters':[plan(1)]})), encoding='utf-8')
         with self.assertRaises(Error):self.cli('submit','--result',str(f),'--continue-review')
-        self.prepare();t=self.cli('advance')['task'];f=self.path/t['output_path'];f.write_text(dump(self.receipt(t)))
+        self.prepare();t=self.cli('advance')['task'];f=self.path/t['output_path'];f.write_text(dump(self.receipt(t)), encoding='utf-8')
         with self.assertRaises(Error):self.cli('submit','--result',str(f),'--continue-review','--continue-preparation')
 
     def test_shared_materials_are_exact_and_missing_files_are_rebuilt(self):
-        self.prepare();t=self.cli('advance')['task'];v=json.loads((self.path/t['input_path']).read_text())
+        self.prepare();t=self.cli('advance')['task'];v=json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
         row=self.db.execute('SELECT input FROM tasks WHERE id=?',(t['task_id'],)).fetchone();full=json.loads(row[0])
         self.assertIn('contract',v['shared_materials'])
         for k,ref in v['shared_materials'].items():
-            self.assertEqual(json.loads((self.path/ref['path']).read_text()),full[k])
+            self.assertEqual(json.loads((self.path/ref['path']).read_text(encoding='utf-8')),full[k])
             self.assertTrue(digest(full[k]).startswith(ref['hash']))
         ref=v['shared_materials']['contract'];(self.path/ref['path']).write_bytes(b'\xff')
         same=self.cli('advance')['task']
         self.assertEqual(same['input_hash'],t['input_hash'])
-        self.assertEqual(json.loads((self.path/ref['path']).read_text()),full['contract'])
+        self.assertEqual(json.loads((self.path/ref['path']).read_text(encoding='utf-8')),full['contract'])
 
     def test_long_material_preparation_stays_inside_review_and_preserves_sources(self):
         from novel_core.ledger import append_events

@@ -241,7 +241,7 @@ class ChapterLengthTests(unittest.TestCase):
         reader=self.task();work=self.work(reader)
         self.assertIn('pacing',work['payload']['reader_checks'])
         self.assertTrue(rpath(reader,'first_read_path').exists())
-        self.assertEqual(rpath(reader,'first_read_path').read_text(),prose)
+        self.assertEqual(rpath(reader,'first_read_path').read_text(encoding='utf-8'),prose)
         self.assertNotIn('writer_brief',work)
         respond(self.db,self.path,reader)
         self.assertEqual(head(self.db,'main'),1)

@@ -153,7 +153,7 @@ class ReviewPackMaterialTests(unittest.TestCase):
 
     def test_review_discipline_names_branch_coordinate(self):
         task, work = self._work()
-        guide=work.get('guide') or json.loads((self.path/work['shared_materials']['guide']['path']).read_text())
+        guide=work.get('guide') or json.loads((self.path/work['shared_materials']['guide']['path']).read_text(encoding='utf-8'))
         self.assertIn('branch 字段所指分支', guide)
         self.assertNotIn('【第', guide)
 

@@ -250,7 +250,7 @@ def render(db, branch):
     head_n = len(rows)
     names = {eid: meta['name'] for eid, meta in state['entities'].items()}
     anchor = get(db, 'style_anchor')
-    usage = stat.get('context_usage', {})
+    usage = stat.get('usage') or {}
     generated = time.strftime('%Y-%m-%d %H:%M')
 
     nav = ''.join(f'<a href="#{key}">{label}</a>' for key, label in
@@ -282,7 +282,7 @@ def render(db, branch):
                 f'<div class="stat"><b>{report["han_characters"]:,}</b><span>累计汉字</span></div>'
                 f'<div class="stat"><b>{len(open_hooks)}</b><span>待兑承诺</span></div>'
                 f'<div class="stat"><b>{_esc(stat["status"])}</b><span>运行状态</span></div>'
-                f'<div class="stat"><b>{usage.get("tasks",0)}</b><span>任务 · {usage.get("session_handoffs",0)} 次交接</span></div></div>')
+                f'<div class="stat"><b>{usage.get("tasks",0)}</b><span>任务 · {usage.get("session_handoffs") or 0} 次交接</span></div></div>')
     if report['problems']:
         page.append(f'<div class="card" style="border-color:var(--bad)"><b>审计问题</b><pre>{_pretty(report["problems"])}</pre></div>')
 
@@ -556,7 +556,7 @@ def render(db, branch):
                     f'<span class="pos">{i + 1} / {len(rows)}</span>'
                     f'<button {next_btn}>下一章 →</button></div></section>')
     page.append('</div></main></div><footer>本页为派生只读视图,真源是 novel.sqlite3;重新生成:novel.py html --project &lt;PROJECT&gt;'
-                f' · 任务 {usage.get("tasks",0)} · 会话交接 {usage.get("session_handoffs",0)} · 输入 {usage.get("input_chars",0):,} 字符'
+                f' · 任务 {usage.get("tasks",0)} · 会话交接 {usage.get("session_handoffs") or 0} · 输入 {(usage.get("task_input_chars") or 0):,} 字符'
                 ' · <span class="re">Ctrl+P 打印可导出当前视图 PDF</span></footer>'
                 '<script>function setMode(m,keep){var r=document.getElementById(\'view-read\'),s=document.getElementById(\'view-settings\');'
                 'r.hidden=m!==\'read\';s.hidden=m!==\'settings\';'

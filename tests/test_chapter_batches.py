@@ -22,7 +22,7 @@ class ChapterBatchTests(unittest.TestCase):
         engine.validate_plan(self.db,'main',2,{'chapters':[plan(n) for n in range(2,11)]})
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def cli(self,*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
-    def work(self,t):return json.loads((self.path/t['input_path']).read_text())
+    def work(self,t):return json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
     def write(self,t,events=None,prose=None):
         n=t['chapter'];text=prose or f'第{n}章，周行把收据交给宋禾。她在凭证上写下第{n}次交接的去向。'
         before=batchflow.candidate_state(self.db,'main',n-1)['facts'].get('hero:route')
@@ -30,7 +30,7 @@ class ChapterBatchTests(unittest.TestCase):
         return {'prose':text,'summary':'核验凭证后改变去向。','self_check':'核对凭证、去向变化和上一章的交接前态。',
                 'candidate_events':events,'repair_note':'按证据修复承接','design_change':'由核实凭证推动行动'}
     def submit(self,t,data):
-        path=self.path/t['output_path'];path.write_text(dump(result(t,data)))
+        path=self.path/t['output_path'];path.write_text(dump(result(t,data)), encoding='utf-8')
         return self.cli('submit','--result',str(path),'--brief','--continue-chapter-batch')
     def writer_batch(self,t=None):
         t=t or self.cli('advance')['task'];tasks=[]
@@ -221,13 +221,13 @@ class ChapterBatchTests(unittest.TestCase):
 
     def test_raw_output_retry_and_changed_retry_stay_bound_to_original_task(self):
         t=self.cli('advance')['task'];data=self.write(t,events=[])
-        path=self.path/t['output_path'];path.write_text(dump(data))
+        path=self.path/t['output_path'];path.write_text(dump(data), encoding='utf-8')
         first=self.cli('submit','--result',str(path),'--brief','--continue-chapter-batch')
         replayed=self.cli('submit','--result',str(path),'--brief','--continue-chapter-batch')
         self.assertEqual(first['task_id'],replayed['task_id'])
         self.assertEqual(first['task']['task_id'],replayed['task']['task_id'])
         self.assertIsNone(engine.load_draft(self.db,'main',3))
-        changed={**data,'prose':data['prose']+'周行重新核对。'};path.write_text(dump(changed))
+        changed={**data,'prose':data['prose']+'周行重新核对。'};path.write_text(dump(changed), encoding='utf-8')
         with self.assertRaises(Error) as caught:
             self.cli('submit','--result',str(path),'--brief','--continue-chapter-batch')
         self.assertEqual(caught.exception.code,'replay_conflict')
@@ -248,7 +248,7 @@ class ChapterBatchTests(unittest.TestCase):
         t=self.cli('advance')['task'];data=self.write(t,events=[])
         self.cli('pause','--reason','取消旧执行','--cancel-task');self.cli('resume')
         fresh=self.cli('advance')['task']
-        path=self.path/t['output_path'];path.write_text(dump(data))
+        path=self.path/t['output_path'];path.write_text(dump(data), encoding='utf-8')
         with self.assertRaises(Error) as caught:self.cli('submit','--result',str(path))
         self.assertEqual(caught.exception.code,'stale_task')
         self.assertEqual(self.cli('advance')['task']['task_id'],fresh['task_id'])
@@ -265,11 +265,11 @@ class ChapterBatchTests(unittest.TestCase):
         t=self.cli('advance')['task'];view=self.work(t)
         self.assertNotIn('contract',view);self.assertIn('contract',view['shared_materials'])
         ref=view['shared_materials']['contract'];path=self.path/ref['path']
-        self.assertEqual(json.loads(path.read_text()),get(self.db,'contract'))
-        full=digest(json.loads(path.read_text()));self.assertTrue(full.startswith(ref['hash']));self.assertTrue(ref['path'].endswith(full[:16]+'.json'))
+        self.assertEqual(json.loads(path.read_text(encoding='utf-8')),get(self.db,'contract'))
+        full=digest(json.loads(path.read_text(encoding='utf-8')));self.assertTrue(full.startswith(ref['hash']));self.assertTrue(ref['path'].endswith(full[:16]+'.json'))
         a=self.submit(t,self.write(t));self.assertEqual(self.work(a['task'])['shared_materials']['contract'],ref)
         path.write_bytes(b'\xff\xfe');self.cli('advance')
-        self.assertTrue(digest(json.loads(path.read_text())).startswith(ref['hash']))
+        self.assertTrue(digest(json.loads(path.read_text(encoding='utf-8'))).startswith(ref['hash']))
         self.assertIn('同一 Worker',a['task']['worker_prompt'])
 
     def test_volume_end_closes_batch_before_next_volume_or_long_review(self):
@@ -371,7 +371,7 @@ class ChapterBatchTests(unittest.TestCase):
         task=self.cli('advance','--after',out['task_id'])['task'];self.assertNotIn('chapter_session',task)
         for _ in range(30):
             receipt=result(task,{'cannot_compact':True,'reason':'首读前由材料者保留原始资料，不签审稿。'})
-            path=self.path/task['output_path'];path.write_text(dump(receipt))
+            path=self.path/task['output_path'];path.write_text(dump(receipt), encoding='utf-8')
             out=self.cli('submit','--result',str(path),'--brief','--continue-preparation')
             if out['action']!='continue_preparation':break
             task=out['task']

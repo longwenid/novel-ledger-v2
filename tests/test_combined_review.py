@@ -111,7 +111,7 @@ class CombinedReviewTests(unittest.TestCase):
         c=get(self.db,'contract');c['character_mode']='profiled';put(self.db,'contract',c)
         put(self.db,'context_mode','bounded')
         respond(self.db,self.path,self.task())
-        profiles=json.loads((Path(__file__).resolve().parents[1]/'assets/characters.example.json').read_text())
+        profiles=json.loads((Path(__file__).resolve().parents[1]/'assets/characters.example.json').read_text(encoding='utf-8'))
         t=self.task();self.assertEqual(t['stage'],'character_plan')
         engine.submit(self.db,result(t,profiles))
         respond(self.db,self.path,self.task(),prose=self.prose)
@@ -120,7 +120,7 @@ class CombinedReviewTests(unittest.TestCase):
         self.assertIn('character_consistency',w['payload']['facts_checks'])
         self.assertIn('dialogue_identity',w['payload']['reader_checks'])
         self.assertIn('character_context',w)
-        self.assertEqual(rpath(t,'first_read_path').read_text(),self.prose)
+        self.assertEqual(rpath(t,'first_read_path').read_text(encoding='utf-8'),self.prose)
         engine.submit(self.db,result(t,self.receipt(t)))
         self.assertEqual(head(self.db,'main'),1)
 

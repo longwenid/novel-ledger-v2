@@ -55,7 +55,7 @@ class EnvelopeFixTests(unittest.TestCase):
         baseline = self.plans_count()
         data = {'chapters': [plan(2), plan(3)]}
         path = self.path / task['output_path']
-        path.write_text(dump(result(task, data)))
+        path.write_text(dump(result(task, data)), encoding='utf-8')
         out = self.cli('preflight', '--result', str(path))
         self.assertTrue(out['checked']); self.assertFalse(out['submitted'])
         self.assertEqual(self.plans_count(), baseline)
@@ -74,7 +74,7 @@ class EnvelopeFixTests(unittest.TestCase):
              'entities': [], 'scenes': []},
         ]}
         path = self.path / task['output_path']
-        path.write_text(dump(result(task, data)))
+        path.write_text(dump(result(task, data)), encoding='utf-8')
         with self.assertRaises(Error) as caught:
             self.cli('submit', '--result', str(path))
         issues = caught.exception.details['issues']

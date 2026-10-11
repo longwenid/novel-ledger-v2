@@ -201,7 +201,7 @@ def draft_job(db,branch,n,draft):
             payload['prior_events']=prior['events']
             payload['prior_events_source']=prior['source']
             payload['auto_carry']=[i for i,ev in enumerate(prior['events']) if resolvable(ev)]
-            payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件在 events 中原样重报即自动视为 kept,无须 prior_dispositions;正文不再支持的事件须在 prior_dispositions 声明 dropped/replaced 并说明如何变化,既不重报也不声明会被拒绝;也可声明覆盖自动续算。完整语义仍需facts核验。'
+            payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件在 events 中原样重报即自动视为 kept,无须 prior_dispositions;正文不再支持的事件须在 prior_dispositions 声明 dropped/replaced 并说明如何变化,既不重报也不声明会被拒绝;也可声明覆盖自动续算,条目形如 {"index":0,"disposition":"dropped","reason":"正文如何变化"}。完整语义仍需facts核验。'
     if observation:payload['chapter_length']=observation
     return stage,n,payload
 
@@ -402,6 +402,12 @@ def review_job(db,branch,scope,first,n):
         payload['instruction']+=' volume_development 必须用正文证据判断本卷职责和重要过程、选择代价及余波是否充分演出；sequence_refs 出现不等于节拍完成。design 是 proposal_not_canon，须与实际正文对照。结合实际篇幅、参考预算偏离和全书剩余区间说明收卷是否合理，以及后卷职责与承载路径是否成立；未配置参考预算仍须审查展开充分性。预算仅供解释，不因字数差额、固定比例或章数自动判失败，也不能用后卷自动重分配代替展开判断。'
     if scope=='revision':
         payload['checks']+=('revision_intent',)
+        from .carriage import carried_chapters
+        carried=carried_chapters(db,branch)
+        if carried:
+            payload['carried_chapters']=carried
+            payload['instruction']+=(' carried_chapters 未经逐章重审：引擎核验事件重放与依赖差分后携带了原审结论；'
+                                     '复核须抽查这些章与修订目标的关联（尤其被改事实的旧口径残留），发现残留判 fix 并指认章与位置。')
         payload['instruction']+=' revision_intent 须对照 revision_context.chain 中每个修订目标核对已写范围，不能仅核验最后一次文风修改。超出 through 的长期展开目标须在有效设计和后续计划中继续保留，不要求本次历史修订写完未来全卷。旧稿传播范围结束和沿用的 volume_end 不证明父级结构目标完成；过早收卷或已写内容违背目标须 fix 并举证。原因有歧义须报告，不能自行视为已撤销。事实对齐类目标须逐章举证全部耦合章口径一致；被点名章已改而其他章残留旧口径的判 fix，并列出残留章与位置。'
     return scope+'_review',n,payload
 
@@ -597,6 +603,10 @@ def task_files(db, project, task):
 
 
 def next_task(db,project,after=None,brief=False,preparation_bundle=None,chapter_session=None,review_session=None):
+    # Dependency-derived scope: provably unaffected suffix chapters carry over
+    # before dispatching anything (own transactions; no-op unless idle).
+    from .carriage import fast_forward
+    fast_forward(db,get(db,'work_branch'))
     created=False
     with transaction(db):
         if after is not None:
@@ -693,7 +703,17 @@ def next_task(db,project,after=None,brief=False,preparation_bundle=None,chapter_
         removed=prune_work(db,project)
         if removed:
             with transaction(db):log(db,'work_tidy',{'removed':removed,'kept':3})
-    return task_files(db,project,task)
+    try:
+        return task_files(db,project,task)
+    except Exception:
+        # Envelope materialization failed after the row committed: a pending row
+        # without task.json wedges every later advance on the same error (QC
+        # session 233b §二.4). Cancel once; the next advance rebuilds cleanly.
+        if created and db.execute("SELECT 1 FROM tasks WHERE id=? AND state='pending'",(task['id'],)).fetchone():
+            with transaction(db):
+                db.execute("UPDATE tasks SET state='cancelled' WHERE id=?",(task['id'],))
+                log(db,'dispatch_files_failed',{'task':task['id'],'error':'envelope build failed'})
+        raise
 
 
 def parse_prose(data):
@@ -737,7 +757,9 @@ def validate_plan(db,branch,start,data):
         scenes=p.get('scenes',[])
         if batch.require(isinstance(scenes,list) and all(isinstance(s,dict) for s in scenes),'scene','scenes 须为场景对象数组',**context):
             for scene in scenes:
-                batch.require(nonempty_scene(scene,state),'scene','场景须引用已登记 place 或给出未确立新场所的 label；present 使用实体 ID',**context)
+                batch.require(nonempty_scene(scene,state),'scene','场景须引用已登记 place 或给出未确立新场所的 label；present 使用实体 ID',
+                        **context, **{'known_places': sorted(state.get('places',{}))[:12],
+                                      'hint': '已登记场所把 place 写成其中的 ID；全新场所删掉 place 只写 label，present 一律实体 ID'})
         if not layered:
             design.validate_chapter_execution(p,sink=batch,chapter=i)
         author_target=get(db,'contract').get('chapter_target_han')
@@ -869,7 +891,10 @@ def validate_hook_deadlines(state,chapter):
 
 def commit_draft(db,branch,n,draft):
     state=replay(db,branch)
-    plan=json.loads(db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()[0])
+    plan_row=db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n)).fetchone()
+    require(plan_row is not None,'plan','该章没有章计划（可能被设计重存或 replan 删除）；先完成规划再执笔',
+            {'chapter':n,'recover':'运行 advance 重新取得规划任务；已有草稿的场景走审稿修订或 replan，不要重复提交'})
+    plan=json.loads(plan_row[0])
     require(n==head(db,branch)+1,'sequence','不能跳章提交')
     observation=chapter_length(db,branch,n,draft['prose'])
     require(not observation or observation['status']!='needs_development','chapter_development',

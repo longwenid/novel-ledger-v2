@@ -25,7 +25,7 @@ DISCIPLINE = {
     'review': 'checks 结果只能 pass/fix;审稿以充分核验为先:quote 精确定位必要语境,reason 说明事实/因果与阅读影响,不设字数限制;避免重复抄录与自辩,必要证据不得省略;pass 时 findings 必须为 [];每项证据 {chapter,start,quote} 以任务 branch 字段所指分支的库存正文为坐标系实测且唯一命中,不适用须 not_applicable+具体理由',
     'events': 'before 照抄账本当前值(首次登记为 null);clock.before 恒为包内 state.clock 当前值(首章为 0),不是 null;move 必须引用 continuity 中已登记的 links ID,不确定先 recall;resource 只登记已入账资产,from_before/to_before 照账本,未登记道具不补流水',
     'hooks': '钩子只为正文已写明的重大承诺登记(约定定调或读者可指认的明确伏笔),不为章末效果硬造,无钩可留就不留;延期上限 2 次且每次须 reason;closed 不可重开;due 为最迟章号,到期章必须兑现/关闭/再延',
-    'clock': '证据须引用含时间词(日/夜/晨/时…)的正文语句;计划 scenes 的 D+N 是日程锚',
+    'clock': '证据须引用含时间词(日/夜/晨/时…)的正文语句;计划 scenes 的 D+N 相对本章首时钟计',
     'patches': 'start 为完整基稿的字符位置,old 必须与该处原文精确一致',
     'plan': '分层计划:每章需 ending_shape(收束形态"类别:说明",类别: 闭环/交接/爆发/静收/反转/余波;章尾不加悬念钩子,收束落在行动、抉择或后果的自然完成上);卷纲有 sequence 时 sequence_refs 为 1 起的节拍序号数组。近期章纲用 execution 说明场景展开依据及已约定篇幅，用 rhythm 说明本章作用、压力变化原因、呼吸落点与承接；不固定事件数、松紧曲线或章末类别轮换。未设通常篇幅时按场景估计本章 target_han 并解释依据，不由全书总量机械均分。',
 }

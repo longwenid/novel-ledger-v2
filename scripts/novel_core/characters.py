@@ -19,11 +19,16 @@ def validate_relevance(item,state):
     """Hints are searchable claims, never sufficient authority to omit an item."""
     relevance=item.get('relevance')
     if relevance is None:return
-    require(isinstance(relevance,dict) and bool(relevance) and set(relevance)<={'entities','topics','places'},'character','relevance 只支持 entities/topics/places 相关性声明')
+    require(isinstance(relevance,dict) and bool(relevance) and set(relevance)<={'entities','topics','places'},'character','relevance 只支持 entities/topics/places 相关性声明',
+            {'received': sorted(relevance) if isinstance(relevance,dict) else relevance,
+             'recover': '形如 {"entities":["hero"],"topics":["旧案"]}；不确定适用范围时 relevance 留空并给理由'})
     for dimension,values in relevance.items():
-        require(strings(values) and values and len(values)==len(set(values)),'character','relevance 各维度须为非空且不重复的字符串数组')
+        require(strings(values) and values and len(values)==len(set(values)),'character','relevance 各维度须为非空且不重复的字符串数组',
+                {'dimension': dimension,'recover': '去掉空串和重复项；该维度没有把握就整维删除'})
         if dimension in ('entities','places'):
-            require(all(value in state['entities'] for value in values),'character','relevance 必须引用稳定实体 ID')
+            require(all(value in state['entities'] for value in values),'character','relevance 必须引用稳定实体 ID',
+                    {'dimension': dimension,'unknown': [v for v in values if v not in state['entities']],
+                     'known_examples': sorted(state['entities'])[:10]})
 
 
 def participants(plan,state):

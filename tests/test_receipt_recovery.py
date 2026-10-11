@@ -113,7 +113,7 @@ class TimeScheduleEscapeTests(unittest.TestCase):
         with self.assertRaises(Error) as caught:
             submit_review(self.db, task, data)
         details = caught.exception.details
-        self.assertEqual(details['expected_range'], [3, 4])
+        self.assertEqual(details['expected_advance'], [2, 3])
         self.assertIn('clock 事件', details['recover'])
         self.assertIn('replan', details['recover'])
 
@@ -194,6 +194,42 @@ def copy_events(events):
     return json.loads(json.dumps(events, ensure_ascii=False))
 
 
+class ChapterStartAnchorTests(unittest.TestCase):
+    """day_span 是相对章首时钟的推进量，不是批次签发时的绝对日程（0077 漂移）。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.path = Path(self.tmp.name)
+        c = contract(); c['clock_unit'] = '天'; c['chapter_batch_size'] = 1
+        initialize(self.path, c); self.db = connect(self.path)
+
+    def tearDown(self):
+        self.db.close(); self.tmp.cleanup()
+
+    def task(self):
+        return engine.next_task(self.db, self.path)
+
+    def _chapter(self, n, clock_events):
+        respond(self.db, self.path, self.task(), prose=f'第{n}天，周行在货栈清点货物并记账。')
+        task = self.task()
+        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        prose = pack_prose(self.path, work)
+        data = review(work['payload']['facts_checks'], prose, n)
+        data.update(events=clock_events(prose, n), summary='清点。')
+        submit_review(self.db, task, data)
+
+    def test_batch_signed_early_late_chapters_keep_pacing_margin(self):
+        # 一批三章都在 clock=0 签发计划，每章 D+1；逐章消耗后末章仍有余量。
+        planned = [dict(plan(n), scenes=[{'label': '货栈', 'present': ['hero'], 'time_hint': 'D+1 白昼'}])
+                   for n in (1, 2, 3)]
+        engine.submit(self.db, result(self.task(), {'chapters': planned}))
+        self._chapter(1, lambda p, n: [{'op': 'clock', 'before': n - 1, 'after': n, 'evidence': ev(p, n)}])
+        if self.task().get('stage') == 'await_author':
+            engine.approve(self.db)
+        self._chapter(2, lambda p, n: [{'op': 'clock', 'before': n - 1, 'after': n, 'evidence': ev(p, n)}])
+        self._chapter(3, lambda p, n: [{'op': 'clock', 'before': n - 1, 'after': n, 'evidence': ev(p, n)}])
+        self.assertEqual(head(self.db, 'main'), 3)
+
+
 class TemplateMirrorTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(); self.path = Path(self.tmp.name)
@@ -238,5 +274,78 @@ class TemplateMirrorTests(unittest.TestCase):
         self.assertEqual(self.db.execute('SELECT count(*) FROM plans').fetchone()[0], baseline + 1)
 
 
+class RobustnessTests(unittest.TestCase):
+    """QC 233b P0 regression: plan guard, envelope failure, JSON error stream."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.path = Path(self.tmp.name)
+        initialize(self.path, contract()); self.db = connect(self.path)
+
+    def tearDown(self):
+        self.db.close(); self.tmp.cleanup()
+
+    def task(self):
+        return engine.next_task(self.db, self.path)
+
+    def test_design_save_refuses_to_drop_plan_behind_draft(self):
+        self.db.close(); self.tmp.cleanup()
+        self.tmp = tempfile.TemporaryDirectory(); self.path = Path(self.tmp.name)
+        c = contract(); c['planning_mode'] = 'layered'
+        initialize(self.path, c); self.db = connect(self.path)
+        submit_review(self.db, self.task(), copy.deepcopy(EXAMPLE['world_plan']))
+        submit_review(self.db, self.task(), copy.deepcopy(EXAMPLE['volume_plan']))
+
+        def layered_plan(n):
+            p = copy.deepcopy(EXAMPLE['chapter_plan']); p.update(number=n, volume='v1')
+            p['ending_shape'] = '闭环:测试收束'; p['sequence_refs'] = [1]
+            return p
+
+        def chapter(n):
+            engine.submit(self.db, result(self.task(), {'chapters': [layered_plan(n)]}))
+            respond(self.db, self.path, self.task())
+            task = self.task()
+            work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+            text = pack_prose(self.path, work)
+            data = review(work['payload']['facts_checks'], text, n)
+            data.update(events=[], summary='交付凭证。')
+            submit_review(self.db, task, data)
+
+        chapter(1)
+        if self.task().get('stage') == 'await_author':
+            engine.approve(self.db)
+        chapter(2)
+        engine.submit(self.db, result(self.task(), {'chapters': [layered_plan(3)]}))
+        respond(self.db, self.path, self.task())                    # draft ch3 留在 drafts
+        self.assertTrue(self.db.execute("SELECT 1 FROM drafts WHERE branch='main'").fetchone())
+        from novel_core import design
+        with self.assertRaises(Error) as caught:
+            design.save(self.db, 'main', 'v1', 3, copy.deepcopy(EXAMPLE['volume_plan']), 'fixture-task')
+        self.assertEqual(caught.exception.code, 'design')
+        self.assertIn('chapter', caught.exception.details)
+
+    def test_envelope_failure_cancels_task_once(self):
+        from unittest.mock import patch
+        with patch.object(engine, 'task_files', side_effect=OSError('disk full')):
+            with self.assertRaises(OSError):
+                self.task()
+        row = self.db.execute("SELECT state FROM tasks ORDER BY rowid DESC LIMIT 1").fetchone()
+        self.assertEqual(row['state'], 'cancelled')                 # 不留不可投递 pending
+        task = self.task()                                          # 重建干净
+        self.assertEqual(task['stage'], 'plan')
+
+    def test_corrupt_database_yields_json_error_stream(self):
+        import subprocess, sys
+        bad = Path(self.tmp.name) / 'notdb'
+        bad.mkdir()
+        (bad / 'novel.sqlite3').write_text('not a database', encoding='utf-8')
+        proc = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1] / 'scripts' / 'novel.py'),
+                               'status', '--project', str(bad)], capture_output=True, encoding='utf-8')
+        self.assertEqual(proc.returncode, 2)
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload['code'], 'database')
+        self.assertEqual(proc.stderr, '')
+
+
 if __name__ == '__main__':
     unittest.main()
+

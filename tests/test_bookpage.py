@@ -65,13 +65,13 @@ class BookPageTests(unittest.TestCase):
             task=response['task'] if entry=='advance' else response
             if task['stage']=='draft':
                 data={'prose':f'第{task["chapter"]}章。周行交付凭证。宋禾签名。'+marker}
-                path=self.path/task['output_path'];path.write_text(dump(result(task,data)))
+                path=self.path/task['output_path'];path.write_text(dump(result(task,data)), encoding='utf-8')
                 cli('submit','--result',str(path),'--brief')
             else:respond(self.db,self.path,task)
-            self.assertNotIn(marker,(self.path/'book.html').read_text())
+            self.assertNotIn(marker,(self.path/'book.html').read_text(encoding='utf-8'))
         else:self.fail('revision did not promote')
         self.assertEqual(get(self.db,'active_branch'),branch)
-        self.assertIn(marker,(self.path/'book.html').read_text())
+        self.assertIn(marker,(self.path/'book.html').read_text(encoding='utf-8'))
 
     def test_advance_promotion_refreshes_formal_book_page(self):
         self.check_promotion_refreshes_page('advance')

@@ -15,7 +15,7 @@
 - **章节批次连写**：`chapter_session` 默认 3 章、最多 5 章给单一执笔角色，同会话逐章提交并自查；程序在提交时校验合成全文的实际篇幅。
 - **整批密封审稿**：每批完成后派一个新的独立审稿者，先只读整批正文、`first-read` 逐章持久冻结首读，再一次提交事实+读者两类检查。
 - **连续会话**：跨章复审（`review_session`）由同一独立审稿者连续处理分块与综合判断；材料准备（`preparation_session`）由同一 Worker 连续处理同批材料任务。
-- **定点修订**：审稿冻结稿（批次候选或单章/修订稿）的简单数字笔误可在一次独立审稿中用版本补丁修正；普通局部返修在结算未变且后文仍可复算时保留后文候选。完整两类审稿与账本核验继续执行，历史章仍走修订分支。
+- **定点修订**：审稿冻结稿（批次候选或单章/修订稿）的简单数字笔误可在一次独立审稿中用版本补丁修正；普通局部返修在结算未变且后文仍可复算时保留后文候选。完整两类审稿与账本核验继续执行，历史章仍走修订分支。修订范围按依赖推导：后缀章经依赖差分、表面形扫荡与事件重放三重核验后自动携带原审结论，不受影响不再重写重审；分块与整体复核仍是安全网。
 - **确定性定位和结算**：`patch` 返回精确补丁位置，`preflight` 回滚执行完整提交校验，`submit` 返回实际资源/时钟结算；历史与候选事件分别按完整版本引用交付。校验拒绝自带答案：引文错误附最接近的原文片段或多处命中位置，前序事件 kept 由重报内容自动推导，日程冲突给出两条修正出口。
 - **输入输出去重**：人物、设计及较大的账本与连续性资料按完整记录分片，同一 Worker 复用已读且未变的版本；主控用 `advance --compact`，生成的提交命令返回简洁交接，完整信封从 `task_path` 读取。重复原文证据可在 `evidence_catalog` 定义一次、各检查按编号引用，展开后仍执行全部核验。正式回执用本任务冻结首读哈希引用原体验，恢复时有完整首读文件，不重复抄写。
 
@@ -28,10 +28,10 @@
 命令入口（Windows 用 `python`，其余 `python3`）：
 
 ```bash
-python scripts/novel.py --project "$PROJECT" <command>
+python scripts/novel.py <command> --project "$PROJECT"
 ```
 
-常用子命令：`init`（开书）、`advance`/`next`/`submit`（派工与提交）、`measure`（篇幅）、`preflight`（完整预检）、`patch`（定点定位）、`approve`（首章定调）、`recall`（定向检索）、`revise`（修订分支）、`audit`（全书审计）、`export`/`html`（导出与书刊视图）、`doctor`（环境诊断）、`status`/`pause`/`resume`/`complete`（运行管理），以及 `design`/`character`/`map`/`material`/`impact`/`pilot`/`first-read`/`evidence`/`checkpoint`/`dependencies`/`tidy` 等视图与治理命令。
+常用子命令：`init`（开书）、`advance`/`next`/`submit`（派工与提交）、`measure`（篇幅）、`preflight`（完整预检）、`patch`（定点定位）、`approve`（首章定调）、`recall`（定向检索）、`revise`（修订分支）、`audit`（全书审计）、`export`/`html`（导出与书刊视图）、`doctor`（环境诊断）、`status`/`pause`/`resume`/`complete`（运行管理），以及 `config`/`replan`/`candidate`/`design`/`character`/`map`/`material`/`impact`/`pilot`/`first-read`/`evidence`/`checkpoint`/`dependencies`/`tidy` 等视图与治理命令。
 
 依赖：Python 3.9+，仅标准库，无第三方包。
 

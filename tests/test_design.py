@@ -54,7 +54,7 @@ class DesignTests(unittest.TestCase):
         respond(self.db,self.path,t);f=self.task();fw=json.loads(rpath(f, 'input_path').read_text(encoding='utf-8'))
         self.assertNotIn('writer_brief',fw);self.assertNotIn('design_context',fw)
         text=pack_prose(self.path, fw);data=review(fw['payload']['facts_checks'],text);data.update(events=[],summary='交付凭证')
-        self.assertEqual(rpath(f,'first_read_path').read_text(),text)
+        self.assertEqual(rpath(f,'first_read_path').read_text(encoding='utf-8'),text)
         self.submit(f,data)
     def test_volume_outline_requires_adjudication_log(self):
         a=self.task();self.submit(a,EXAMPLE['world_plan']);t=self.task()

@@ -20,10 +20,10 @@ class TargetedRepairTests(unittest.TestCase):
         engine.validate_plan(self.db,'main',2,{'chapters':[plan(n) for n in range(2,11)]})
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def cli(self,*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
-    def work(self,t):return json.loads((self.path/t['input_path']).read_text())
+    def work(self,t):return json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
     def receipt(self,t,data):return {'schema':'novel-ledger-v2.result/1','task_id':t['task_id'],'input_hash':t['input_hash'],'data':data}
     def save(self,t,data):
-        path=self.path/t['output_path'];path.write_text(dump(self.receipt(t,data)));return str(path)
+        path=self.path/t['output_path'];path.write_text(dump(self.receipt(t,data)), encoding='utf-8');return str(path)
     def submit(self,t,data):return self.cli('submit','--result',self.save(t,data),'--brief','--continue-chapter-batch')
     def draft(self,t,text=None,events=None):
         n=t['chapter'];text=text or f'第{n}章。\n周行交出凭证。\n收据记着一百枚。\n宋禾签名。'
@@ -73,7 +73,7 @@ class TargetedRepairTests(unittest.TestCase):
         self.assertEqual(cm.exception.details['event_index'],0);self.assertEqual(self.snapshot(),before)
         # Structural repair of a bare receipt must also stay read-only.
         checked=self.cli('preflight','--result',self.save(t,self.draft(t)))
-        raw=self.path/t['output_path'];raw.write_text(dump(self.draft(t)))
+        raw=self.path/t['output_path'];raw.write_text(dump(self.draft(t)), encoding='utf-8')
         checked=self.cli('preflight','--result',str(raw));self.assertTrue(checked['checked'])
         self.assertEqual(self.snapshot(),before)
 
@@ -103,7 +103,7 @@ class TargetedRepairTests(unittest.TestCase):
         suffix=copy.deepcopy(engine.load_draft(self.db,'main',3));fix=self.local_fix(t)
         self.assertEqual(engine.load_draft(self.db,'main',3),suffix)
         repair=self.cli('advance','--after',fix['task_id'])['task'];w=self.work(repair)
-        template=json.loads((self.path/repair['template_path']).read_text())['data']
+        template=json.loads((self.path/repair['template_path']).read_text(encoding='utf-8'))['data']
         self.assertTrue(template['reuse_candidate_events']);self.assertNotIn('candidate_events',template)
         patch=self.cli('patch','--task',repair['task_id'],'--old','宋禾签名。','--new','宋禾核对封条后签名。')
         data={**template,'base_hash':patch['base_hash'],'patches':[patch['patch']],
@@ -221,12 +221,12 @@ class TargetedRepairTests(unittest.TestCase):
               'candidate_ledger':{'prefix':[{'chapter':2,'events':[{'op':'state','after':'候选'}]}]}}
         view=shared_delivery(self.path,full);record=view['selected'][0]['material']
         prefix=view['candidate_ledger']['prefix'][0]['events_material']
-        self.assertEqual(json.loads((self.path/record['path']).read_text()),full['selected'][0])
-        self.assertEqual(json.loads((self.path/prefix['path']).read_text()),full['candidate_ledger']['prefix'][0]['events'])
+        self.assertEqual(json.loads((self.path/record['path']).read_text(encoding='utf-8')),full['selected'][0])
+        self.assertEqual(json.loads((self.path/prefix['path']).read_text(encoding='utf-8')),full['candidate_ledger']['prefix'][0]['events'])
         extended=copy.deepcopy(full);extended['selected'].append({'kind':'history','chapter':2,'index':0,'event_hash':'new','event':{}})
         self.assertEqual(shared_delivery(self.path,extended)['selected'][0]['material'],record)
         (self.path/record['path']).write_bytes(b'broken');restored=shared_delivery(self.path,full)
-        self.assertEqual(restored,view);self.assertEqual(json.loads((self.path/record['path']).read_text()),full['selected'][0])
+        self.assertEqual(restored,view);self.assertEqual(json.loads((self.path/record['path']).read_text(encoding='utf-8')),full['selected'][0])
 
 
     def test_generated_commands_match_host_interpreter(self):
@@ -256,12 +256,12 @@ class StandaloneNumericTests(unittest.TestCase):
         self.task=engine.next_task(self.db,self.path)
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def cli(self,*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
-    def work(self,t):return json.loads((self.path/t['input_path']).read_text())
+    def work(self,t):return json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
 
     def unlock(self):
-        receipt=json.loads((self.path/self.task['first_read_template_path']).read_text())
+        receipt=json.loads((self.path/self.task['first_read_template_path']).read_text(encoding='utf-8'))
         receipt['first_read']=fixture_first_read()
-        path=self.path/self.task['first_read_result_path'];path.write_text(dump(receipt))
+        path=self.path/self.task['first_read_result_path'];path.write_text(dump(receipt), encoding='utf-8')
         self.cli('first-read','--task',self.task['task_id'],'--result',str(path))
         return engine.next_task(self.db,self.path)
 
@@ -274,7 +274,7 @@ class StandaloneNumericTests(unittest.TestCase):
     def envelope(self,t,data):
         path=self.path/t['output_path']
         payload={'schema':'novel-ledger-v2.result/1','task_id':t['task_id'],'input_hash':t['input_hash'],'data':data}
-        path.write_text(dump(payload));return payload
+        path.write_text(dump(payload), encoding='utf-8');return payload
 
     def test_standalone_review_numeric_patch_commits_without_rework(self):
         t=self.unlock();work=self.work(t)

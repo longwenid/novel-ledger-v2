@@ -32,10 +32,10 @@ def catalog_receipt(data):
 
 def rebuild_parts(project,ref):
     if 'parts' not in ref:                      # whole-field file is the equivalent read
-        return json.loads((Path(project)/ref['path']).read_text())
+        return json.loads((Path(project)/ref['path']).read_text(encoding='utf-8'))
     result={}
     for part in ref['parts']:
-        value=json.loads((Path(project)/part['path']).read_text())
+        value=json.loads((Path(project)/part['path']).read_text(encoding='utf-8'))
         if not part['pointer']:result=value;continue
         cursor=result
         for key in part['pointer'][:-1]:cursor=cursor.setdefault(key,{})
@@ -86,12 +86,12 @@ class ContextIOTests(unittest.TestCase):
     def test_compact_handoff_is_recoverable_and_keeps_first_read_sealed(self):
         raw=self.f.cli('advance');short=compact_response(self.path,raw)
         self.assertLess(len(dump(short)),len(dump(raw)))
-        t=short['task'];full=json.loads((self.path/t['task_path']).read_text())
+        t=short['task'];full=json.loads((self.path/t['task_path']).read_text(encoding='utf-8'))
         self.assertEqual(t['task_id'],full['task_id']);self.assertEqual(t['input_hash'],full['input_hash'])
         self.assertIn('--compact',full['commands']['submit'])
         out=self.f.writer_batch(full)
         short=self.f.cli('advance','--after',out['task_id'],'--compact');t=short['task']
-        full=json.loads((self.path/t['task_path']).read_text())
+        full=json.loads((self.path/t['task_path']).read_text(encoding='utf-8'))
         self.assertEqual(full['delivery_phase'],'first_read');self.assertFalse((self.path/full['input_path']).exists())
         self.assertNotIn('numeric_correction',full);self.assertNotIn('template_path',full)
         with self.assertRaises(Error):self.f.cli('recall','--task',t['task_id'],'--contract')
@@ -99,7 +99,7 @@ class ContextIOTests(unittest.TestCase):
     def test_real_cli_compact_flag_and_full_status_preserve_progress(self):
         script=Path(__file__).resolve().parents[1]/'scripts'/'novel.py'
         proc=subprocess.run([sys.executable,str(script),'advance','--project',str(self.path),'--compact'],
-                            capture_output=True,text=True,check=True)
+                            capture_output=True,text=True,encoding='utf-8',check=True)
         short=json.loads(proc.stdout);full=self.f.cli('advance')
         self.assertEqual(short['task']['task_id'],full['task']['task_id'])
         self.assertEqual(short['status']['work_committed'],full['status']['work_committed'])
@@ -110,10 +110,10 @@ class ContextIOTests(unittest.TestCase):
         full=self.f.cli('advance')['task'];self.f.save(full,self.f.draft(full))
         argv=shlex.split(full['commands']['submit'])
         if os.name=='nt':argv[0]=sys.executable  # generated envelopes say python3; Windows hosts lack it
-        proc=subprocess.run(argv,capture_output=True,text=True,check=True)
+        proc=subprocess.run(argv,capture_output=True,text=True,encoding='utf-8',check=True)
         out=json.loads(proc.stdout);self.assertEqual(out['action'],'continue_chapter_batch')
         self.assertEqual(out['response_view'],'compact/1');self.assertNotIn('commands',out['task'])
-        following=json.loads((self.path/out['task']['task_path']).read_text())
+        following=json.loads((self.path/out['task']['task_path']).read_text(encoding='utf-8'))
         self.assertEqual(following['task_id'],out['task']['task_id']);self.assertIn('--compact',following['commands']['submit'])
         final=self.f.writer_batch(following);self.assertEqual(final['action'],'chapter_batch_done')
         self.assertEqual(head(self.db,'main'),1)
@@ -160,7 +160,7 @@ class ContextIOTests(unittest.TestCase):
         view=shared_delivery(self.path,full)
         ref=view['shared_materials']['contract']
         self.assertEqual(ref['path'],'work/shared/'+prefix+'.json')
-        self.assertEqual(json.loads((self.path/ref['path']).read_text()),full['contract'])
+        self.assertEqual(json.loads((self.path/ref['path']).read_text(encoding='utf-8')),full['contract'])
 
     def test_frozen_first_read_reference_roundtrips_and_commits_numeric_patch(self):
         t,base,corrected,data=self.f.numeric_task();wire=catalog_receipt(data)
@@ -168,12 +168,12 @@ class ContextIOTests(unittest.TestCase):
         wire['reader'].pop('first_read');wire['reader']['first_read_ref']=sealed['hash']
         row=self.db.execute('SELECT * FROM tasks WHERE id=?',(t['task_id'],)).fetchone()
         self.assertEqual(expand_receipt(self.db,row,json.loads(row['input']),wire),data)
-        template=json.loads((self.path/t['template_path']).read_text())
+        template=json.loads((self.path/t['template_path']).read_text(encoding='utf-8'))
         self.assertEqual(template['data']['reader']['first_read_ref'],sealed['hash'])
-        self.assertEqual(json.loads((self.path/t['first_read_receipt_path']).read_text()),sealed['receipt'])
-        (self.path/t['first_read_receipt_path']).write_text('corrupt')
+        self.assertEqual(json.loads((self.path/t['first_read_receipt_path']).read_text(encoding='utf-8')),sealed['receipt'])
+        (self.path/t['first_read_receipt_path']).write_text('corrupt', encoding='utf-8')
         restored=engine.task_files(self.db,self.path,dict(row))
-        self.assertEqual(json.loads((self.path/restored['first_read_receipt_path']).read_text()),sealed['receipt'])
+        self.assertEqual(json.loads((self.path/restored['first_read_receipt_path']).read_text(encoding='utf-8')),sealed['receipt'])
         before=self.f.snapshot();self.f.cli('preflight','--result',self.f.save(t,wire),'--compact')
         self.assertEqual(self.f.snapshot(),before)
         self.f.submit(t,wire)
@@ -225,11 +225,11 @@ class ContextIOTests(unittest.TestCase):
             a=next(p for p in old['shared_materials']['state']['parts'] if p['pointer']==[key])
             b=next(p for p in new['shared_materials']['state']['parts'] if p['pointer']==[key])
             self.assertEqual(a,b)
-            (self.path/a['path']).write_text('broken')
+            (self.path/a['path']).write_text('broken', encoding='utf-8')
         restored=shared_delivery(self.path,changed)
         self.assertEqual(rebuild_parts(self.path,restored['shared_materials']['state']),changed['state'])
         self.assertEqual(new['shared_materials']['continuity'],old['shared_materials']['continuity'])
         base=next(p for p in new['shared_materials']['state']['parts'] if p['pointer']==[])
-        self.assertIn('entities',json.loads((self.path/base['path']).read_text()))  # debris stays with the base
+        self.assertIn('entities',json.loads((self.path/base['path']).read_text(encoding='utf-8')))  # debris stays with the base
         small={'chapter_session':{'role':'writer'},'state':{'clock':0,'facts':{}}}
         self.assertEqual(shared_delivery(self.path,small)['state'],small['state'])

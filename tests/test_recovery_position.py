@@ -60,7 +60,7 @@ class RecoveryPositionTests(unittest.TestCase):
         self.assertEqual(restored['status']['recovery']['target']['volume'],'v1')
         self.assertEqual(before,(get(self.db,'active_branch'),get(self.db,'work_branch'),head(self.db,child)))
         self.assertNotEqual(t['task_id'],restored['task']['task_id'])
-        point=json.loads((self.path/'work/controller.json').read_text())
+        point=json.loads((self.path/'work/controller.json').read_text(encoding='utf-8'))
         self.assertEqual(point['recovery'],restored['status']['recovery'])
 
     def test_old_frozen_pending_gets_intent_without_hash_change(self):
@@ -77,7 +77,7 @@ class RecoveryPositionTests(unittest.TestCase):
 
     def test_new_packs_inherit_goals_and_first_read_does_not_disclose_them(self):
         parent,child=self.nested();t=engine.next_task(self.db,self.path)
-        work=json.loads(rpath(t).read_text())
+        work=json.loads(rpath(t).read_text(encoding='utf-8'))
         self.assertEqual(len(work['revision_context']['chain']),2)
         respond(self.db,self.path,t)
         reviewer=engine.next_task(self.db,self.path)
@@ -87,7 +87,7 @@ class RecoveryPositionTests(unittest.TestCase):
         rpath(reviewer)  # Freeze first reading through the engineering fixture.
         formal=engine.next_task(self.db,self.path)
         self.assertEqual(len(formal['revision_context']['chain']),2)
-        self.assertEqual(len(json.loads(rpath(formal).read_text())['revision_context']['chain']),2)
+        self.assertEqual(len(json.loads(rpath(formal).read_text(encoding='utf-8'))['revision_context']['chain']),2)
 
     def test_final_revision_review_requires_evidence_for_inherited_goals(self):
         parent,child=self.nested()
@@ -98,12 +98,12 @@ class RecoveryPositionTests(unittest.TestCase):
         for _ in range(12):
             t=engine.next_task(self.db,self.path)
             self.assertIn('task_id',t)
-            work=json.loads(rpath(t).read_text())
+            work=json.loads(rpath(t).read_text(encoding='utf-8'))
             if work['payload'].get('scope')=='revision':break
             respond(self.db,self.path,t)
         else:self.fail('missing revision synthesis')
         self.assertIn('revision_intent',work['payload']['checks'])
-        revision=work.get('revision_context') or json.loads((self.path/work['shared_materials']['revision_context']['path']).read_text())
+        revision=work.get('revision_context') or json.loads((self.path/work['shared_materials']['revision_context']['path']).read_text(encoding='utf-8'))
         self.assertEqual(len(revision['chain']),2)
         prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',(child,)).fetchone()[0]
         data=review(work['payload']['checks'],prose,1);data['memory']='核对修订传播。'

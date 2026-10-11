@@ -27,13 +27,13 @@ class RuntimeHandoffTests(unittest.TestCase):
         draft=self.cli('advance','--after',planning['task_id'])['task'];respond(self.db,self.path,draft)
         return self.cli('advance','--after',draft['task_id'])['task']
     def formal_review(self,task):
-        first=json.loads((self.path/task['first_read_template_path']).read_text())
+        first=json.loads((self.path/task['first_read_template_path']).read_text(encoding='utf-8'))
         first['first_read']={'desire':'交付收据','obstacle':'尚未信任','change':'按下指印','read_on_reason':'选择的后果'}
-        first_path=self.path/task['first_read_result_path'];first_path.write_text(dump(first))
+        first_path=self.path/task['first_read_result_path'];first_path.write_text(dump(first), encoding='utf-8')
         # Use the returned envelope directly: no second next call or task.json reload.
         formal=self.cli('first-read','--task',task['task_id'],'--result',str(first_path))['task']
-        receipt=json.loads((self.path/formal['template_path']).read_text())
-        prose=(self.path/formal['first_read_path']).read_text();evidence=ev(prose)
+        receipt=json.loads((self.path/formal['template_path']).read_text(encoding='utf-8'))
+        prose=(self.path/formal['first_read_path']).read_text(encoding='utf-8');evidence=ev(prose)
         for category in ('facts','reader'):
             data=receipt['data'][category];data['verdict']='pass'
             for row in data['checks']:
@@ -44,7 +44,7 @@ class RuntimeHandoffTests(unittest.TestCase):
         receipt['data']['facts']['summary']='周行交付收据，宋禾按下指印。'
         return formal,receipt
     def submit_file(self,task,receipt):
-        path=self.path/task['output_path'];path.write_text(dump(receipt))
+        path=self.path/task['output_path'];path.write_text(dump(receipt), encoding='utf-8')
         return self.cli('submit','--result',str(path),'--brief')
 
     def test_start_and_retry_restore_one_frozen_task_with_short_status_and_checkpoint(self):
@@ -55,7 +55,7 @@ class RuntimeHandoffTests(unittest.TestCase):
         self.assertEqual(started['task']['task_id'],again['task']['task_id'])
         self.assertEqual(started['task']['input_hash'],again['task']['input_hash'])
         self.assertNotIn('usage',started['status']);self.assertNotIn('volume_budget',started['status'])
-        point=json.loads((self.path/'work/controller.json').read_text())
+        point=json.loads((self.path/'work/controller.json').read_text(encoding='utf-8'))
         self.assertFalse(point['authorization_recorded'])
         self.assertEqual(point['task']['input_hash'],started['task']['input_hash'])
 

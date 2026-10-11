@@ -23,6 +23,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 
 ### world_plan.data
 - `overview`：世界支撑全书核心体验的简要说明。
+- `causal_spine`：主要因果节点字符串数组（必填非空）。
 - `event_spine`：四层事件脊柱（`main` / `subplot` / `timeline` / `tension`），触点格式 `{"id":"sp:...","span":"幕跨度","event":"触点推进"}`。重大转折必须引用脊柱触点。
 - `factions`：势力组织数组（`name/drive/limits`）。这里的势力是设计意图；需要账目级管理的势力（阵营战争、粮饷军械、结盟与背叛）应注册为 entity（kind 如 org），粮饷兵力走 `resource` 流水，阵营间立场用 `relation` 有向边登记——设计层写目标，账本层记事实，两层不混。
 - `geography`：宏观区域 `regions` 与连接 `connections`。
@@ -31,6 +32,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 
 ### volume_plan.data
 - `volume`：卷 ID，与任务一致。
+- `purpose`：本卷用途（必填非空）。
 - `carries_in` / `climax` / `handoff`：承接上卷债务、本卷高潮走向与下卷交接说明。
 - `sequence`：因果推进节拍数组。
 - `choice_log`：方向与关键节拍裁决。按 [创意工具箱](hatch-ideas.md) 给至少 2 个候选，含至少一个 wild:true；每项 direction/payoff/cost/risk，记录 chosen/reason。

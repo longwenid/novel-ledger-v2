@@ -3,6 +3,7 @@
 from __future__ import annotations
 import argparse
 import json
+import sqlite3
 import sys
 from pathlib import Path
 from novel_core import engine
@@ -509,11 +510,12 @@ def main(argv=None):
         result=dispatch(parser().parse_args(argv))
         print(json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False))
         return 0
-    except (Error,OSError,ValueError,KeyError,TypeError) as exc:
+    except (Error,OSError,ValueError,KeyError,TypeError,sqlite3.Error) as exc:
         # stdout + nonzero exit: hosts parse one clean JSON stream, and shells
         # that paint stderr as error records (pwsh NativeCommandError) no longer
-        # bury the answer the worker needs.
-        print(json.dumps({'ok':False,'code':getattr(exc,'code',type(exc).__name__),'message':str(exc),'details':getattr(exc,'details',None)},ensure_ascii=False))
+        # bury the answer the worker needs. sqlite3.Error is not an OSError
+        # subclass; lock contention and corrupt files must stay JSON too.
+        print(json.dumps({'ok':False,'code':getattr(exc,'code','database' if isinstance(exc,sqlite3.Error) else type(exc).__name__),'message':str(exc),'details':getattr(exc,'details',None)},ensure_ascii=False))
         return 2
 
 if __name__=='__main__':

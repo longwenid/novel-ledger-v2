@@ -62,7 +62,7 @@ class CharacterTests(unittest.TestCase):
         self.submit(t,{'prose':'周行问：“最后谁签收？”宋禾说：“把范围写清楚。”'})
         t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['facts_checks'])
         self.assertIn('dialogue_identity',w['payload']['reader_checks'])
-        first=rpath(t,'first_read_path').read_text()
+        first=rpath(t,'first_read_path').read_text(encoding='utf-8')
         self.assertNotIn(detail,first)
         self.assertEqual(first,pack_prose(self.path,w))
         self.assertNotIn('writer_brief',w)

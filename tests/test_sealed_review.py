@@ -25,14 +25,14 @@ class SealedReviewTests(unittest.TestCase):
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def path_for(self,key):return self.path/self.task[key]
     def first(self):
-        receipt=json.loads(self.path_for('first_read_template_path').read_text())
+        receipt=json.loads(self.path_for('first_read_template_path').read_text(encoding='utf-8'))
         receipt['first_read']={'desire':'交收据','obstacle':'宋禾拒签','change':'先找证人','read_on_reason':'证人是否愿意来'}
         return receipt
     def seal(self):
         reviewflow.seal(self.db,self.path,self.task['task_id'],self.first())
         self.task=engine.next_task(self.db,self.path)
     def receipt(self):
-        r=json.loads(self.path_for('template_path').read_text());e=ev(self.prose)
+        r=json.loads(self.path_for('template_path').read_text(encoding='utf-8'));e=ev(self.prose)
         for category in ('facts','reader'):
             r['data'][category]['verdict']='pass'
             for row in r['data'][category]['checks']:
@@ -52,7 +52,7 @@ class SealedReviewTests(unittest.TestCase):
         self.assertEqual(self.task['delivery_phase'],'first_read')
         self.assertFalse(self.path_for('input_path').exists())
         self.assertNotIn('template_path',self.task)
-        self.assertEqual(self.path_for('first_read_path').read_text(),self.prose)
+        self.assertEqual(self.path_for('first_read_path').read_text(encoding='utf-8'),self.prose)
         self.assertEqual(self.task['prose_files'],[self.task['first_read_path']])
         initial=dependencies.read_set(self.db,self.task['task_id'])['entries']
         self.assertEqual(len(initial),1)
@@ -64,11 +64,11 @@ class SealedReviewTests(unittest.TestCase):
         self.assertEqual(self.cli('evidence','--task',self.task['task_id'],'--quote','宋禾拒绝签字'),ev(self.prose,quote='宋禾拒绝签字'))
 
     def test_cli_seal_unlocks_template_and_is_immutable_across_restart(self):
-        receipt=self.first();path=self.path_for('first_read_result_path');path.write_text(dump(receipt))
+        receipt=self.first();path=self.path_for('first_read_result_path');path.write_text(dump(receipt), encoding='utf-8')
         accepted=self.cli('first-read','--task',self.task['task_id'],'--result',str(path))
         self.assertTrue(accepted['accepted']);self.assertTrue(self.path_for('input_path').exists())
         self.task=engine.next_task(self.db,self.path)
-        work=json.loads(self.path_for('input_path').read_text())
+        work=json.loads(self.path_for('input_path').read_text(encoding='utf-8'))
         self.assertEqual([r['id'] for r in work['review_obligations']],['language','world:0','style:0','style:1'])
         self.assertEqual(self.receipt()['data']['reader']['first_read_ref'],accepted['first_read_hash'])
         self.assertEqual(len(dependencies.read_set(self.db,self.task['task_id'])['entries']),2)
@@ -150,11 +150,11 @@ class SealedReviewTests(unittest.TestCase):
 
     def test_compact_submit_updates_controller_without_heavy_status(self):
         self.seal();taskio.checkpoint(self.db,self.path,goal='只写首章',writer_session='writer-a',handled=[1])
-        r=self.receipt();self.path_for('output_path').write_text(dump(r))
+        r=self.receipt();self.path_for('output_path').write_text(dump(r), encoding='utf-8')
         with patch('novel_core.budget.overview',side_effect=AssertionError('heavy status')):
             out=self.cli('submit','--result',str(self.path_for('output_path')),'--brief')
         self.assertTrue(out['accepted']);self.assertNotIn('usage',out);self.assertNotIn('volume_budget',out)
-        point=json.loads((self.path/'work/controller.json').read_text())
+        point=json.loads((self.path/'work/controller.json').read_text(encoding='utf-8'))
         self.assertEqual(point['committed'],1);self.assertIsNone(point['task']);self.assertEqual(point['authorized_goal'],'只写首章')
         self.assertEqual(point['root'],str(Path(engine.__file__).resolve().parents[2]))
         same=self.cli('submit','--result',str(self.path_for('output_path')),'--brief');self.assertTrue(same['idempotent'])

@@ -117,7 +117,7 @@ python3 "$ROOT/scripts/novel.py" resume --project "$PROJECT"
 
 resume 先审计、释放旧租约，保留同一 pending 输入。丢弃无效任务须显式 pause --cancel-task，旧回执失效、失败次数保留。完整性失败不自动修库，旧进程或权限无法核实时停止。
 
-取消批次首个任务且尚无候选稿时，可执行 replan 重做未来计划；旧批次同时归档并清理，下一次 advance 从规划阶段恢复。已有候选稿仍通过审稿返修，不删除计划留下未处理正文。advance/next 完成修订合并后刷新正式 book.html。
+取消批次首个任务且尚无候选稿时，可执行 replan 重做未来计划；旧批次同时归档并清理，下一次 advance 从规划阶段恢复。已有候选稿仍通过审稿返修，不删除计划留下未处理正文。time_schedule 冲突同理：本章无草稿可由主控 replan 调整日程；已有草稿走审稿判 fix→返修重排，不得硬改 clock 凑数；审稿 pass 回执被该闸门拒绝时，同一审稿者可改判 fix 并以冲突为发现补交，不必重派。advance/next 完成修订合并后刷新正式 book.html。
 
 `status`（含 brief）、`advance` 与 controller 快照均带 `recovery`：`work` 是工作分支已验收正文的卷次/章号，`published` 是正式展示分支的位置；`target` 是 pending、未来计划或待复核的 `revision_boundary`，不能当作已完成正文。修订写满传播范围后，状态停留在修订边界，不指向下一卷计划。没有派发任务时 `stage=null`，不得推测下一阶段；实际派工以 advance 返回为准。预算默认属于工作分支，book.html 默认属于正式分支，两者不能混成一份进度。暂停与 resume 不切卷、不切分支，也不自动合并修订。
 

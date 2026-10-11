@@ -57,7 +57,7 @@ def pack_prose(base, pack, key='prose'):
 def result(task,data,**extra):
     data=copy.deepcopy(data)
     if task.get('stage')=='chapter_review' and isinstance(data,dict):
-        work=json.loads(rpath(task).read_text());prose=pack_prose(task['project'],work)
+        work=json.loads(rpath(task).read_text(encoding='utf-8'));prose=pack_prose(task['project'],work)
         for category in ('facts','reader'):
             if isinstance(data.get(category),dict):
                 data[category].setdefault('obligations',fixture_obligations(work,category,prose,task['chapter']))
