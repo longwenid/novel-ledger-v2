@@ -6,7 +6,7 @@ the truth of an editorial judgment. Old frozen tasks retain their old contract.
 import copy
 import json
 import time
-from .store import get, put, digest, require, transaction, log
+from .store import Error, Batch, get, put, digest, require, transaction, log
 from .ledger import evidence
 
 PROTOCOL = 'sealed-review/1'
@@ -135,6 +135,7 @@ def validate(db, task, work, facts, reader, prose, first_read_prose=None):
             'first_read', '首读需要四项非空文字体验')
     require(reader.get('first_read') == saved['receipt']['first_read'],
             'first_read_conflict', '正式回执必须保留冻结首读，不得用约定或旧评价重新解释首读')
+    batch = Batch()
     for category, receipt in (('facts', facts), ('reader', reader)):
         expected = [r for r in work['review_obligations'] if r['category'] == category]
         rule_by_id = {r['id']: r.get('rule', '') for r in expected}
@@ -144,28 +145,42 @@ def validate(db, task, work, facts, reader, prose, first_read_prose=None):
                 and len(rows) == len(expected) and ids == {r['id'] for r in expected},
                 'review_obligations', '须逐条核对本类别全部作者约定，不能用总评替代',
                 {'category': category, 'expected': [r['id'] for r in expected], 'received': sorted(ids) if ids else None})
+        checks = receipt.get('checks') if isinstance(receipt.get('checks'), list) else []
+        findings = receipt.get('findings') if isinstance(receipt.get('findings'), list) else []
         for row in rows:
-            oid = {'obligation_id': row.get('id'), 'rule': rule_by_id.get(row.get('id'), '')}
-            require(row.get('result') in ('pass', 'fix') and isinstance(row.get('reason'), str)
-                    and row['reason'].strip(), 'review_obligations', '每条约定须有具体判断与理由', oid)
+            oid = {'category': category, 'obligation_id': row.get('id'), 'rule': rule_by_id.get(row.get('id'), '')}
+            batch.require(row.get('result') in ('pass', 'fix') and isinstance(row.get('reason'), str)
+                    and row['reason'].strip(), 'review_obligations', '每条约定须有具体判断与理由', **oid)
             refs = row.get('evidence')
-            require(isinstance(refs, list) and bool(refs), 'review_obligations', '每条约定须有正文证据', oid)
-            for ref in refs:
-                evidence(prose, ref, task['chapter'])
+            batch.require(isinstance(refs, list) and bool(refs), 'review_obligations',
+                    '每条约定须有正文证据；约定对象本章未触及时判 pass：reason 说明对象未出现，evidence 引任一正文句作未触及佐证', **oid)
+            for ref in refs if isinstance(refs, list) else []:
+                try:
+                    evidence(prose, ref, task['chapter'])
+                except Error as error:
+                    batch.capture(error, **oid)
             challenge = row.get('challenge')
-            require(isinstance(challenge, dict) and challenge.get('disposition') in ('satisfied', 'violated')
+            batch.require(isinstance(challenge, dict) and challenge.get('disposition') in ('satisfied', 'violated')
                     and isinstance(challenge.get('reason'), str) and challenge['reason'].strip(),
-                    'review_challenge', '核对最可能违约的正文语段，说明为何保留或返修', {'obligation_id': row.get('id')})
-            evidence(prose, challenge.get('evidence'), task['chapter'])
-            require((row['result'] == 'fix') == (challenge['disposition'] == 'violated'),
-                    'review_challenge', '违约证据与检查结论不一致', {'obligation_id': row.get('id')})
-            if row['result'] == 'fix':
+                    'review_challenge', '每条约定须核对最可能违约的正文语段：challenge 含 disposition/reason 与正文证据',
+                    **{'category': category, 'obligation_id': row.get('id')})
+            if isinstance(challenge, dict):
+                try:
+                    evidence(prose, challenge.get('evidence'), task['chapter'])
+                except Error as error:
+                    batch.capture(error, category=category, obligation_id=row.get('id'), field='challenge.evidence')
+            if batch.require(isinstance(row.get('result'), str) and isinstance(challenge, dict)
+                    and (row['result'] == 'fix') == (challenge.get('disposition') == 'violated'),
+                    'review_challenge', '违约证据与检查结论不一致',
+                    **{'category': category, 'obligation_id': row.get('id')}) \
+                    and row.get('result') == 'fix':
                 check_id = 'world_rules' if row['id'].startswith('world:') else (
                     'voice_match' if row['id'].startswith('style:') and 'voice_match' in work['payload']['reader_checks'] else 'language')
-                require(any(c.get('id') == check_id and c.get('result') == 'fix' for c in receipt.get('checks',[]) if isinstance(c,dict)),
+                batch.require(any(c.get('id') == check_id and c.get('result') == 'fix' for c in checks if isinstance(c,dict)),
                         'review_obligations', '违约须同步到对应 world_rules/voice_match/language 检查', {**oid, 'check_id': check_id})
-                require(any(f.get('obligation_id') == row['id'] and f.get('severity') in ('blocker','quality')
-                            for f in receipt.get('findings',[]) if isinstance(f,dict)),
+                batch.require(any(f.get('obligation_id') == row['id'] and f.get('severity') in ('blocker','quality')
+                            for f in findings if isinstance(f,dict)),
                         'review_obligations', '违约须有标记 obligation_id 的实质返修发现', {**oid, 'check_id': check_id})
-        require(not any(r['result'] == 'fix' for r in rows) or receipt.get('verdict') == 'fix',
-                'review_obligations', '约定违约必须返修，不能总评通过')
+        batch.require(not any(isinstance(r,dict) and r.get('result') == 'fix' for r in rows) or receipt.get('verdict') == 'fix',
+                'review_obligations', '约定违约必须返修，不能总评通过', {'category': category})
+    batch.raise_if_any()

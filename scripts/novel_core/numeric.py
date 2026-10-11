@@ -14,9 +14,14 @@ TITLE=re.compile(r'^\s*(?:#{1,6}\s*)?第\s*(?P<number>[0-9零〇一二两三四�
 def capability(draft):
     # An unreviewed provisional ledger supplies the reference arithmetic,
     # not a semantic pass. The independent reviewer still performs every check.
-    if not isinstance(draft.get('candidate_events'),list):return None
+    # Standalone reviews (first chapter, single-chapter mode, revision branch)
+    # carry no candidate ledger: there this receipt's own events define the
+    # settlement, so a literal-only patch cannot alter effects it never had.
+    batch=isinstance(draft.get('candidate_events'),list)
+    effect=('事件效果与结算必须和本章候选基线一致' if batch
+            else '事件按合成稿举证，补丁不得改变本回执任何事件的账本效果')
     return {'protocol':PROTOCOL,'base_hash':digest(draft['prose']),
-            'instruction':'仅数字字面笔误可在 data.numeric_correction 交 base_hash/patches/repair_note；每项只替换完整数字（阿拉伯或中文），两类审稿须针对合成稿完整举证并 pass。保持冻结首读，不改账本事件效果、人物、情节、单位或日程；其他问题判 fix。'}
+            'instruction':'仅数字字面笔误可在 data.numeric_correction 交 base_hash/patches/repair_note；每项只替换完整数字（阿拉伯或中文），两类审稿须针对合成稿完整举证并 pass。保持冻结首读，不改账本事件效果、人物、情节、单位或日程；其他问题判 fix。'+effect+'。'}
 
 
 def compose(work,draft,data,state):
@@ -51,5 +56,7 @@ def effects(events):
 
 
 def verify(draft,events,old_state,new_state):
+    if old_state is None and not isinstance(draft.get('candidate_events'),list):
+        return  # standalone review: this receipt's events are the baseline itself
     require(effects(draft['candidate_events'])==effects(events) and state_hash(old_state)==state_hash(new_state),
             'numeric_correction_state','修正改变了事件效果或结算前态，须正常 fix 返修与传播核验')

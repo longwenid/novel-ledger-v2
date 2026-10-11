@@ -229,6 +229,18 @@ class ArchitectureTests(unittest.TestCase):
         with self.assertRaises(Error) as exc: submit_review(self.db,t,data)
         self.assertEqual(exc.exception.code,'event_accounting')
 
+    def test_post_repair_accounting_lists_all_indices_at_once(self):
+        t,work=self._reach_patched_facts()
+        data=review(work['payload']['facts_checks'],pack_prose(self.path, work))
+        data.update(events=[],summary='漏交代。')
+        with self.assertRaises(Error) as exc: submit_review(self.db,t,data)
+        self.assertEqual(exc.exception.code,'event_accounting')
+        self.assertEqual(exc.exception.details['issues'][0]['indices'],[0,1])
+        data.update(prior_dispositions=[{'index':0,'disposition':'kept'},{'index':1,'disposition':'kept'}])
+        with self.assertRaises(Error) as exc: submit_review(self.db,t,data)
+        kept=next(i for i in exc.exception.details['issues'] if 'kept' in i['message'])
+        self.assertEqual(kept['indices'],[0,1])
+
     def test_revision_branch_inherits_ancestor_prior_events(self):
         t,prose,facts=self._draft_with_events()
         submit_review(self.db,t,facts)                     # combined pass -> chapter 1 committed

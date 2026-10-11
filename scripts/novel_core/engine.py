@@ -6,7 +6,7 @@ import re
 import time
 import uuid
 from pathlib import Path
-from .store import Error, require, dump, digest, get, put, transaction, log, chapters, head, branch_hash, write_json
+from .store import Error, Batch, require, dump, digest, get, put, transaction, log, chapters, head, branch_hash, write_json
 from .ledger import replay, append_events, evidence
 from .memory import pack
 
@@ -765,27 +765,41 @@ def validate_review(data,checks,sources):
     require(data.get('verdict') in ('pass','fix'), 'review','审稿结论只能 pass/fix')
     rows = data.get('checks')
     require(isinstance(rows,list) and all(isinstance(r,dict) for r in rows) and {r.get('id') for r in rows}==set(checks) and len(rows)==len(checks), 'review','审稿检查项不完整或重复')
-    for row in rows:
-        require(row.get('result') in ('pass','fix') and isinstance(row.get('reason'),str) and row['reason'].strip(), 'review','每项需要结论及具体理由')
+    batch=Batch()
+    mandatory={'coverage','continuity','read_on','character','change','language','substance','causality','character_arcs','payoffs','pacing','ending','length','core_promises','spatial','stable_facts','character_consistency','voice_evolution','voice_match','volume_development'}
+    mandatory.add('revision_intent')
+    for index,row in enumerate(rows):
+        where={'check_id':row.get('id'),'row_index':index}
+        batch.require(row.get('result') in ('pass','fix') and isinstance(row.get('reason'),str) and row['reason'].strip(),
+                'review','每项需要结论及具体理由',**where)
         refs = row.get('evidence',[])
-        require(isinstance(refs,list) and all(isinstance(ref,dict) for ref in refs),'review','evidence 必须为对象数组')
-        mandatory={'coverage','continuity','read_on','character','change','language','substance','causality','character_arcs','payoffs','pacing','ending','length','core_promises','spatial','stable_facts','character_consistency','voice_evolution','voice_match','volume_development'}
-        mandatory.add('revision_intent')
-        exception=row.get('not_applicable')
-        require(bool(refs) or (row['id'] not in mandatory and isinstance(exception,str) and exception.strip()), 'review','核心审稿项必须有正文证据；可选项确不适用须说明具体原因')
-        for item in refs:
-            require(item.get('chapter') in sources,'review','证据不属于本次有效审稿范围')
-            evidence(sources[item['chapter']],item,item['chapter'])
+        if batch.require(isinstance(refs,list) and all(isinstance(ref,dict) for ref in refs),'review','evidence 必须为对象数组',**where):
+            exception=row.get('not_applicable')
+            batch.require(bool(refs) or (row.get('id') not in mandatory and isinstance(exception,str) and exception.strip()),
+                    'review','核心审稿项必须有正文证据；可选项确不适用须说明具体原因',**where)
+            for item in refs:
+                if item.get('chapter') not in sources:
+                    batch.add('review','证据不属于本次有效审稿范围',**where,submitted_chapter=item.get('chapter'))
+                    continue
+                try:evidence(sources[item['chapter']],item,item['chapter'])
+                except Error as error:batch.capture(error,**where)
     findings = data.get('findings',[])
-    require(isinstance(findings,list) and all(isinstance(f,dict) for f in findings), 'review','findings 必须为数组')
-    for item in findings:
-        require(item.get('impact') and item.get('goal') and item.get('severity') in ('blocker','quality','note'), 'finding','发现须含读者影响、修订目标和级别')
+    if not batch.require(isinstance(findings,list) and all(isinstance(f,dict) for f in findings),'finding','findings 必须为数组'):
+        findings=[f for f in findings if isinstance(f,dict)]
+    for index,item in enumerate(findings):
+        where={'finding_index':index}
+        batch.require(item.get('impact') and item.get('goal') and item.get('severity') in ('blocker','quality','note'),
+                'finding','发现须含读者影响、修订目标和级别',**where)
         ref=item.get('evidence',{})
-        require(ref.get('chapter') in sources,'finding','发现须定位具体正文')
-        evidence(sources[ref['chapter']],ref,ref['chapter'])
-    needs_fix = any(r['result']=='fix' for r in rows) or any(f['severity'] in ('blocker','quality') for f in findings)
-    require((data['verdict']=='fix')==needs_fix,'review','结论与检查/发现不一致')
-    require(not needs_fix or any(f['severity'] in ('blocker','quality') for f in findings),'review','返工须提供可执行发现')
+        if not isinstance(ref,dict) or ref.get('chapter') not in sources:
+            batch.add('finding','发现须定位具体正文',**where);continue
+        try:evidence(sources[ref['chapter']],ref,ref['chapter'])
+        except Error as error:batch.capture(error,**where)
+    needs_fix = any(isinstance(r,dict) and r.get('result')=='fix' for r in rows) or any(isinstance(f,dict) and f.get('severity') in ('blocker','quality') for f in findings)
+    batch.require((data.get('verdict')=='fix')==needs_fix,'review','结论与检查/发现不一致')
+    batch.require(not needs_fix or any(isinstance(f,dict) and f.get('severity') in ('blocker','quality') for f in findings),
+            'review','返工须提供可执行发现')
+    batch.raise_if_any()
 
 
 def repair(db,branch,n,draft,findings,scope='chapter'):
@@ -939,12 +953,16 @@ def validated_fact_events(db,branch,n,draft,work,data):
         # uniquely resolves; the receipt only declares the delta.
         auto={i for i in auto_idx if type(i) is int and 0<=i<len(prior)}
         entries={}
+        batch=Batch()
         for d in (data.get('prior_dispositions') or []):
-            require(isinstance(d,dict),'event_accounting','prior_dispositions 须为对象数组')
+            if not isinstance(d,dict):
+                batch.add('event_accounting','prior_dispositions 须为对象数组');continue
             idx,disposition=d.get('index'),d.get('disposition')
-            require(type(idx) is int and 0<=idx<len(prior) and idx not in entries,'event_accounting','index 须落在前序事件范围内且不重复')
-            require(disposition in ('kept','dropped','replaced'),'event_accounting','disposition 只能 kept/dropped/replaced')
-            require(disposition=='kept' or (isinstance(d.get('reason'),str) and d['reason'].strip()),'event_accounting','dropped/replaced 须说明正文如何变化')
+            batch.require(type(idx) is int and 0<=idx<len(prior) and idx not in entries,'event_accounting',
+                    'index 须落在前序事件范围内且不重复',index=idx)
+            batch.require(disposition in ('kept','dropped','replaced'),'event_accounting','disposition 只能 kept/dropped/replaced',index=idx)
+            batch.require(disposition=='kept' or (isinstance(d.get('reason'),str) and d['reason'].strip()),
+                    'event_accounting','dropped/replaced 须说明正文如何变化',index=idx)
             entries[idx]=d
         def reanchor(ev):
             clone=copy.deepcopy(ev)
@@ -958,14 +976,19 @@ def validated_fact_events(db,branch,n,draft,work,data):
             d=entries.get(i)
             if d and d['disposition'] in ('dropped','replaced'):continue
             if i in auto:carried.append(reanchor(ev))
-            else:
-                require(d is not None,'event_accounting',f'第 {i} 条前序事件的证据或完整句语境已变，须在 prior_dispositions 中明确 kept/dropped/replaced；kept须原样重报事件')
-        for i,d in entries.items():
-            if d['disposition']=='kept' and i not in auto:
-                require(anchor(prior[i]) in {anchor(e) for e in events},'event_accounting',f'第 {i} 条声明 kept 但未出现在新 events 中;内容有变应标 replaced 并说明')
+        batch.require(all(entries.get(i) is not None or i in auto for i in range(len(prior))),'event_accounting',
+                '前序事件的证据或完整句语境已变，须在 prior_dispositions 中逐条明确 kept/dropped/replaced；kept 须原样重报事件',
+                indices=[i for i in range(len(prior)) if entries.get(i) is None and i not in auto])
+        submitted={anchor(e) for e in events}
+        batch.require(all(anchor(prior[i]) in submitted for i,d in entries.items()
+                    if d['disposition']=='kept' and i not in auto),'event_accounting',
+                '声明 kept 但未出现在新 events 中；内容有变应标 replaced 并说明',
+                indices=[i for i,d in sorted(entries.items()) if d['disposition']=='kept' and i not in auto and anchor(prior[i]) not in submitted])
         carried_anchors={anchor(c) for c in carried}
-        for e in events:
-            require(anchor(e) not in carried_anchors,'event_accounting','该前序事件已由引擎自动续算,勿重复提交;要变更请用 prior_dispositions 声明 replaced/dropped')
+        batch.require(all(anchor(e) not in carried_anchors for e in events),'event_accounting',
+                '该前序事件已由引擎自动续算,勿重复提交;要变更请用 prior_dispositions 声明 replaced/dropped',
+                indices=[i for i,e in enumerate(events) if anchor(e) in carried_anchors])
+        batch.raise_if_any()
         events=carried+events
     return events
 
@@ -1110,9 +1133,11 @@ def submit(db, result, brief=False, preview=False):
                 proposed_state=candidate_state(db,branch,n)
             if 'numeric_correction' in data:
                 from .numeric import compose as numeric_compose
-                require(proposed_state is not None,'numeric_correction','无候选结算基线，按正常 fix 返修')
+                require(proposed_state is not None or not work.get('chapter_session'),
+                        'numeric_correction','此任务无账本基线，按正常 fix 返修')
                 draft=copy.deepcopy(draft)
-                draft['prose'],correction=numeric_compose(work,draft,data,proposed_state)
+                name_scan=proposed_state if proposed_state is not None else replay(db,branch)
+                draft['prose'],correction=numeric_compose(work,draft,data,name_scan)
             from .reviewflow import validate as validate_protocol
             validate_protocol(db,task,work,facts,reader,draft['prose'],first_read_prose=original_prose if correction else None)
             validate_review(facts,work['payload']['facts_checks'],{n:draft['prose']})

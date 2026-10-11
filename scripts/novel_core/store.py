@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.39.0'
+VERSION = '1.40.0'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -44,6 +44,37 @@ def digest(value):
 def require(ok, code, message, details=None):
     if not ok:
         raise Error(code, message, details() if callable(details) else details)
+
+
+class Batch:
+    """Collect every failing row so one rejection answers the whole receipt.
+
+    Each worker retry costs a full-context model call; failing one row at a
+    time turns N defects into N round trips. The raised Error keeps the first
+    issue's code (tests and hosts key on it) and lists all issues in order.
+    """
+
+    def __init__(self):
+        self.issues = []
+
+    def add(self, code, message, **details):
+        self.issues.append({'code': code, 'message': message, **details})
+
+    def require(self, ok, code, message, details=None, **extra):
+        if not ok:
+            self.add(code, message, **(details or {}), **extra)
+        return ok
+
+    def capture(self, error, **details):
+        """Adopt a raised row-level Error, adding the surrounding context."""
+        self.add(error.code, str(error), **details, **(error.details or {}))
+
+    def raise_if_any(self):
+        if self.issues:
+            first = self.issues[0]
+            raise Error(first['code'], first['message'],
+                        {'issues': self.issues, 'count': len(self.issues),
+                         'recover': '一次修正全部列出项后重提，不再逐项试探'})
 
 
 def write_json(path, value, compact=False):

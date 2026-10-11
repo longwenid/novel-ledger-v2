@@ -58,7 +58,7 @@ submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果�
 人物、设计和较大的 state/continuity 字段另可含 `parts:[{pointer:[],path,hash,encoding},…]`，作为整文件的等价读法：pointer=[] 的完整对象为基础，其余完整记录按 pointer 的逐层键路径填回。人物档案与发展按实体分别寻址，设计按 world/volume 分片，账本与连续性按完整命名集合分片；跨章只有变化集合需要重读，未变记录仍须是当前 Worker 自己已读的版本。小型 state/continuity 直接交付，减少文件和目录开销；该路径选择不删减内容。首次读取选全部分片或完整字段文件之一，不两者重复读、不漏任一分片。拼回值与字段 hash 对应的冻结完整值一致，元数据也保留；新 Worker 或上下文不足须完整恢复必要资料。
 `selected` 的历史事件通过 `material` 引用完整原记录；候选前缀通过 `events_material` 引用完整事件数组。每份记录独立寻址，未变事件不会因窗口变化而重新打包；语义判断与审稿检查仍逐章执行。旧库内冻结输入保持不变，交付视图可恢复重建。
 
-批次审稿 `payload.numeric_correction` 是 `numeric-patch/1` 能力声明，只含基稿哈希与约束，不公开候选事件或执笔自评。综合审稿 data 可选同名对象，字段恰为 base_hash/patches/repair_note；每个补丁仅替换完整简单数字。两类检查及约定义务须针对合成稿全部通过，原首读保持不变；事件效果及章末账本状态须与原候选一致。正式章节留存原稿/改稿哈希及补丁审计记录；详见 [局部修订](repairs.md)。
+带冻结正文的 chapter_review 信封携带 `payload.numeric_correction`（`numeric-patch/1` 能力声明，只含基稿哈希与约束，不公开候选事件或执笔自评）。综合审稿 data 可选同名对象，字段恰为 base_hash/patches/repair_note；每个补丁仅替换完整简单数字。两类检查及约定义务须针对合成稿全部通过，原首读保持不变；批次审稿的事件效果及章末账本状态须与原候选一致，单章/修订审稿的事件按合成稿举证、结算以本回执为准。正式章节留存原稿/改稿哈希及补丁审计记录；详见 [局部修订](repairs.md)。
 
 ### 材料准备 preparation_session
 
@@ -220,7 +220,7 @@ status/doctor.usage 返回 task_input_chars、accepted_receipt_chars、attempted
 
 ## 错误与修正
 
-CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧凑格式最省 token；嵌入字符串（如 recall 的正文）pretty 化也不会换行，长文本阅读一律走文件通道（prose/prose_path 文件、material 页文件）加分页游标，不靠加宽 stdout。非零退出码返回 {ok:false,code,message,details}。格式、引用或前态错误按原文修正结果，任务保持 pending；阅读缺陷走 repair/redesign，不只改判词。context_scan/context_reduce/context_more 见 [上下文协议](context-runtime.md)，信封仍为 /1。
+CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧凑格式最省 token；嵌入字符串（如 recall 的正文）pretty 化也不会换行，长文本阅读一律走文件通道（prose/prose_path 文件、material 页文件）加分页游标，不靠加宽 stdout。非零退出码的 {ok:false,code,message,details} 同样走 stdout（退出码 2 标失败，stderr 不承载答案）。审稿回执、事件对账等逐行校验的 details 另含 issues 数组：一次列出全部不合格行（各带自身 code 与定位字段）与 count，逐项修完再重提，不逐条试探。格式、引用或前态错误按原文修正结果，任务保持 pending；阅读缺陷走 repair/redesign，不只改判词。context_scan/context_reduce/context_more 见 [上下文协议](context-runtime.md)，信封仍为 /1。
 
 `patch --task TASK --old 原文 --new 替换文 [--start N]` 返回完整 base_hash 与精确补丁，不写草稿。重复原文须指定目标坐标，错误 details.matches 为实际匹配位置；局部任务仍校验允许范围。
 

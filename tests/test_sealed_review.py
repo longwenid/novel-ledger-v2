@@ -121,6 +121,19 @@ class SealedReviewTests(unittest.TestCase):
             self.assert_error(code,lambda:engine.submit(self.db,r))
             self.assertEqual(head(self.db,'main'),0);self.assertEqual(engine.next_task(self.db,self.path)['task_id'],self.task['task_id'])
 
+    def test_obligation_defects_across_rows_are_reported_together(self):
+        self.seal();r=self.receipt()
+        r['data']['facts']['obligations'][0]['evidence']=[]
+        r['data']['reader']['obligations'][0]['challenge']['reason']=''
+        r['data']['reader']['obligations'][2]['evidence'][0]['quote']='不存在的原文'
+        with self.assertRaises(Error) as caught:engine.submit(self.db,r)
+        details=caught.exception.details
+        self.assertEqual(caught.exception.code,'review_obligations')
+        self.assertEqual(details['count'],3)
+        self.assertEqual({i['obligation_id'] for i in details['issues']},{'world:0','language','style:1'})
+        self.assertEqual({i['code'] for i in details['issues']},{'review_obligations','review_challenge','evidence'})
+        self.assertEqual(head(self.db,'main'),0)
+
     def test_violation_must_link_to_check_and_repair_finding(self):
         self.seal();r=self.receipt();reader=r['data']['reader'];reader['verdict']='fix'
         row=reader['obligations'][0];row['result']='fix';row['challenge']['disposition']='violated'

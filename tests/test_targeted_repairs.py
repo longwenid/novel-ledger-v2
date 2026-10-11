@@ -229,4 +229,87 @@ class TargetedRepairTests(unittest.TestCase):
         self.assertEqual(restored,view);self.assertEqual(json.loads((self.path/record['path']).read_text()),full['selected'][0])
 
 
+class StandaloneNumericTests(unittest.TestCase):
+    """Reviews without a candidate ledger (first chapter, single-chapter or
+    revision flow) baseline numeric patches against their own frozen prose."""
+
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.path=Path(self.tmp.name)
+        c=contract();initialize(self.path,c);self.db=connect(self.path)
+        self.prose='周行交出收据，金额一百文。宋禾拒绝签字，让他先找来证人。'
+        respond(self.db,self.path,engine.next_task(self.db,self.path))
+        respond(self.db,self.path,engine.next_task(self.db,self.path),prose=self.prose)
+        self.task=engine.next_task(self.db,self.path)
+    def tearDown(self):self.db.close();self.tmp.cleanup()
+    def cli(self,*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
+    def work(self,t):return json.loads((self.path/t['input_path']).read_text())
+
+    def unlock(self):
+        receipt=json.loads((self.path/self.task['first_read_template_path']).read_text())
+        receipt['first_read']=fixture_first_read()
+        path=self.path/self.task['first_read_result_path'];path.write_text(dump(receipt))
+        self.cli('first-read','--task',self.task['task_id'],'--result',str(path))
+        return engine.next_task(self.db,self.path)
+
+    def receipt(self,t,prose):
+        work=self.work(t);r=combined_review(work,prose,t['chapter'])
+        for category in ('facts','reader'):
+            r[category]['obligations']=fixture_obligations(work,category,prose,t['chapter'])
+        return r
+
+    def envelope(self,t,data):
+        path=self.path/t['output_path']
+        payload={'schema':'novel-ledger-v2.result/1','task_id':t['task_id'],'input_hash':t['input_hash'],'data':data}
+        path.write_text(dump(payload));return payload
+
+    def test_standalone_review_numeric_patch_commits_without_rework(self):
+        t=self.unlock();work=self.work(t)
+        self.assertNotIn('chapter_session',work)
+        self.assertEqual(work['payload']['numeric_correction']['protocol'],'numeric-patch/1')
+        corrected=self.prose.replace('一百','九十九')
+        r=self.receipt(t,corrected)
+        r['numeric_correction']={'base_hash':digest(self.prose),
+            'patches':[{'start':self.prose.index('一百'),'old':'一百','new':'九十九'}],
+            'repair_note':'按账本口径修正金额'}
+        payload=self.envelope(t,r);file=str(self.path/t['output_path'])
+        checked=self.cli('preflight','--result',file,'--task',t['task_id'])
+        self.assertTrue(checked['would_commit']);self.assertIn('settlement',checked)
+        self.assertTrue(self.cli('submit','--result',file)['accepted'])
+        self.assertEqual(head(self.db,'main'),1)
+        stored=self.db.execute('SELECT prose,data FROM chapters WHERE branch=? AND number=1',('main',)).fetchone()
+        corrected=self.prose.replace('一百','九十九')
+        self.assertEqual(stored['prose'],corrected)
+        proof=json.loads(stored['data'])['numeric_correction']
+        self.assertEqual(proof['original_prose_hash'],digest(self.prose))
+        self.assertEqual(proof['corrected_prose_hash'],digest(corrected))
+        engine.approve(self.db)
+        following=self.cli('advance')['task']
+        self.assertEqual(following['chapter'],2);self.assertNotIn('repair',following['stage'])
+        self.assertTrue(engine.submit(self.db,payload)['idempotent'])
+
+    def test_standalone_numeric_patch_still_literal_only(self):
+        t=self.unlock();r=self.receipt(t,self.prose)
+        r['numeric_correction']={'base_hash':digest(self.prose),
+            'patches':[{'start':self.prose.index('收据'),'old':'收据','new':'清单'}],'repair_note':'换词'}
+        payload=self.envelope(t,r)
+        with self.assertRaises(Error) as caught:engine.submit(self.db,payload)
+        self.assertEqual(caught.exception.code,'numeric_correction')
+        self.assertEqual(head(self.db,'main'),0)
+
+    def test_preflight_task_flag_and_stdout_error_contract(self):
+        t=self.cli('advance')['task']
+        payload=self.envelope(t,{'verdict':'pass','checks':[],'findings':[]})
+        file=str(self.path/t['output_path'])
+        with self.assertRaises(Error) as caught:self.cli('preflight','--result',file,'--task','0'*32)
+        self.assertEqual(caught.exception.code,'preflight')
+        import io,contextlib
+        buffer=io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code=novel.main(['preflight','--project',str(self.path),'--result',file,'--task','0'*32])
+        self.assertEqual(code,2)
+        body=json.loads(buffer.getvalue())
+        self.assertFalse(body['ok']);self.assertEqual(body['code'],'preflight')
+        self.assertIn('--task',body['message'])
+
+
 if __name__=='__main__':unittest.main()

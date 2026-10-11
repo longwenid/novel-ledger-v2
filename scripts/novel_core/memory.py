@@ -159,7 +159,7 @@ def guide(stage, instruction=None):
         lines.append('[纪律] ' + DISCIPLINE[key])
     lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的账本为准。')
     helpers='信封提供时用 commands.patch 定位补丁、commands.preflight 只读验证完整回执；' if stage in ('draft','repair','redesign','chapter_review') else ''
-    lines.append('[纠错] '+helpers+'错误定位按 message/details 修正。结算以前后值和 settlement 为准，不从自评推算余额；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
+    lines.append('[纠错] '+helpers+'错误定位按 message/details 修正，details.issues 一次列出全部不合格项，逐项修完再重提，不逐条试探。结算以前后值和 settlement 为准，不从自评推算余额；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
     lines.append('[观测] 协议字符仅观测，不是配额；缺项可用 recall/material 定向补读，未选入不表示不存在。')
     return '\n'.join(lines)
 
@@ -392,7 +392,8 @@ def pack(db, branch, chapter, stage, payload):
         base['review_obligations'] = obligations(contract, base.get('style_anchor'))
         base['guide'] += ('\n[审稿门禁] 首读由 first-read 持久冻结；正式 reader.first_read_ref 按模板引用本任务首读哈希，程序恢复原记录，亦可原样交 first_read 全文，二者不混用。'
                           'facts/reader.obligations 按 review_obligations 本类别 ID 穷尽回应；'
-                          '每条含 result/reason/evidence 和 challenge={disposition:satisfied|violated,reason,evidence}。'
+                          '每条含 result/reason/evidence 和 challenge={disposition:satisfied|violated,reason,evidence}；'
+                          '约定对象本章未触及时判 pass：reason 说明对象未出现，evidence 引任一正文句作未触及佐证。'
                           'challenge 选最可能违反该约定的原文并解释为何可保留或必须返修；violated 必须 fix，'
                           '对应 world_rules/voice_match/language 检查同步 fix，并给标有 obligation_id 的 quality/blocker findings。'
                           '技术名词、字数、格式通过不证明语义质量；不读旧审稿判词来补写首读或替自己判断。'

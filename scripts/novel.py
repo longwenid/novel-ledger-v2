@@ -48,6 +48,7 @@ def parser():
             s.add_argument('--continue-preparation',action='store_true');s.add_argument('--continue-chapter-batch',action='store_true')
             s.add_argument('--continue-review',action='store_true')
         if name in ('first-read','evidence','patch'): s.add_argument('--task',required=True)
+        if name=='preflight': s.add_argument('--task')  # optional; workers pass it by patch habit
         if name=='patch':
             s.add_argument('--old',required=True);s.add_argument('--new',required=True);s.add_argument('--start',type=int)
         if name=='evidence':
@@ -171,6 +172,7 @@ def dispatch_raw(args):
             task=db.execute('SELECT * FROM tasks WHERE id=?',(receipt.get('task_id') if isinstance(receipt,dict) else None,)).fetchone()
             require(task and task['state']=='pending' and task['stage'] in ('draft','repair','redesign','chapter_review'),
                     'preflight','预检只用于当前有效执笔或审稿任务')
+            require(args.task is None or args.task==task['id'],'preflight','--task 与回执绑定的任务不一致，按回执 task_id 预检')
             before=engine.head(db,task['branch'])
             checked=engine.submit(db,receipt,brief=True,preview=True)
             return {'schema':'novel-ledger-v2.preflight/1','task_id':task['id'],'checked':True,'submitted':False,
@@ -498,7 +500,10 @@ def main(argv=None):
         print(json.dumps(result,ensure_ascii=False,separators=(',',':'),allow_nan=False))
         return 0
     except (Error,OSError,ValueError,KeyError,TypeError) as exc:
-        print(json.dumps({'ok':False,'code':getattr(exc,'code',type(exc).__name__),'message':str(exc),'details':getattr(exc,'details',None)},ensure_ascii=False),file=sys.stderr)
+        # stdout + nonzero exit: hosts parse one clean JSON stream, and shells
+        # that paint stderr as error records (pwsh NativeCommandError) no longer
+        # bury the answer the worker needs.
+        print(json.dumps({'ok':False,'code':getattr(exc,'code',type(exc).__name__),'message':str(exc),'details':getattr(exc,'details',None)},ensure_ascii=False))
         return 2
 
 if __name__=='__main__':
