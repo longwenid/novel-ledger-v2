@@ -20,7 +20,7 @@ class DisciplineTests(unittest.TestCase):
 
     def test_pack_carries_discipline(self):
         t=self.task()
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertIn('[提交契约]',work['guide'])
         self.assertIn('ending_shape',work['guide'])  # plan 阶段只挂 plan 纪律
         facts=pack(self.db,'main',1,'chapter_review',{})
@@ -33,7 +33,7 @@ class DisciplineTests(unittest.TestCase):
         respond(self.db,self.path,self.task())
         respond(self.db,self.path,self.task())
         task=self.task()
-        work=json.loads(rpath(task).read_text(encoding='utf-8'))
+        work=envelope(task)
         example,_=json.JSONDecoder().raw_decode(work['guide'].split('data 示例=',1)[1])
         prose=pack_prose(self.path,work)
         data={}

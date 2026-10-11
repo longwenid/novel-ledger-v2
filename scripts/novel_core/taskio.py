@@ -40,6 +40,284 @@ def check_rows(ids):
 # inside a single host read; it routes delivery, it never caps content.
 INLINE_MATERIAL_CHARS = 4096
 
+# The envelope is sliced per type so that no single delivered file has to be
+# read in pages. Measured on a real 16-worker run: input.json reached 27–36K
+# characters, the worker read it in two or three pages (27.3K + 26.9K + 27.4K on
+# one revision chapter), and every page stayed in context for the rest of the
+# run. A host read limit counts bytes, and CJK text is three bytes per
+# character, so the routing threshold is a byte budget: an index measured in
+# characters can still be three times over the limit it was chosen for.
+ENVELOPE_TARGET_BYTES = 24000
+# A typed file is a file read plus a manifest row; below this it costs more in
+# round trips than it saves in bytes.
+SLICE_MIN_BYTES = 3072
+
+# Fields that always ship as typed files when present. They are whole,
+# version-stable documents: the contract and the guide change no more than once
+# per project, so a worker that already read the same version pays nothing to
+# skip it, while a one-shot worker that must read it reads one small file.
+ALWAYS_SLICED = ('contract', 'guide')
+# Reading a version-stable document is a startup cost, not a per-chapter one:
+# the contract and the guide do not change between chapters of the same
+# project, so a worker that read that version once does not pay for it again.
+# Stages that must enforce author rules or assemble a contract-bound receipt
+# still get them as required reading.
+REQUIRED_DOCUMENT_STAGES = ('chapter_review', 'batch_review', 'volume_review', 'revision_review',
+                            'book_review', 'world_plan', 'volume_plan', 'character_index')
+# Ordering matters: the largest blocks leave the envelope first, so the inline
+# index keeps the identity, location and instruction fields a worker needs even
+# when the material is enormous.
+SLICE_CANDIDATES = ('design_context', 'character_context', 'selected', 'state', 'continuity',
+                    'writer_brief', 'review_obligations', 'candidate_ledger', 'prior_volume',
+                    'synthesis_materials', 'context_notes', 'context_materials', 'context_delivery',
+                    'address_signals', 'volume_budget', 'revision_context', 'plan')
+
+
+def _json_bytes(value):
+    return len(json.dumps(value, ensure_ascii=False, allow_nan=False).encode('utf-8'))
+
+
+def live_context(work):
+    """Structured keys this task actually writes about.
+
+    Projection, not a cap: `state`, `character_context` and `design_context`
+    are assembled from these keys upstream, and the marking below only decides
+    which *delivered shards* are required reading. Everything else stays
+    reachable through the delivery commands.
+    """
+    plan = work.get('plan') or {}
+    brief = (work.get('writer_brief') or {}).get('dramatic_task') or {}
+    keys = set(plan.get('entities') or []) | set(plan.get('topics') or []) | set(plan.get('hooks') or [])
+    keys.update(choice.get('entity') for choice in (plan.get('character_choices') or [])
+                if isinstance(choice, dict))
+    for scene in plan.get('scenes') or []:
+        if not isinstance(scene, dict):
+            continue
+        keys.update(scene.get('present') or [])
+        keys.update(scene.get('speakers') or [])
+        keys.update(scene.get('props') or [])
+        if scene.get('place'):
+            keys.add(scene['place'])
+        for intent in scene.get('dialogue_intents') or []:
+            keys.add(intent.get('entity'))
+            if intent.get('to'):
+                keys.add(intent['to'])
+            keys.update(intent.get('knowledge_topics') or [])
+    keys.update(brief.get('entities') or [])
+    keys.discard(None)
+    payload = work.get('payload') or {}
+    return {'keys': {k for k in keys if isinstance(k, str)},
+            'document': payload.get('document'),
+            'chapters': {n for n in [payload.get('chapter'), payload.get('first'), work.get('chapter')]
+                         if isinstance(n, int)}}
+
+
+def _entry_needed(entry, context):
+    """Does this delivered shard carry something the task provably needs?
+
+    Only explicit references mark a shard required. An unmarked shard is not
+    withheld — it keeps its path and its retrieve command, because the engine
+    cannot prove a character or a fact is irrelevant to a scene.
+    """
+    pointer = entry.get('pointer') or []
+    record = entry.get('record')
+    if record is None and entry.get('path'):
+        # A material that shipped whole has no per-shard file; its identity is
+        # the pointer alone.
+        record = {}
+    if record is None:
+        return True
+    key = pointer[0] if pointer else ''
+    if key in ('profiles', 'developments', 'entities', 'facts', 'knowledge', 'resources',
+               'placements', 'anchors', 'places', 'links', 'hooks', 'relations'):
+        ident = pointer[1] if len(pointer) > 1 else None
+        if isinstance(ident, int):
+            return True
+        name = str(ident).split(':', 1)[0] if ident is not None else None
+        return bool(name and name in context['keys'])
+    if key in ('world', 'volume', 'previous_design'):
+        return True
+    if key == 'clocks':
+        return True
+    if key in ('document', 'purpose', 'target'):
+        return True
+    return False
+
+
+def typed_delivery(project, root, view, materials=None):
+    """Per-type files for the envelope, with required shards marked.
+
+    Two shapes ship out of the envelope, and both need the same treatment:
+
+    * a whole field above the size threshold becomes a type file;
+    * a block material (`shared_materials`) may already have been extracted, in
+      which case its shards keep their own content addresses.
+
+    `workers read one file per type` is the whole point: the envelope stops
+    being one object whose size grows with the book, and each type keeps its
+    own address, so a worker that must read the state reads only the state.
+    Files live inside the task directory; a shared `work/input/` would let one
+    task's leftovers masquerade as another task's index.
+    """
+    base = Path(project).resolve()
+    directory = Path(root)
+    context = live_context(view)
+    materials = materials if materials is not None else (view.get('shared_materials') or {})
+    files, needed, optional = {}, [], []
+
+    # Mark every delivered shard required or optional, before any field moves.
+    # Marking is delivery routing only: the shard keeps its address and stays
+    # complete either way. It must run on the pre-slice view, because a field
+    # that ships whole still carries its records inside the slice, and the index
+    # then needs a required/optional summary pointing at that field's address.
+    def summary(field, pointer, flag, path=None, size=None):
+        name = f"{field}/{pointer}" if pointer else field
+        if size is None and path:
+            candidate = base / path
+            size = candidate.stat().st_size if candidate.is_file() else None
+        (needed if flag else optional).append({'field': name, 'path': path, 'bytes': size})
+
+    def mark_parts(field, rows):
+        for part in rows:
+            if not isinstance(part, dict):
+                continue
+            flag = _entry_needed(part, context) if field != 'selected' else _selected_needed(part, context)
+            if (part.get('view') or {}).get('scope'):
+                flag = True
+            part['needed'] = flag
+            # A material that shipped whole has no per-record file address; its
+            # marking lives inside the record, which *is* the delivered file.
+            record = part.get('record')
+            if isinstance(record, dict):
+                record['needed'] = flag
+            pointer = '/'.join(str(p) for p in (part.get('pointer') or []))
+            summary(field, pointer, flag, part.get('path'), part.get('bytes'))
+
+    def mark_material(field):
+        value = view.get(field)
+        if not isinstance(value, dict):
+            return
+        rows = []
+        for collection in ('profiles', 'developments'):
+            entries = value.get(collection)
+            if isinstance(entries, dict):
+                rows += [{'pointer': [collection, key], 'record': record}
+                         for key, record in entries.items() if isinstance(record, dict)]
+        for key, record in value.items():
+            if key in ('profiles', 'developments', 'status', 'instruction', 'view_policy',
+                       'validity', 'omitted_profiles', 'source_refs', 'omitted_developments'):
+                continue
+            if isinstance(record, dict) and record:
+                rows.append({'pointer': [key], 'record': record})
+        mark_parts(field, rows)
+
+    for field in ('character_context', 'design_context', 'state', 'continuity'):
+        entry = materials.get(field)
+        if isinstance(entry, dict):
+            mark_parts(field, entry.get('parts') or [entry])
+        else:
+            mark_material(field)
+    for record in view.get('selected') or []:
+        if isinstance(record, dict):
+            record['needed'] = _selected_needed(record, context)
+    candidate = view.get('candidate_ledger') or {}
+    if isinstance(candidate, dict):
+        for record in candidate.get('prefix') or []:
+            entry = record.get('events_material')
+            if isinstance(entry, dict):
+                entry['needed'] = True
+                summary('candidate_ledger', str(record.get('chapter')), True,
+                        entry.get('path'), entry.get('bytes'))
+
+    order = []
+    for field in ALWAYS_SLICED:
+        if field in view:
+            order.append(field)
+    for field in SLICE_CANDIDATES:
+        if field not in view or field in order:
+            continue
+        if field == 'plan' and not isinstance(view[field], dict):
+            continue
+        order.append(field)
+    prefix = os.path.relpath(directory, base).replace('\\', '/')
+    for field in order:
+        value = view[field]
+        if _json_bytes(value) < (0 if field in ALWAYS_SLICED else SLICE_MIN_BYTES):
+            continue
+        hashed = digest(value)
+        rel = prefix + '/input/' + field.replace('_', '-') + '.json'
+        path = base / rel
+        # LF endings: a slice is measured in bytes, and Windows text mode would
+        # add one byte per line to the delivered file without changing content.
+        expected = (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + '\n').encode('utf-8')
+        stored = path.read_bytes() if path.exists() else None
+        if stored != expected:
+            write_json(path, value, newline='\n')
+            materials.pop(field, None)
+        view.pop(field)
+        files[field] = {'path': rel, 'hash': hashed[:12], 'bytes': len(expected)}
+        if field in ALWAYS_SLICED:
+            # Reading a project-level document is not a per-chapter obligation:
+            # name the address and the scope, and let the caller decide. Stages
+            # that must honor author rules keep it as required reading.
+            stage = str(view.get('stage') or '')
+            summary(field, '', stage in REQUIRED_DOCUMENT_STAGES, rel, len(expected))
+        # A whole field that ships as one file leaves no per-record address, so
+        # its shard rows have to point at the field file instead.
+        for row in needed + optional:
+            if row.get('path') is None and row.get('field', '').startswith(field + '/'):
+                row['path'] = rel
+    return view, files, needed, optional, materials
+
+
+def _selected_needed(part, context):
+    """Historical evidence is required when the plan or the payload names it."""
+    if part.get('kind') in ('required_chapter', 'dependent_chapter'):
+        return part.get('chapter') in context['chapters'] or not context['chapters']
+    if part.get('kind') in ('history', 'memory', 'recent_summary', 'recent_rhythm'):
+        return True
+    if part.get('document') is not None:
+        return context['document'] is None or part.get('document') == context['document']
+    return True
+
+
+def envelope(project, work, root):
+    """Index plus typed files: what `input.json` holds after slicing."""
+    view = shared_delivery(project, work)
+    view, files, needed, optional, materials = typed_delivery(project, root, view)
+    rel_prefix = os.path.relpath(Path(root), Path(project).resolve()).replace('\\', '/')
+    while files and _json_bytes(view) > ENVELOPE_TARGET_BYTES:
+        room = [(field, _json_bytes(value)) for field, value in view.items()
+                if field not in files and field != '_needed' and _json_bytes(value) >= SLICE_MIN_BYTES]
+        if not room:
+            break
+        field = max(room, key=lambda row: row[1])[0]
+        value = view.pop(field)
+        hashed = digest(value)
+        rel = rel_prefix + '/input/' + field.replace('_', '-') + '.json'
+        write_json(Path(project).resolve() / rel, value, newline='\n')
+        files[field] = {'path': rel, 'hash': hashed[:12],
+                        'bytes': len((json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))}
+        for row in needed + optional:
+            if row.get('path') is None and row.get('field', '').startswith(field + '/'):
+                row['path'] = rel
+    if materials:
+        view['shared_materials'] = materials
+    if files:
+        view['input_files'] = files
+        view['input_read_rule'] = ('本文件是信封索引：按字段路由到各自类型文件，读取本文件不等于读到被外置的字段。'
+            'needed=true 的材料属于本任务必读，先读它再处理。needed=false 的材料是同一版本里的其余内容，'
+            '仍在账本内：先按任务书摘要与 must_read 动笔，疑点用 recall/character/material 等任务内命令按需补读——'
+            '不读它不等于它不存在。contract/guide 是项目级文档，已读过同一版本的不必重读，'
+            '但它是作者约定与出场口径的判据：涉及约定、称谓、篇幅、检查项时先核它再judge。'
+            '输入文件命名与字段同名（<任务目录>/input/<字段>.json），'
+            '同一 Worker 只复用自己已读且哈希未变的文件。')
+    if needed or optional:
+        view['must_read'] = needed
+        view['on_demand'] = optional
+    view.pop('_needed', None)
+    return view
+
 
 def shared_delivery(project,work):
     """Exact-address delivery for every task, not only role sessions.
@@ -129,7 +407,13 @@ def shared_delivery(project,work):
     # frozen ones whose input must stay byte-identical across re-materialisation.
     if materials or extracted:
         view['shared_materials']=materials
-        view['shared_read_rule']='完整资料按版本引用。shared_materials 有 parts 时完整读取各 part，pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段完整文件；二者选一，不重复读。selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取；writer_brief.continuity_sources 点到的字段若出现在 shared_materials（例如 design_context、character_context），属于本章必读材料，先读它再动笔——外置只改变交付方式，不表示该材料可选；其余可先以摘要兜底，疑点用 commands 定向补读。同一 Worker 只复用自己已读且哈希未变的文件；新 Worker或上下文不足重新读，复用不代表审稿通过。'
+        view['shared_read_rule']=('完整资料按版本引用。shared_materials 有 parts 时，'
+            'needed=true 的 part 属于本任务必读，先读完再动笔；needed=false 的 part 是同一版本里的其余记录，'
+            '用 pointer 路径按需补读，不读它不等于它不存在（例如省略的认知或人物档案仍在账本内）。'
+            'pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段的完整文件；基础对象与 parts 二者选一，不重复读。'
+            'selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取。'
+            'writer_brief.continuity_sources 点到的字段若出现在 shared_materials，按上一条规则处理。'
+            '同一 Worker 只复用自己已读且哈希未变的文件；新 Worker 或上下文不足时重新读，复用不代表审稿通过。')
     return view
 
 
@@ -324,7 +608,12 @@ def delivery(db, project, task, work, envelope):
             envelope['worker_prompt'] += '核对信封 revision_context 的全部未完成父子修订目标，后加文风目标不撤销父级结构目标。'
         envelope['template_path'] = str((root/'result.template.json').relative_to(base))
         write_json(root/'result.template.json', template(task, work, saved, db=db))
-        envelope['worker_prompt'] += '读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。响应 task 有 task_path 时读该文件取得完整信封。brief_path 是同一任务书的可读替代视图（内容全部来自 input.json），读其中一个即可——两个都读等于把同一批信息付两遍上下文成本。'
+        envelope['worker_prompt'] += ('读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。'
+            'input_files 非空时 input_path 只是索引：字段被外置到同名字段文件，'
+            'must_read（needed=true）是本任务必读，on_demand 用任务内命令按需补读。'
+            '响应 task 有 task_path 时读该文件取得完整信封。'
+            'brief_path 是同一任务书的可读替代视图（内容全部来自 input.json），读其中一个即可——'
+            '两个都读等于把同一批信息付两遍上下文成本。')
         if task['stage'] in ('draft', 'repair', 'redesign'):
             envelope['worker_prompt'] += '程序校验合成全文及篇幅；需在提交前查看计数时可用 commands.measure。'
         if task['stage'] == 'chapter_review':

@@ -36,7 +36,7 @@ class ReviewChunkTests(unittest.TestCase):
         self._commit_book()
         t=engine.next_task(self.path,self.db) if False else engine.next_task(self.db,self.path)
         self.assertEqual(t['stage'],'batch_review')
-        payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
+        payload=envelope(t)['payload']
         self.assertEqual((payload['first'],payload['through']),(1,1))
 
     def test_chunk_of_three_covers_and_advances(self):
@@ -44,7 +44,7 @@ class ReviewChunkTests(unittest.TestCase):
         with transaction(self.db): put(self.db,'review_chunk',3)
         t=engine.next_task(self.db,self.path)
         self.assertEqual(t['stage'],'batch_review')
-        payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
+        payload=envelope(t)['payload']
         self.assertEqual((payload['first'],payload['through']),(1,3))
         self.assertEqual([f['chapter'] for f in payload['prose_files']],[1,2,3])
         stored=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=3',('main',)).fetchone()[0]
@@ -57,7 +57,7 @@ class ReviewChunkTests(unittest.TestCase):
                                 ('main','batch_chunk',end,engine.review_hash(self.db,'main',end-2,end),
                                  dump({'verdict':'pass','first':end-2,'through':end})))
         t=engine.next_task(self.db,self.path)
-        payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
+        payload=envelope(t)['payload']
         self.assertEqual((payload['first'],payload['through']),(7,9))
         with transaction(self.db):
             self.db.execute("UPDATE tasks SET state='cancelled' WHERE state='pending'")
@@ -65,7 +65,7 @@ class ReviewChunkTests(unittest.TestCase):
                             ('main','batch_chunk',9,engine.review_hash(self.db,'main',7,9),
                              dump({'verdict':'pass','first':7,'through':9})))
         t=engine.next_task(self.db,self.path)
-        payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
+        payload=envelope(t)['payload']
         self.assertEqual((payload['first'],payload['through']),(10,10))
 
     def test_config_bounds(self):

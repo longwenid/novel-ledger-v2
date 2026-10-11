@@ -39,7 +39,7 @@ class ReviewSessionTests(unittest.TestCase):
         return branch
 
     def receipt(self,t):
-        w=json.loads((self.path/t['input_path']).read_text(encoding='utf-8'));p=w['payload']
+        w=envelope(t);p=w['payload']
         if t['stage'] in ('context_scan','context_reduce'):return result(t,{'cannot_compact':True,'reason':'工程夹具逐字保留全部来源。'})
         n=p['first'];prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(t['branch'],n)).fetchone()[0]
         data=review(p['checks'],prose,n)
@@ -53,7 +53,7 @@ class ReviewSessionTests(unittest.TestCase):
     def stream(self,t):
         trace=[]
         for _ in range(80):
-            w=json.loads((self.path/t['input_path']).read_text(encoding='utf-8'));trace.append((t,w.get('payload',{}).get('scope')))
+            w=envelope(t);trace.append((t,w.get('payload',{}).get('scope')))
             reply=self.submit(t)
             if reply['action']!='continue_review':return reply,trace
             t=reply['task']
@@ -173,7 +173,7 @@ class ReviewSessionTests(unittest.TestCase):
         with self.assertRaises(Error):self.cli('submit','--result',str(f),'--continue-review','--continue-preparation')
 
     def test_shared_materials_are_exact_and_missing_files_are_rebuilt(self):
-        self.prepare();t=self.cli('advance')['task'];v=json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
+        self.prepare();t=self.cli('advance')['task'];v=envelope(t)
         row=self.db.execute('SELECT input FROM tasks WHERE id=?',(t['task_id'],)).fetchone();full=json.loads(row[0])
         self.assertIn('contract',v['shared_materials'])
         for k,ref in v['shared_materials'].items():

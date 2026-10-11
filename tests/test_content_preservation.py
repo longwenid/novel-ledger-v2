@@ -39,7 +39,7 @@ class ContentPreservationTests(unittest.TestCase):
         respond(self.db,self.path,self.task(),ending=True)
         prose='周行把完整凭证交给宋禾，两人承担追索的代价。'
         respond(self.db,self.path,self.task(),prose=prose)
-        task=self.task();work=json.loads(rpath(task).read_text(encoding='utf-8'))
+        task=self.task();work=envelope(task)
         summary='必要的选择、代价、关系和因果依据。'*150
         data=review(work['payload']['facts_checks'],prose,1)
         data.update(events=[],summary=summary)
@@ -49,7 +49,7 @@ class ContentPreservationTests(unittest.TestCase):
         engine.approve(self.db)
         memory='必须保留的伏笔、人物选择和完整因果证据。'*200
         for _ in range(10):
-            task=self.task();work=json.loads(rpath(task).read_text(encoding='utf-8'))
+            task=self.task();work=envelope(task)
             scope=work['payload']['scope']
             if scope.endswith('_chunk'):
                 respond(self.db,self.path,task)

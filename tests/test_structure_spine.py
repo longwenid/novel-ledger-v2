@@ -55,7 +55,7 @@ class SpineTests(unittest.TestCase):
 
     def finish_chapter(self,n=1):
         respond(self.db,self.path,self.task())                        # draft
-        t=self.task();w=json.loads(rpath(t,'input_path').read_text(encoding='utf-8'));text=pack_prose(self.path, w)
+        t=self.task();w=envelope(t);text=pack_prose(self.path, w)
         data=review(w['payload']['facts_checks'],text,n);data.update(events=[],summary='s');self.submit(t,data)
         return head(self.db,'main')
 

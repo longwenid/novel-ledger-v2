@@ -5,3 +5,4 @@ __pycache__/
 validation/runs/
 .pytest_cache/
 .zcode/
+.probe-tmp/

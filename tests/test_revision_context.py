@@ -19,7 +19,7 @@ class RevisionContextTests(unittest.TestCase):
         self.db.close();self.temp.cleanup()
 
     def task(self):return engine.next_task(self.db,self.path)
-    def work(self,task):return json.loads(rpath(task).read_text(encoding='utf-8'))
+    def work(self,task):return envelope(task)
 
     def start_draft(self,prose,events=None,ending=False):
         respond(self.db,self.path,self.task(),ending=ending)

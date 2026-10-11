@@ -248,7 +248,7 @@ class ProfilePipelineTests(unittest.TestCase):
                 task=engine.next_task(db,temp);self.assertEqual(task['stage'],'character_plan')
                 engine.submit(db,result(task,copy.deepcopy(PROFILES)))
                 index_task=engine.next_task(db,temp);self.assertEqual(index_task['stage'],'character_index')
-                work=json.loads(rpath(index_task).read_text(encoding='utf-8'));state_before=digest(replay(db,'main'));indexes=[]
+                work=envelope(index_task);state_before=digest(replay(db,'main'));indexes=[]
                 for eid in work['payload']['entities']:
                     record=characters.current(db,'main',eid)
                     self.assertEqual(work['character_context']['profiles'][eid]['data'],record['data'])

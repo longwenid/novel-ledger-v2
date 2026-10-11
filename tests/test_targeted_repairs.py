@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from support import contract, initialize, connect, respond, plan, ev, combined_review, fixture_first_read, fixture_obligations
+from support import combined_review, connect, contract, envelope, ev, fixture_first_read, fixture_obligations, initialize, plan, respond
 from novel_core import engine, batchflow, reviewflow
 from novel_core.store import dump, digest, Error, head, get
 from novel_core.ledger import replay
@@ -20,7 +20,7 @@ class TargetedRepairTests(unittest.TestCase):
         engine.validate_plan(self.db,'main',2,{'chapters':[plan(n) for n in range(2,11)]})
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def cli(self,*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
-    def work(self,t):return json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
+    def work(self,t):return envelope(t)
     def receipt(self,t,data):return {'schema':'novel-ledger-v2.result/1','task_id':t['task_id'],'input_hash':t['input_hash'],'data':data}
     def save(self,t,data):
         path=self.path/t['output_path'];path.write_text(dump(self.receipt(t,data)), encoding='utf-8');return str(path)
@@ -256,7 +256,7 @@ class StandaloneNumericTests(unittest.TestCase):
         self.task=engine.next_task(self.db,self.path)
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def cli(self,*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
-    def work(self,t):return json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
+    def work(self,t):return envelope(t)
 
     def unlock(self):
         receipt=json.loads((self.path/self.task['first_read_template_path']).read_text(encoding='utf-8'))

@@ -8,8 +8,22 @@ import tempfile
 import unittest
 
 from support import (
-    contract, drive, engine, ev, initialize, connect, get, pack_prose, plan, respond,
-    result, review, rpath, transaction, submit_review,
+    connect,
+    contract,
+    drive,
+    engine,
+    envelope,
+    ev,
+    get,
+    initialize,
+    pack_prose,
+    plan,
+    respond,
+    result,
+    review,
+    rpath,
+    submit_review,
+    transaction,
 )
 from novel import dispatch, parser
 from novel_core.ledger import replay, resource_key
@@ -39,7 +53,7 @@ class IndependentRegressions(unittest.TestCase):
         respond(db, project, engine.next_task(db, project),
                 prose='周行划去那笔一文的收入，将原有银钱全部交出。')
         task = engine.next_task(db, project)
-        prose = pack_prose(project, json.loads(rpath(task, 'input_path').read_text(encoding='utf-8')))
+        prose = pack_prose(project, envelope(task))
         data = review(engine.FACT_CHECKS, prose)
         data.update(summary='周行交出原有银钱。', events=[{
             'op': 'resource', 'asset': 'cash', 'unit': '文',
@@ -106,7 +120,7 @@ class IndependentRegressions(unittest.TestCase):
             if (stage == 'batch_review' and task['chapter'] not in requested
                     and task['branch'] == get(db, 'active_branch')):
                 requested.add(task['chapter'])
-                payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
+                payload = envelope(task)['payload']
                 first = payload['first']
                 prose = db.execute(
                     'SELECT prose FROM chapters WHERE branch=? AND number=?',

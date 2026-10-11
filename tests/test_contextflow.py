@@ -81,7 +81,7 @@ class ContextFlowTests(unittest.TestCase):
     def ready(self,verbose=False):
         seen=[]
         for _ in range(200):
-            task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+            task=engine.next_task(self.db,self.path);work=envelope(task)
             if task['stage'] not in ('context_scan','context_reduce'):
                 self.assertIn('[观测]',work['guide'])
                 return task,work,seen
@@ -104,7 +104,7 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(task['stage'],'draft')
 
     def test_restart_duplicate_and_bad_coverage_are_atomic(self):
-        before=self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        before=self.grow();task=engine.next_task(self.db,self.path);work=envelope(task)
         data=preparation(self.path,task,work);bad=copy.deepcopy(data);bad['coverage']['end']-=1
         with self.assertRaises(Error):self.submit(task,bad)
         self.db.close();self.db=connect(self.path)
@@ -114,14 +114,14 @@ class ContextFlowTests(unittest.TestCase):
         self.assertEqual(digest(replay(self.db,'main')),before)
 
     def test_forged_note_evidence_is_rejected(self):
-        self.grow();task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        self.grow();task=engine.next_task(self.db,self.path);work=envelope(task)
         data=preparation(self.path,task,work);data['notes']=[{'text':'假的来源','evidence':[{'document':work['payload']['document'],'start':0,'quote':'不存在的内容'}]}]
         with self.assertRaises(Error):self.submit(task,data)
         self.assertEqual(engine.next_task(self.db,self.path)['task_id'],task['task_id'])
 
     def test_cannot_compact_retains_complete_source_without_pausing(self):
         self.grow();task=engine.next_task(self.db,self.path)
-        work=json.loads(rpath(task).read_text(encoding='utf-8'))
+        work=envelope(task)
         self.submit(task,{'cannot_compact':True,'reason':'当前任务确实需要全部原始条件同时可见，无法在预算内表达。'})
         self.assertEqual(get(self.db,'status'),'ready')
         bundle=get(self.db,contextflow.view_key(work['payload']['bundle']))
@@ -147,7 +147,7 @@ class ContextFlowTests(unittest.TestCase):
     def test_reducer_cannot_claim_kept_without_retaining_source(self):
         before=self.grow(1500)
         for _ in range(100):
-            task=engine.next_task(self.db,self.path);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+            task=engine.next_task(self.db,self.path);work=envelope(task)
             if task['stage']=='context_reduce':break
             self.submit(task,preparation(self.path,task,work,verbose=True))
         self.assertEqual(task['stage'],'context_reduce')

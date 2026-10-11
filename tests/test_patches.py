@@ -57,15 +57,15 @@ class PatchPipelineTests(unittest.TestCase):
     def task(self):return engine.next_task(self.db,self.path)
     def start(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task(),prose=self.text)
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['facts_checks'],self.text)
+        t=self.task();w=envelope(t);data=review(w['payload']['facts_checks'],self.text)
         data['verdict']='fix';data['repair_scope']='local';data['checks'][0]['result']='fix'
         data['findings']=[{'severity':'quality','impact':'这段动作重复，削弱人物分工','goal':'让宋禾指出封条不同','evidence':ev(self.text,quote=self.target)}]
         submit_review(self.db,t,data);return self.task()
     def patch(self,t,old=None,new='第40段：周行核对收据，宋禾指着重新粘过的封条，等他先开口。'):
-        w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));old=old or self.target
+        w=envelope(t);old=old or self.target
         return result(t,{'base_hash':w['payload'].get('base_hash',digest(self.text)),'patches':[{'start':self.text.index(old),'old':old,'new':new}],'repair_note':'只改本段分工和动作'})
     def test_local_packet_omits_whole_chapter_and_preserves_same_task(self):
-        t=self.start();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=w['payload']
+        t=self.start();w=envelope(t);payload=w['payload']
         self.assertNotIn('prose',payload);self.assertGreater(payload['omitted_chars'],len(self.text)*0.8)
         self.assertTrue(any(self.target in x['text'] for x in payload['excerpts']))
         self.assertEqual(t,self.task())
@@ -75,7 +75,7 @@ class PatchPipelineTests(unittest.TestCase):
     def test_patch_composes_without_canon_change_and_reaudits_full_text(self):
         t=self.start();data=self.patch(t);engine.submit(self.db,data)
         self.assertTrue(engine.submit(self.db,data)['idempotent']);self.assertEqual(head(self.db,'main'),0)
-        next_=self.task();w=json.loads(rpath(next_, 'input_path').read_text(encoding='utf-8'))
+        next_=self.task();w=envelope(next_)
         self.assertEqual(next_['stage'],'chapter_review');self.assertEqual(pack_prose(self.path, w),self.text.replace(self.target,data['data']['patches'][0]['new']))
         self.assertNotIn('facts_review',engine.load_draft(self.db,'main',1))
         respond(self.db,self.path,next_);self.assertEqual(head(self.db,'main'),1)
@@ -91,7 +91,7 @@ class PatchPipelineTests(unittest.TestCase):
     def test_expansion_is_bounded_and_does_not_reset_failure_count(self):
         t=self.start();attempts=engine.load_draft(self.db,'main',1)['attempts']
         engine.submit(self.db,result(t,{'expand_context':True,'reason':'需要核对章首的交接条件'}))
-        next_=self.task();w=json.loads(rpath(next_, 'input_path').read_text(encoding='utf-8'));self.assertEqual(pack_prose(self.path, w),self.text)
+        next_=self.task();w=envelope(next_);self.assertEqual(pack_prose(self.path, w),self.text)
         self.assertEqual(engine.load_draft(self.db,'main',1)['attempts'],attempts)
         with self.assertRaises(Error):engine.submit(self.db,result(next_,{'expand_context':True,'reason':'再次扩大'}))
         self.assertEqual(head(self.db,'main'),0)
@@ -109,7 +109,7 @@ class PatchPipelineTests(unittest.TestCase):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task(),prose=self.text)
         respond(self.db,self.path,self.task());engine.approve(self.db)
         with transaction(self.db):revision=engine.begin_revision(self.db,1,'复核后续连续性')
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        t=self.task();w=envelope(t)
         self.assertEqual(t['stage'],'draft');self.assertEqual(w['payload']['base_hash'],digest(self.text))
         outcome=engine.submit(self.db,result(t,{'base_hash':digest(self.text),'reuse_original':True}))
         # Reuse requires unchanged upstream prose and valid parent reviews.

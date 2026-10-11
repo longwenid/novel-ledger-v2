@@ -8,8 +8,19 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from support import (contract, initialize, connect, respond, result, review,
-                     plan, rpath, pack_prose, submit_review)
+from support import (
+    connect,
+    contract,
+    envelope,
+    initialize,
+    pack_prose,
+    plan,
+    respond,
+    result,
+    review,
+    rpath,
+    submit_review,
+)
 from novel_core import engine
 from novel_core.ledger import replay
 from novel_core.store import Error, get, head
@@ -34,7 +45,7 @@ class RevisionCarryTests(unittest.TestCase):
         planned = self.task(); self.assertEqual(planned['stage'], 'plan')
         if plan_entities is not None or plan_extra:
             from support import result as _result
-            work = json.loads(rpath(planned, 'input_path').read_text(encoding='utf-8'))
+            work = envelope(planned)
             chapter = dict(plan(planned['chapter']))
             if plan_entities is not None:
                 chapter['entities'] = list(plan_entities)
@@ -48,7 +59,7 @@ class RevisionCarryTests(unittest.TestCase):
         else:
             respond(self.db, self.path, draft_run, prose=prose)
         task = self.task(); self.assertEqual(task['stage'], 'chapter_review')
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         text = pack_prose(self.path, work)
         data = review(work['payload']['facts_checks'], text, task['chapter'])
         data.update(events=events, summary='登记事件。')
@@ -78,7 +89,7 @@ class RevisionCarryTests(unittest.TestCase):
         p2 = '第2天，宋禾在柜台记下' + new + '，声音很轻。'
         respond(self.db, self.path, task, prose=p2)
         task = self.task(); self.assertEqual(task['stage'], 'chapter_review')
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         text = pack_prose(self.path, work)
         data = review(work['payload']['facts_checks'], text, 2)
         data.update(events=[self._state_event('ally', 'ledger_note', None, new, new, p2, 2)],
@@ -247,7 +258,7 @@ class RevisionCarryTests(unittest.TestCase):
         p2 = '第2天，宋禾在灯下把半文旧账重新誊清了一遍。'
         respond(self.db, self.path, task, prose=p2)
         task = self.task(); self.assertEqual(task['stage'], 'chapter_review')
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         text = pack_prose(self.path, work)
         data = review(work['payload']['facts_checks'], text, 2)
         data.update(events=[self._state_event('ally', 'ledger_note', None, '半文旧账', '半文旧账', p2, 2)],

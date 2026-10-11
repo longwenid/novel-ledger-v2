@@ -21,19 +21,19 @@ class StyleAnchorTests(unittest.TestCase):
         with transaction(self.db):put(self.db,'style_anchor',anchor|{'source':'author'})
         respond(self.db,self.path,self.task())                     # plan
         t=self.task();self.assertEqual(t['stage'],'draft')
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertEqual(work['style_anchor']['traits'],anchor['traits'])
         self.assertEqual(work['style_anchor']['sample'],anchor['sample'])
         respond(self.db,self.path,t)
         t=self.task();self.assertEqual(t['stage'],'chapter_review')
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertIn('voice_match',work['payload']['reader_checks'])
         self.assertIn('style_anchor',work)
 
     def test_no_anchor_no_voice_check(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
         t=self.task();self.assertEqual(t['stage'],'chapter_review')
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertNotIn('voice_match',work['payload']['reader_checks'])
 
     def test_approve_snapshots_pilot_as_anchor(self):
@@ -51,14 +51,14 @@ class StyleAnchorTests(unittest.TestCase):
             if t.get('stage')=='chapter_review':break
             self.assertTrue(t.get('task_id'))
             respond(self.db,self.path,t)
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertIn('voice_match',work['payload']['reader_checks'])
         self.assertEqual(work['style_anchor']['sample'],anchor['sample'])
 
     def test_voice_match_requires_evidence(self):
         with transaction(self.db):put(self.db,'style_anchor',{'traits':['短句'],'sample':'雨未停。','source':'author'})
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
-        t=self.task();work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        t=self.task();work=envelope(t)
         data=review(work['payload']['reader_checks'],pack_prose(self.path, work))
         row=next(r for r in data['checks'] if r['id']=='voice_match');row['evidence']=[]
         row['not_applicable']='跳过'
@@ -101,7 +101,7 @@ class ContextStructureTests(unittest.TestCase):
         for n in (1,2,3):
             self._commit_chapter(n)
         t=self.task()
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         if t['stage']=='context_scan':
             bundle=get(self.db,'context_bundle:'+work['payload']['bundle'])
             selected=json.loads(next(d['text'] for d in bundle['documents'] if d['field']=='selected'))
@@ -118,7 +118,7 @@ class ContextStructureTests(unittest.TestCase):
 
     def test_memories_capped_at_two(self):
         self._commit_chapter(1)
-        t=self.task();work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        t=self.task();work=envelope(t)
         self.assertEqual(len([s for s in work['selected'] if s['kind']=='memory']),2)
 
     def test_config_style_anchor_sets_and_validates(self):
@@ -139,7 +139,7 @@ class ContextStructureTests(unittest.TestCase):
         for _ in range(50):
             t=self.task()
             if not t.get('task_id'):break
-            pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+            pack=envelope(t)
             if t['stage'].endswith('_review') and not pack['payload'].get('scope','').endswith('_chunk'):
                 seen=pack['payload']['checks'];break
             respond(self.db,self.path,t,ending=t['chapter']==1)

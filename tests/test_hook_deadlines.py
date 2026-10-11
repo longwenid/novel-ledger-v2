@@ -22,7 +22,7 @@ class HookDeadlineTests(unittest.TestCase):
         respond(self.db,self.path,self.task())
         prose=prose or '周行答应交出旧收据，宋禾守在桌边等候。'
         respond(self.db,self.path,self.task(),prose=prose)
-        task=self.task();work=json.loads(rpath(task).read_text(encoding='utf-8'))
+        task=self.task();work=envelope(task)
         data=review(work['payload']['facts_checks'],prose,number)
         data.update(events=[],summary='周行承诺交出收据。')
         return task,prose,data

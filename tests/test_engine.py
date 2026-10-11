@@ -34,7 +34,7 @@ class BookTests(unittest.TestCase):
     def test_quality_failure_repair_and_no_canon_pollution(self):
         t=self.task();respond(self.db,self.path,t)
         t=self.task();respond(self.db,self.path,t)
-        t=self.task();p=pack_prose(self.path, json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
+        t=self.task();p=pack_prose(self.path, envelope(t))
         bad=review(engine.READER_CHECKS,p);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'人物没有选择，场面像汇报','goal':'呈现犹豫与选择','evidence':ev(p)}]
@@ -42,7 +42,7 @@ class BookTests(unittest.TestCase):
         self.assertEqual(head(self.db,'main'),0);self.assertEqual(self.task()['stage'],'repair')
     def test_bad_evidence_transaction_rolls_back(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task())
-        t=self.task();p=pack_prose(self.path, json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
+        t=self.task();p=pack_prose(self.path, envelope(t))
         data=review(engine.FACT_CHECKS,p);data.update(summary='摘要',events=[{'op':'state','entity':'hero','key':'alive','before':None,'after':False,'evidence':{'chapter':1,'start':0,'quote':'不存在'}}])
         with self.assertRaises(Error):submit_review(self.db,t,data)
         self.assertEqual(self.task()['task_id'],t['task_id']);self.assertEqual(head(self.db,'main'),0)
@@ -92,7 +92,7 @@ class BookTests(unittest.TestCase):
         respond(self.db,self.path,self.task())
         text='周行选择让宋禾决定是否签字。\n'+('核对档案的过程必须完整保留。'*5000)+'\n她最终承担了作证的风险。'
         draft=self.task();engine.submit(self.db,result(draft,{'prose':text}))
-        facts=self.task();work=json.loads(rpath(facts,'input_path').read_text(encoding='utf-8'))
+        facts=self.task();work=envelope(facts)
         self.assertEqual(pack_prose(self.path, work),text)
         summary='周行的选择使宋禾有权决定是否作证，双方仍须承担后果。'*200
         checks=[{'id':check,'result':'pass','reason':'合成工程样本验证完整正文与摘要的传递，不评价文学质量。',
@@ -105,7 +105,7 @@ class BookTests(unittest.TestCase):
         self.assertEqual(stored['summary'],summary)
     def test_file_tampering_does_not_change_database(self):
         t=self.task();rpath(t, 'input_path').write_text('{}', encoding='utf-8')
-        t=self.task();self.assertIn('contract',json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')))
+        t=self.task();self.assertIn('contract',envelope(t))
     def test_length_not_self_reported(self):
         c=get(self.db,'contract');c['word_range']=[10000,20000]
         with transaction(self.db):put(self.db,'contract',c)

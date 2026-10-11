@@ -28,7 +28,7 @@ class CharacterTests(unittest.TestCase):
         self.submit(t,profiles)
     def write(self,prose='周行问：“最后一个签收的人是谁？”宋禾把表格推过去：“先写清你要拿什么。”',events=None):
         t=self.task();self.assertEqual(t['stage'],'draft');self.submit(t,{'prose':prose})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['facts_checks'],prose,t['chapter'])
+        t=self.task();w=envelope(t);data=review(w['payload']['facts_checks'],prose,t['chapter'])
         data.update(events=events or [],summary='核对交接，双方承担不同风险。');self.submit(t,data)
     def test_profile_task_idempotent_and_not_canon(self):
         self.submit(self.task(),{'chapters':[self.plan()]});t=self.task();before=digest(replay(self.db,'main'))
@@ -53,7 +53,7 @@ class CharacterTests(unittest.TestCase):
         profiles['profiles'][0]['biography']['contradiction']=detail
         # Older projects may still store this setting; it cannot cut off a required profile.
         put(self.db,'context_chars',4096)
-        self.prepare(profiles);t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        self.prepare(profiles);t=self.task();w=envelope(t)
         # 大块人物档案按内容寻址交付；worker 读回后与完整值等价，篇幅设置不能截断必读档案。
         characters_context=restore_material(self.path,w,'character_context')
         self.assertEqual(set(characters_context['profiles']),{'hero','ally'})
@@ -62,7 +62,7 @@ class CharacterTests(unittest.TestCase):
         again=pack(self.db,'main',1,'draft',{})
         self.assertEqual(again['character_context']['profiles'],characters_context['profiles'])
         self.submit(t,{'prose':'周行问：“最后谁签收？”宋禾说：“把范围写清楚。”'})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertIn('character_consistency',w['payload']['facts_checks'])
+        t=self.task();w=envelope(t);self.assertIn('character_consistency',w['payload']['facts_checks'])
         self.assertIn('dialogue_identity',w['payload']['reader_checks'])
         first=rpath(t,'first_read_path').read_text(encoding='utf-8')
         self.assertNotIn(detail,first)
@@ -85,7 +85,7 @@ class CharacterTests(unittest.TestCase):
         event={'op':'character_development','entity':'hero','before':None,'change':'开始允许同伴自行承担风险','cause':'宋禾提出愿意签字','evidence':ev(text),'cause_evidence':ev(text)}
         self.write(text,[event]);engine.approve(self.db)
         self.submit(self.task(),{'chapters':[self.plan(2)]});t=self.task()
-        self.assertEqual(t['stage'],'character_plan');w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));self.assertEqual(w['payload']['entities'],['hero'])
+        self.assertEqual(t['stage'],'character_plan');w=envelope(t);self.assertEqual(w['payload']['entities'],['hero'])
         revised=copy.deepcopy(PROFILES['profiles'][0]);revised['change_reason']='同伴争取到了决定自己风险的权利'
         revised['biography']['experiences']=[{'text':'让宋禾自行决定签字','status':'established','evidence':ev(text)}]
         wrong=copy.deepcopy(revised);wrong['biography']['experiences'][0]['evidence']['quote']='历史中不存在的话'
@@ -96,7 +96,7 @@ class CharacterTests(unittest.TestCase):
         self.assertIn('1',history['current']['sources']);self.assertTrue(history['valid']);self.assertEqual(self.task()['stage'],'draft')
     def test_dialogue_quality_can_trigger_repair(self):
         self.prepare();t=self.task();text='周行说：“此事必有蹊跷。”宋禾说：“此事必有蹊跷。”';self.submit(t,{'prose':text})
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));data=review(w['payload']['reader_checks'],text)
+        t=self.task();w=envelope(t);data=review(w['payload']['reader_checks'],text)
         data['checks'][-1]['result']='fix';data['verdict']='fix'
         data['findings']=[{'severity':'quality','impact':'两人对白可互换，责任立场在正文中消失','goal':'让宋禾提出交接条件，周行核对经过','evidence':ev(text)}]
         data['first_read']=fixture_first_read()
@@ -122,7 +122,7 @@ class CharacterTests(unittest.TestCase):
         for _ in range(20):
             t=self.task()
             if t.get('status')=='completed':break
-            work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));checks.append(work['payload']['checks'])
+            work=envelope(t);checks.append(work['payload']['checks'])
             respond(self.db,self.path,t)
         self.assertEqual(t['status'],'completed')
         self.assertTrue(checks and all('voice_evolution' in c for c in checks))
@@ -144,7 +144,7 @@ class CharacterTests(unittest.TestCase):
         self.assertFalse(replay(self.db,revision['branch']).get('character_developments'))
         self.assertEqual(head(self.db,'main'),1)
         task=self.task();self.assertEqual(task['stage'],'character_plan')
-        self.assertEqual(json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']['entities'],['hero'])
+        self.assertEqual(envelope(task)['payload']['entities'],['hero'])
 
 
 class ProfileErrorDirectionTests(unittest.TestCase):

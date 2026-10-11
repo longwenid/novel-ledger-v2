@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from support import contract, drive, engine, ev, initialize, connect, get, plan, respond, review, rpath, submit_review
+from support import connect, contract, drive, engine, envelope, ev, get, initialize, plan, respond, review, rpath, submit_review
 from novel import dispatch, parser
 from novel_core.store import Error, head
 
@@ -34,7 +34,7 @@ class RevisionChainLimits(unittest.TestCase):
         the engine no longer infers the revision start from where the quote
         happens to live — an undeclared fix repairs the newest chapter in range.
         """
-        payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
+        payload = envelope(task)['payload']
         first = payload['first']
         prose = db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
                            (task['branch'], first)).fetchone()[0]
@@ -175,7 +175,7 @@ class RevisionChainLimits(unittest.TestCase):
             if stage == 'revision_promoted':
                 continue
             self.assertTrue(task.get('task_id'), task)
-            payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
+            payload = envelope(task)['payload']
             if stage == 'draft' and not draft_seen:
                 self.assertIn('先对账再动笔', payload['instruction'])
                 self.assertIn('耦合章', payload['instruction'])

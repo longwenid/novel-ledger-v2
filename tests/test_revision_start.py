@@ -16,8 +16,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from support import (connect, contract, ev, initialize, respond, result,
-                     review, rpath)
+from support import (
+    connect,
+    contract,
+    envelope,
+    ev,
+    initialize,
+    respond,
+    result,
+    review,
+    rpath,
+)
 from novel_core import engine
 from novel_core.store import Error, get, head
 
@@ -52,7 +61,7 @@ class RevisionStartTests(unittest.TestCase):
         """Submit a verdict=fix whose proof is quoted from `evidence_chapter`."""
         task = engine.next_task(self.db, self.path)
         self.assertEqual(task['stage'], 'volume_review')
-        payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
+        payload = envelope(task)['payload']
         prose = self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
                                 (task['branch'], evidence_chapter)).fetchone()[0]
         data = review(payload['checks'], prose, evidence_chapter)
@@ -79,7 +88,7 @@ class RevisionStartTests(unittest.TestCase):
         """
         task = engine.next_task(self.db, self.path)
         self.assertEqual(task['stage'], 'volume_review')
-        payload = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))['payload']
+        payload = envelope(task)['payload']
         prose = self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',
                                 (task['branch'],)).fetchone()[0]
         data = review(payload['checks'], prose, 1)

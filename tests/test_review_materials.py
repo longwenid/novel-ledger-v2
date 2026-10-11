@@ -76,7 +76,7 @@ class ReviewPackMaterialTests(unittest.TestCase):
     def _work(self):
         task = engine.next_task(self.db, self.path)
         self.assertEqual(task['stage'], 'batch_review')
-        return task, json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        return task, envelope(task)
 
     def test_chunk_review_carries_each_reviewed_chapters_plan(self):
         with transaction(self.db): put(self.db, 'review_chunk', 3)

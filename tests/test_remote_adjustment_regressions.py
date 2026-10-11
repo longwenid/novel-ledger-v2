@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from support import contract, ev, plan, respond, review
+from support import contract, envelope, ev, plan, respond, review
 import novel
 from novel_core import design, engine
 from novel_core.ledger import append_events, replay
@@ -50,7 +50,7 @@ class RemoteAdjustmentTests(unittest.TestCase):
         prose = self.original_chapter()
         engine.begin_revision(self.db, 1, '调整文风', style_only=True)
         task = engine.next_task(self.db, self.project)
-        work = json.loads((self.project/task['input_path']).read_text(encoding='utf-8'))
+        work = envelope(task)
         path = self.project/work['payload']['original_prose_path']
         self.assertEqual(path.read_text(encoding='utf-8'), prose)
         self.assertIn(work['payload']['original_prose_path'], task['prose_files'])
@@ -97,7 +97,7 @@ class RemoteAdjustmentTests(unittest.TestCase):
 
         next_task = engine.next_task(self.db, self.project)
         self.assertEqual(next_task['stage'], 'plan')
-        work = json.loads((self.project/next_task['input_path']).read_text(encoding='utf-8'))
+        work = envelope(next_task)
         original = next(item for item in work['selected']
                         if item.get('kind') == 'required_chapter' and item.get('branch') == 'main')
         self.assertEqual((self.project/original['prose_path']).read_text(encoding='utf-8'), '周行把收据交给宋禾。')

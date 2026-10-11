@@ -81,7 +81,7 @@ class LayoutPathTests(unittest.TestCase):
                                         'sample':'刀出鞘时,雨还没停。','source':'author'})
         respond(self.db,self.path,self.task())
         t=self.task()
-        work=json.loads(rpath(t).read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertEqual(work['style_anchor']['voice'],'白描底+悬疑线索纪律')
         self.assertIn('克制叙述',work['style_anchor']['traits'][0])
 

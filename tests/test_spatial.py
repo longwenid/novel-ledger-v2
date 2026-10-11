@@ -152,7 +152,7 @@ class SpatialPipelineTests(unittest.TestCase):
     def test_writer_pack_includes_unmentioned_office_binding_and_map(self):
         t=engine.next_task(self.db,self.path);p=plan(1);p['entities']=['office']
         engine.submit(self.db,result(t,{'chapters':[p]}));t=engine.next_task(self.db,self.path)
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertEqual(work['continuity']['anchors']['r4:floor']['value'],'4')
         self.assertEqual(work['continuity']['conditions']['door:open'],False)
     def test_direct_place_reference_keeps_full_required_layout(self):
@@ -171,7 +171,7 @@ class SpatialPipelineTests(unittest.TestCase):
         self.assertTrue(work['continuity']['absence_is_not_proof'])
     def test_omitted_events_do_not_silently_ignore_explicit_address_drift(self):
         text='周行来到局长办公室，办公室在3楼505。'
-        task=self.to_facts(text);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        task=self.to_facts(text);work=envelope(task)
         self.assertIn('spatial',work['payload']['facts_checks']);self.assertIn('stable_facts',work['payload']['facts_checks'])
         data=review(work['payload']['facts_checks'],text);data.update(summary='到达办公室',events=[])
         with self.assertRaises(Error):submit_review(self.db,task,data)
@@ -183,7 +183,7 @@ class SpatialPipelineTests(unittest.TestCase):
         self.assertEqual(engine.head(self.db,'main'),0)
     def test_historical_map_replays_prior_address(self):
         text='全楼统一换门牌，四楼101室改编为401室。'
-        task=self.to_facts(text);work=json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        task=self.to_facts(text);work=envelope(task)
         e={'op':'place_change','entity':'r4','before':{'room_number':'101'},'after':{'room_number':'401'},'reason':'编号调整','change_evidence':ev(text),'evidence':ev(text)}
         data=review(work['payload']['facts_checks'],text);data.update(summary='统一重编门牌',events=[e])
         # A historical label in a renumbering sentence is not an unexplained new address.
@@ -203,7 +203,7 @@ class FirstAppearanceTests(unittest.TestCase):
                 t=engine.next_task(db,path);engine.submit(db,result(t,{'chapters':plans}))
                 text='市局大楼四楼的101室是局长办公室。周行站在门内。'
                 respond(db,path,engine.next_task(db,path),prose=text)
-                t=engine.next_task(db,path);work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+                t=engine.next_task(db,path);work=envelope(t)
                 events=[{'op':'entity','entity':{'id':i,'name':name,'kind':kind}} for i,name,kind in [('hq','市局大楼','place'),('r4','市局四楼101室','place'),('office','局长办公室','function')]]
                 events.extend([{'op':'place','entity':'hq','parent':None,'attributes':{}},
                                {'op':'place','entity':'r4','parent':'hq','attributes':{'floor':'4','room_number':'101'}},
@@ -214,7 +214,7 @@ class FirstAppearanceTests(unittest.TestCase):
                 submit_review(db,t,data);engine.approve(db)
                 wrong='周行再次走进局长办公室，三楼505的门牌刚擦亮。'
                 respond(db,path,engine.next_task(db,path),prose=wrong)
-                t=engine.next_task(db,path);work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+                t=engine.next_task(db,path);work=envelope(t)
                 self.assertEqual({x['key'] for x in work['address_signals']},{'floor','room_number'})
                 self.assertEqual(work['continuity']['anchors']['r4:floor']['source']['chapter'],1)
                 data=review(work['payload']['facts_checks'],wrong,2);data.update(events=[],summary='回到办公室。')

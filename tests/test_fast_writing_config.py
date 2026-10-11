@@ -68,7 +68,7 @@ class FastWritingConfigTests(unittest.TestCase):
         respond(self.db, self.path, engine.next_task(self.db, self.path))
         respond(self.db, self.path, engine.next_task(self.db, self.path))
         task = engine.next_task(self.db, self.path)
-        work = json.loads(rpath(task).read_text(encoding='utf-8'))
+        work = envelope(task)
         prose = pack_prose(self.path, work)
         for value in (True, 42, '   ', []):
             receipt = combined_review(work, prose)

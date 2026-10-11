@@ -5,6 +5,7 @@ fails here rather than surfacing as a production incident. These are structure
 tests: they never assert literary behaviour.
 """
 import ast
+import json
 import re
 import sys
 import tempfile
@@ -18,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from novel_core import access, atoms, batchflow, engine, taskio, transitions
 from novel_core.store import Error, VERSION, connect, initialize, put
-from support import contract
+from support import contract, envelope
 
 # 架构契约第四节的分层。编号越小越底层；模块级 import 只能指向 <= 自己的层。
 LAYERS = {
@@ -475,6 +476,168 @@ class DeliveryCostTests(unittest.TestCase):
     def test_handoff_without_a_batch_keeps_the_wait_wording(self):
         boundary = taskio._handoff_boundary(self.db, 'main')
         self.assertIn('等待宿主 Worker 结束', boundary)
+
+
+class EnvelopeSlicingTests(unittest.TestCase):
+    """信封按类型切片：一个随全书增长的对象必然要被分页读入。
+
+    实测来源：真实会话里 input.json 达到 27–36K 字符，Worker 把同一个文件读成
+    2–3 页（某修订章 27.3K + 26.9K + 27.4K），每一页都留在上下文里被后续每一轮
+    重发。切片要证明的是「一次读取装得下」，不是「内容变少了」。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name)
+        initialize(self.path, contract())
+        self.db = connect(self.path)
+        self.addCleanup(self.db.close)
+
+    @staticmethod
+    def blob(count, tag):
+        line = '北岸旧城的水道决定运送证据的路线，不能在推进剧情时凭空消失。'
+        return {f'{tag}{i}': line * 22 for i in range(count)}
+
+    @staticmethod
+    def selected(count):
+        line = '北岸旧城的水道决定运送证据的路线，不能在推进剧情时凭空消失。'
+        return [{'kind': 'history', 'chapter': i, 'index': 0, 'event_hash': 'h' * 8, 'text': line * 22}
+                for i in range(1, count + 1)]
+
+    @staticmethod
+    def state(count):
+        return {'clock': 3, 'facts': {f'hero:f{i}': '值' * 300 for i in range(count)}}
+
+    def task(self, **extra):
+        work = {'branch': 'main', 'stage': 'draft', 'chapter': 9,
+                'payload': {'prose_path': 'work/prose/x.txt', 'prose_hash': 'x'},
+                'contract': self.blob(4, 'c'), 'style_anchor': self.blob(1, 's'),
+                'plan': {'entities': ['hero'], 'goal': 'g'}}
+        work.update(extra)
+        return work
+
+    def sliced(self, work):
+        from novel_core.taskio import envelope, ENVELOPE_TARGET_BYTES
+        return envelope(str(self.path), work, self.path), ENVELOPE_TARGET_BYTES
+
+    def delivered_bytes(self, pointer):
+        """A delivered slice is UTF-8; CJK content is not one byte per character."""
+        return len((self.path / pointer['path']).read_bytes())
+
+    def inline_bytes(self, value):
+        return len((json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode('utf-8'))
+
+    def test_the_index_stays_inside_one_read(self):
+        """索引必须能被一次读入；同一批字段切片后总量不得变大。"""
+        work = self.task(design_context=self.blob(24, 'd'),
+                         character_context={'profiles': self.blob(10, 'p')},
+                         guide='提交约定：' * 900, selected=self.selected(6))
+        view, target = self.sliced(work)
+        index = len(json.dumps(view, ensure_ascii=False, indent=2).encode('utf-8'))
+        self.assertLess(index, target, '索引自身超过了单次读取上限')
+        self.assertTrue(view['input_files'], '超过阈值的字段必须外置')
+        before = taskio.shared_delivery(str(self.path), work)
+        sliced_bytes = sum(self.delivered_bytes(pointer) for pointer in view['input_files'].values())
+        whole_bytes = sum(self.inline_bytes(before[field]) for field in view['input_files'])
+        self.assertLessEqual(sliced_bytes, whole_bytes, '同字段切片后不得比留在索引里更大')
+        for material in view.get('shared_materials', {}).values():
+            for part in material.get('parts') or [material]:
+                self.assertLess(self.delivered_bytes(part), 64000, '分片本身仍需可一次读入')
+
+    def test_a_realistic_envelope_needs_less_reading_than_one_monolith(self):
+        """判据是「读完必须读的那部分」的字节数，不是文件数。
+
+        实测：同一份 27–36K 的 input.json 被读成 2–3 页，每页都留在上下文里；
+        切片后必读集合 = 索引 + needed=true 的分片，其余按需。
+        """
+        from novel_core.taskio import envelope as build
+        work = self.task(design_context=self.blob(24, 'd'),
+                         character_context={'profiles': self.blob(10, 'p')},
+                         guide='提交约定：' * 900, selected=self.selected(6))
+        view = build(str(self.path), work, self.path)
+        monolith = self.inline_bytes(taskio.shared_delivery(str(self.path), work))
+        index = len(json.dumps(view, ensure_ascii=False, indent=2).encode('utf-8'))
+        self.assertLess(index, monolith, '索引必须小于切片前的信封')
+        required = index
+        for entry in view.get('must_read', []):
+            required += self.delivered_bytes(entry)
+        self.assertLess(required, monolith, '切片后必读量反而变大')
+
+    def test_every_sliced_field_comes_back_byte_identical(self):
+        """切片是交付路由，不是内容裁剪：字段必须能原样还原。"""
+        work = self.task(design_context=self.blob(6, 'd'),
+                         character_context={'profiles': self.blob(4, 'p')},
+                         state=self.state(3), guide='提交约定：' * 900)
+        view, _ = self.sliced(work)
+        self.assertTrue(view['input_files'])
+        before = taskio.shared_delivery(str(self.path), work)
+        for field, pointer in view['input_files'].items():
+            restored = json.loads((self.path / pointer['path']).read_text(encoding='utf-8'))
+            self.assertEqual(restored, work.get(field, before.get(field)),
+                             f'{field} 还原后与原文不一致')
+            self.assertEqual(pointer['bytes'], self.delivered_bytes(pointer))
+
+    def test_required_and_optional_shards_are_marked_not_removed(self):
+        """needed=false 只表示不必读，不表示可以少交付。"""
+        line = '她在旧案里反复核对过交接顺序，知道每一步该留下什么凭证。'
+        profiles = {'profiles': {'hero': {'voice': line * 40},
+                                 'p01': {'voice': line * 40},
+                                 'p02': {'voice': line * 40}}}
+        work = self.task(character_context=profiles, plan={'entities': ['hero'], 'goal': 'g'})
+        view, _ = self.sliced(work)
+        delivered = json.loads((self.path / view['input_files']['character_context']['path'])
+                               .read_text(encoding='utf-8'))
+        marked = {key: record['needed'] for key, record in delivered['profiles'].items()}
+        self.assertTrue(marked['hero'], '本章参与者必须标为必读')
+        self.assertFalse(marked['p01'], '未参与者不应被标成必读')
+        self.assertFalse(marked['p02'])
+        self.assertEqual(len(delivered['profiles']), 3, '标记不得删掉任何记录')
+        names = {row['field'] for row in view['must_read']} | {row['field'] for row in view['on_demand']}
+        self.assertEqual(names, {'character_context/profiles/hero',
+                                 'character_context/profiles/p01',
+                                 'character_context/profiles/p02'})
+        for row in view['must_read'] + view['on_demand']:
+            self.assertEqual(row['path'], view['input_files']['character_context']['path'],
+                             '整批交付时，摘要行必须指向该字段的文件地址')
+
+    def test_a_material_that_ships_whole_also_marks_its_records(self):
+        """外置成一份文件时，记录级的必读标记同样要落到交付文件里。"""
+        line = '她在旧案里反复核对过交接顺序，知道每一步该留下什么凭证。'
+        profiles = {'profiles': {'hero': {'voice': line * 200},
+                                 'p01': {'voice': line * 200},
+                                 'p02': {'voice': line * 200}}}
+        work = self.task(character_context=profiles, plan={'entities': ['hero'], 'goal': 'g'})
+        view, _ = self.sliced(work)
+        self.assertIn('shared_materials', view, '大块材料必须外置')
+        material = view['shared_materials']['character_context']
+        entries = material.get('parts') or [material]
+        flags = {tuple(part['pointer']): (part['needed'], part['path']) for part in entries
+                 if part.get('pointer')}
+        self.assertTrue(flags[('profiles', 'hero')][0], '本章参与者必须标为必读')
+        self.assertFalse(flags[('profiles', 'p01')][0], '未参与者不应被标成必读')
+        for part in entries:
+            self.assertTrue((self.path / part['path']).is_file(), '被标为可选的分片仍须交付')
+
+    def test_an_unsliced_envelope_keeps_the_old_shape(self):
+        """没有超过阈值的内容时不得凭空添加路由字段。"""
+        work = {'branch': 'main', 'stage': 'plan', 'chapter': 1,
+                'payload': {'window': [1, 2]}, 'plan': {'entities': ['hero']}}
+        view, _ = self.sliced(work)
+        self.assertNotIn('input_files', view)
+        self.assertNotIn('must_read', view)
+        self.assertNotIn('on_demand', view)
+
+    def test_always_sliced_documents_leave_a_stable_address(self):
+        """约定与 guide 是版本稳定的整份文档：地址稳定，未变则读一次即可。"""
+        work = self.task(guide='提交约定：' * 900)
+        first, _ = self.sliced(work)
+        self.assertIn('guide', first['input_files'])
+        self.assertIn('contract', first['input_files'])
+        again, _ = self.sliced(work)
+        self.assertEqual(first['input_files'], again['input_files'],
+                         '同一版本必须得到同一地址与同一哈希')
+        self.assertIn('payload', first, '身份与执行字段留在索引里')
 
 
 class DegradationTests(unittest.TestCase):

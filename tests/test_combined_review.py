@@ -18,7 +18,7 @@ class CombinedReviewTests(unittest.TestCase):
 
     def tearDown(self):self.db.close();self.temp.cleanup()
     def task(self):return engine.next_task(self.db,self.path)
-    def work(self,t):return json.loads(rpath(t).read_text(encoding='utf-8'))
+    def work(self,t):return envelope(t)
     def prepared(self):
         respond(self.db,self.path,self.task())
         respond(self.db,self.path,self.task(),prose=self.prose)

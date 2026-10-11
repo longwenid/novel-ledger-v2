@@ -11,8 +11,22 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from support import (contract, initialize, connect, respond, result, review,
-                     ev, plan, rpath, pack_prose, fixture_first_read, combined_review, submit_review)
+from support import (
+    combined_review,
+    connect,
+    contract,
+    envelope,
+    ev,
+    fixture_first_read,
+    initialize,
+    pack_prose,
+    plan,
+    respond,
+    result,
+    review,
+    rpath,
+    submit_review,
+)
 from test_envelope_fixes import fill_skeleton
 from novel_core import engine
 from novel_core.ledger import evidence, replay
@@ -94,7 +108,7 @@ class TimeScheduleEscapeTests(unittest.TestCase):
         respond(self.db, self.path, self.task())
         respond(self.db, self.path, self.task(), prose='次日清晨，周行在档案室核对记录。')
         task = self.task()
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         prose = pack_prose(self.path, work)
         data = review(work['payload']['facts_checks'], prose)
         data.update(events=[{'op': 'clock', 'before': 0, 'after': 1, 'evidence': ev(prose)}], summary='次日核对。')
@@ -106,7 +120,7 @@ class TimeScheduleEscapeTests(unittest.TestCase):
         engine.submit(self.db, result(self.task(), {'chapters': [planned]}))
         respond(self.db, self.path, self.task(), prose='两天后，周行走进货栈清点货物。')
         task = self.task()
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         prose = pack_prose(self.path, work)
         data = review(work['payload']['facts_checks'], prose, 2)
         data.update(events=[{'op': 'clock', 'before': 1, 'after': 2, 'evidence': ev(prose, 2)}], summary='进货栈。')
@@ -137,7 +151,7 @@ class KeptDerivationTests(unittest.TestCase):
         prose = '第1章，周行把收据交给宋禾。她看了许久，终于按下指印。'
         respond(self.db, self.path, self.task(), prose=prose)        # draft
         task = self.task()                                           # chapter_review
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         events = [
             {'op': 'state', 'entity': 'hero', 'key': 'mood', 'before': None, 'after': '坚定',
              'evidence': {'chapter': 1, 'quote': '收据', 'start': prose.index('收据')}},
@@ -156,7 +170,7 @@ class KeptDerivationTests(unittest.TestCase):
     def _reach_facts_after_context_drift(self):
         prose = self._draft_with_short_quote_events()
         task = self.task()                                           # repair
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         payload = work['payload']
         base = get(self.db, 'candidate_text:' + payload['base_hash'])
         start = base.index('把')
@@ -164,7 +178,7 @@ class KeptDerivationTests(unittest.TestCase):
                                              'patches': [{'start': start, 'old': '把', 'new': '将'}]}))
         task = self.task()
         self.assertEqual(task['stage'], 'chapter_review')
-        return task, json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        return task, envelope(task)
 
     def test_verbatim_resubmission_is_kept_without_dispositions(self):
         task, work = self._reach_facts_after_context_drift()
@@ -211,7 +225,7 @@ class ChapterStartAnchorTests(unittest.TestCase):
     def _chapter(self, n, clock_events):
         respond(self.db, self.path, self.task(), prose=f'第{n}天，周行在货栈清点货物并记账。')
         task = self.task()
-        work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+        work = envelope(task)
         prose = pack_prose(self.path, work)
         data = review(work['payload']['facts_checks'], prose, n)
         data.update(events=clock_events(prose, n), summary='清点。')
@@ -304,7 +318,7 @@ class RobustnessTests(unittest.TestCase):
             engine.submit(self.db, result(self.task(), {'chapters': [layered_plan(n)]}))
             respond(self.db, self.path, self.task())
             task = self.task()
-            work = json.loads(rpath(task, 'input_path').read_text(encoding='utf-8'))
+            work = envelope(task)
             text = pack_prose(self.path, work)
             data = review(work['payload']['facts_checks'], text, n)
             data.update(events=[], summary='交付凭证。')

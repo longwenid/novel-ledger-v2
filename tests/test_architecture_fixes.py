@@ -94,7 +94,7 @@ class ArchitectureTests(unittest.TestCase):
         respond(self.db,self.path,self.task())                     # plan
         t=self.task();respond(self.db,self.path,t)                 # draft
         t=self.task()                                              # facts
-        pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));prose=pack_prose(self.path, pack)
+        pack=envelope(t);prose=pack_prose(self.path, pack)
         data=review(pack['payload']['facts_checks'],prose)
         data.update(summary='登记两条事件。',events=[
             {'op':'state','entity':'hero','key':'mood','before':None,'after':'坚定','evidence':ev(prose)},
@@ -108,17 +108,17 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
+        receipt=combined_review(envelope(t),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
         t=self.task();self.assertEqual(t['stage'],'repair')
-        pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
+        pack=envelope(t);payload=pack['payload']
         base=payload['base_hash'];full=get(self.db,'candidate_text:'+base)
         start=full.index('收据');end=start+len('收据')
         engine.submit(self.db,result(t,{'base_hash':base,'repair_note':'替换关键道具词',
                                         'patches':[{'start':start,'end':end,'text':'密信'}]}))
         t=self.task();self.assertEqual(t['stage'],'chapter_review')
-        self.assertIn('密信',pack_prose(self.path, json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))))
+        self.assertIn('密信',pack_prose(self.path, envelope(t)))
 
     def test_repair_patch_invalid_span_not_converted(self):
         t,prose,facts=self._draft_with_events()
@@ -126,10 +126,10 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
+        receipt=combined_review(envelope(t),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
-        t=self.task();pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
+        t=self.task();pack=envelope(t);payload=pack['payload']
         with self.assertRaises(Error) as exc:
             engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'repair_note':'越界',
                                             'patches':[{'start':0,'end':10**9,'text':'越界'}]}))
@@ -141,14 +141,14 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'平铺直叙','goal':'加强动作','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
+        receipt=combined_review(envelope(t),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
-        t=self.task();pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=pack['payload']
+        t=self.task();pack=envelope(t);payload=pack['payload']
         full=get(self.db,'candidate_text:'+payload['base_hash'])
         engine.submit(self.db,result(t,{'prose':full+'宋禾低声补了一句。','repair_note':'补一个动作'}))
         t=self.task();self.assertEqual(t['stage'],'chapter_review')
-        return t,json.loads(rpath(t, 'input_path').read_text(encoding='utf-8')),full
+        return t,envelope(t),full
 
     def test_post_repair_auto_carry_needs_no_dispositions(self):
         t,work,full=self._reach_post_repair_facts()
@@ -188,16 +188,16 @@ class ArchitectureTests(unittest.TestCase):
         bad=review(engine.READER_CHECKS,prose);bad['verdict']='fix';bad['checks'][0]['result']='fix'
         bad['first_read']=fixture_first_read()
         bad['findings']=[{'severity':'quality','impact':'道具不实','goal':'换核心道具','evidence':ev(prose)}]
-        receipt=combined_review(json.loads(rpath(t).read_text(encoding='utf-8')),prose)
+        receipt=combined_review(envelope(t),prose)
         receipt.update(facts=facts,reader=bad)
         engine.submit(self.db,result(t,receipt))
-        t=self.task();payload=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))['payload']
+        t=self.task();payload=envelope(t)['payload']
         base=get(self.db,'candidate_text:'+payload['base_hash'])
         start=base.index('收据')
         engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'repair_note':'换核心道具',
                                         'patches':[{'start':start,'old':'收据','new':'密信'}]}))
         t=self.task();self.assertEqual(t['stage'],'chapter_review')
-        return t,json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        return t,envelope(t)
 
     def test_post_repair_broken_evidence_requires_disposition(self):
         t,work=self._reach_patched_facts()
@@ -247,13 +247,13 @@ class ArchitectureTests(unittest.TestCase):
         self.assertEqual(head(self.db,'main'),1)
         engine.begin_revision(self.db,1,'复核传播')
         t=self.task();self.assertEqual(t['stage'],'draft')
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));payload=work['payload']
+        work=envelope(t);payload=work['payload']
         from novel_core.patches import source
         base=source(self.db,{'stage':'draft','payload':payload})
         engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'repair_note':'微调措辞',
                                         'patches':[{'start':0,'old':prose[:4],'new':prose[:3]+'二'}]}))
         t=self.task();self.assertEqual(t['stage'],'chapter_review')
-        work=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertEqual(work['payload']['prior_events_source'],'revision')
         self.assertEqual(len(work['payload']['prior_events']),2)
 
@@ -263,7 +263,7 @@ class ArchitectureTests(unittest.TestCase):
             if t.get('stage')=='await_author': engine.approve(self.db);continue
             if t.get('stage')=='revision_promoted':continue
             if not t.get('task_id'):break
-            pack=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+            pack=envelope(t)
             if t['stage'].endswith('_review') and pack['payload'].get('scope')=='book':
                 source=db_prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
                                                 (t['branch'],pack['payload']['first'])).fetchone()[0]

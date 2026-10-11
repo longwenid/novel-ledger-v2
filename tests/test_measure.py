@@ -46,7 +46,7 @@ class MeasureTests(unittest.TestCase):
         task=self.writing(90)
         engine.submit(self.db,result(task,{'prose':'宋禾迟疑。'}))
         repair=engine.next_task(self.db,self.path)
-        work=json.loads(rpath(repair).read_text(encoding='utf-8'))
+        work=envelope(repair)
         prose='宋禾先核对指印，再问清双方作证的风险。'*10
         before=self.snapshot()
         observed=self.measure(repair,{'base_hash':work['payload']['base_hash'],

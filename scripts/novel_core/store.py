@@ -81,11 +81,11 @@ class Batch:
                          'recover': '一次修正全部列出项后重提，不再逐项试探'})
 
 
-def write_json(path, value, compact=False):
+def write_json(path, value, compact=False, newline=None):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + f'.{os.getpid()}.tmp')
-    with temp.open('w', encoding='utf-8') as out:
+    with temp.open('w', encoding='utf-8', newline=newline) as out:
         out.write((dump(value) if compact else json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False)) + '\n')
         out.flush()
         os.fsync(out.fileno())

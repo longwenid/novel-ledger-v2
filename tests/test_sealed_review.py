@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from support import contract, initialize, connect, get, put, respond, dump, ev
+from support import connect, contract, dump, envelope, ev, get, initialize, put, respond
 import novel
 from novel_core import engine, reviewflow, taskio, dependencies
 from novel_core.store import Error, digest, head
@@ -68,7 +68,7 @@ class SealedReviewTests(unittest.TestCase):
         accepted=self.cli('first-read','--task',self.task['task_id'],'--result',str(path))
         self.assertTrue(accepted['accepted']);self.assertTrue(self.path_for('input_path').exists())
         self.task=engine.next_task(self.db,self.path)
-        work=json.loads(self.path_for('input_path').read_text(encoding='utf-8'))
+        work=envelope(self.task)
         self.assertEqual([r['id'] for r in work['review_obligations']],['language','world:0','style:0','style:1'])
         self.assertEqual(self.receipt()['data']['reader']['first_read_ref'],accepted['first_read_hash'])
         self.assertEqual(len(dependencies.read_set(self.db,self.task['task_id'])['entries']),2)

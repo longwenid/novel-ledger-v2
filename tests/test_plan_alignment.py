@@ -37,7 +37,7 @@ class PlanAlignmentTests(unittest.TestCase):
     def chapter(self,n=1,**over):
         self.submit(self.task(),{'chapters':[self.plan(n,**over)]})
         respond(self.db,self.path,self.task())
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'));text=pack_prose(self.path, w)
+        t=self.task();w=envelope(t);text=pack_prose(self.path, w)
         data=review(w['payload']['facts_checks'],text,n);data.update(events=[],summary='交出凭证，合作成立。')
         self.submit(t,data)
 
@@ -94,7 +94,7 @@ class PlanAlignmentTests(unittest.TestCase):
         self.assertEqual(len(discipline),1)
         self.assertEqual(discipline[0].count('ending_shape'),1)
         self.assertIn('sequence_refs',guide('plan'))
-        t=self.task();w=json.loads(rpath(t, 'input_path').read_text(encoding='utf-8'))
+        t=self.task();w=envelope(t)
         self.assertNotIn('[纪律]',w['guide'])  # 执笔包不再携带整册纪律
         brief=w['writer_brief']
         self.assertEqual(brief['dramatic_task']['ending_shape'],self.plan(1)['ending_shape'])

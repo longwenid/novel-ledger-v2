@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from support import contract, initialize, connect, get, put, dump, ev, plan, result, respond, combined_review, fixture_first_read
+from support import combined_review, connect, contract, dump, envelope, ev, fixture_first_read, get, initialize, plan, put, respond, result
 from novel_core import engine, batchflow, reviewflow
 from novel_core.ledger import replay, resource_key
 from novel_core.store import digest, Error, head
@@ -22,7 +22,7 @@ class ChapterBatchTests(unittest.TestCase):
         engine.validate_plan(self.db,'main',2,{'chapters':[plan(n) for n in range(2,11)]})
     def tearDown(self):self.db.close();self.tmp.cleanup()
     def cli(self,*args):return novel.dispatch(novel.parser().parse_args([args[0],'--project',str(self.path),*args[1:]]))
-    def work(self,t):return json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
+    def work(self,t):return envelope(t)
     def write(self,t,events=None,prose=None):
         n=t['chapter'];text=prose or f'第{n}章，周行把收据交给宋禾。她在凭证上写下第{n}次交接的去向。'
         before=batchflow.candidate_state(self.db,'main',n-1)['facts'].get('hero:route')

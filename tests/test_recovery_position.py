@@ -77,7 +77,7 @@ class RecoveryPositionTests(unittest.TestCase):
 
     def test_new_packs_inherit_goals_and_first_read_does_not_disclose_them(self):
         parent,child=self.nested();t=engine.next_task(self.db,self.path)
-        work=json.loads(rpath(t).read_text(encoding='utf-8'))
+        work=envelope(t)
         self.assertEqual(len(work['revision_context']['chain']),2)
         respond(self.db,self.path,t)
         reviewer=engine.next_task(self.db,self.path)
@@ -87,7 +87,7 @@ class RecoveryPositionTests(unittest.TestCase):
         rpath(reviewer)  # Freeze first reading through the engineering fixture.
         formal=engine.next_task(self.db,self.path)
         self.assertEqual(len(formal['revision_context']['chain']),2)
-        self.assertEqual(len(json.loads(rpath(formal).read_text(encoding='utf-8'))['revision_context']['chain']),2)
+        self.assertEqual(len(envelope(formal)['revision_context']['chain']),2)
 
     def test_final_revision_review_requires_evidence_for_inherited_goals(self):
         parent,child=self.nested()
@@ -98,7 +98,7 @@ class RecoveryPositionTests(unittest.TestCase):
         for _ in range(12):
             t=engine.next_task(self.db,self.path)
             self.assertIn('task_id',t)
-            work=json.loads(rpath(t).read_text(encoding='utf-8'))
+            work=envelope(t)
             if work['payload'].get('scope')=='revision':break
             respond(self.db,self.path,t)
         else:self.fail('missing revision synthesis')

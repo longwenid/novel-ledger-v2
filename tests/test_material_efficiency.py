@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from support import contract, initialize, connect, get, put, dump, ev, plan, result, respond
+from support import connect, contract, dump, envelope, ev, get, initialize, plan, put, respond, result
 from novel_core import contextflow, engine, taskio
 from novel_core.store import digest, Error, transaction, head
 from novel_core.ledger import seed, append_events, replay
@@ -42,7 +42,7 @@ class MaterialEfficiencyTests(unittest.TestCase):
             append_events(self.db,'main',1,text,events,state);put(self.db,'pilot_approved',True)
     def receipt(self,task,preserve=True):
         if preserve:return result(task,{'cannot_compact':True,'reason':'本批每条认知和来源均须保留。'})
-        work=json.loads((self.path/task['input_path']).read_text(encoding='utf-8'));p=work['payload']
+        work=envelope(task);p=work['payload']
         return result(task,{'coverage':{k:p[k] for k in ('document','document_hash','start','end')},
                             'notes':[],'omission_reason':'工程夹具的显式取舍。'})
     def submit(self,task,receipt):
@@ -87,7 +87,7 @@ class MaterialEfficiencyTests(unittest.TestCase):
     def test_direct_review_still_withholds_context_until_first_read(self):
         self.grow(32);before=digest(replay(self.db,'main'))
         draft=self.cli('advance')['task'];self.assertEqual(draft['stage'],'draft')
-        work=json.loads((self.path/draft['input_path']).read_text(encoding='utf-8'));self.assertIn('context_delivery',work)
+        work=envelope(draft);self.assertIn('context_delivery',work)
         self.assertEqual(work['state']['knowledge']['hero:k0']['stance'],'believes')
         respond(self.db,self.path,draft)
         review=self.cli('advance','--after',draft['task_id'])['task']
@@ -106,7 +106,7 @@ class MaterialEfficiencyTests(unittest.TestCase):
         self.assertFalse(self.db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone())
         self.assertEqual(digest(replay(self.db,'main')),before)
         draft=self.cli('advance','--after',out['task_id'])['task'];self.assertEqual(draft['stage'],'draft')
-        work=json.loads((self.path/draft['input_path']).read_text(encoding='utf-8'))
+        work=envelope(draft)
         self.assertIn('她误信钥匙在东门',dump(work['context_notes']))
         self.assertEqual(sum(len(n['notes']) for n in work['context_notes']),len(stages))
 
@@ -180,7 +180,7 @@ class MaterialEfficiencyTests(unittest.TestCase):
     def test_streaming_reduction_inherits_every_scanned_source(self):
         self.grow(160);out,stages=self.stream(self.cli('advance')['task'])
         self.assertEqual(out['action'],'preparation_done');self.assertIn('context_reduce',stages)
-        draft=self.cli('advance','--after',out['task_id'])['task'];work=json.loads((self.path/draft['input_path']).read_text(encoding='utf-8'))
+        draft=self.cli('advance','--after',out['task_id'])['task'];work=envelope(draft)
         notes=[note for node in work['context_notes'] for note in node['notes']]
         self.assertEqual(len(notes),stages.count('context_scan'))
         self.assertIn('完整条件159',dump(notes));self.assertIn('她误信钥匙在东门',dump(notes))

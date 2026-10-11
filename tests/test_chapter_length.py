@@ -30,7 +30,7 @@ class ChapterLengthTests(unittest.TestCase):
 
     def task(self):return engine.next_task(self.db,self.path)
 
-    def work(self,t):return json.loads(rpath(t).read_text(encoding='utf-8'))
+    def work(self,t):return envelope(t)
 
     def planned(self,p=None):
         t=self.task();engine.submit(self.db,result(t,{'chapters':[p or developed_plan()]}))

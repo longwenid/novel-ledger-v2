@@ -49,6 +49,21 @@ def rpath(task, key='input_path'):
     return p if p.is_absolute() else Path(task['project'])/p
 
 
+def envelope(task):
+    """Read the complete envelope the way a worker does.
+
+    `input.json` is an index: fields above the delivery threshold live in
+    per-type files next to it (`input_files`), and the index says which
+    material is required reading. A caller that wants the whole object must put
+    those fields back, exactly as the worker-facing rule describes.
+    """
+    work=json.loads(rpath(task).read_text(encoding='utf-8'))
+    base=rpath(task).parent
+    for field,pointer in (work.get('input_files') or {}).items():
+        work[field]=json.loads((Path(task['project'])/pointer['path']).read_text(encoding='utf-8'))
+    return work
+
+
 def pack_prose(base, pack, key='prose'):
     """Read delivered narrative prose from its content-addressed file."""
     return (Path(base)/pack['payload'][key+'_path']).read_text(encoding='utf-8')

@@ -575,8 +575,11 @@ def task_files(db, project, task):
         prose_files = materialize_prose(db, project, delivered)
     else:
         delivered = work
-        from .taskio import shared_delivery
-        write_json(root/'input.json',shared_delivery(project,work))
+        from .taskio import envelope
+        # The envelope is written as an index plus per-type files: one object
+        # whose size grows with the book forced workers to read it in pages,
+        # and every page stayed in context for the rest of the run.
+        write_json(root/'input.json', envelope(project, work, root))
         prose_files = materialize_prose(db, project, work)
     base = work_rel(task)
     result = {'schema':'novel-ledger-v2.task/1','task_id':task['id'],'stage':task['stage'],
@@ -1517,9 +1520,16 @@ def audit(db,branch=None,strict=False):
             problems.append({'code':'event_coverage','chapter':row['number']})
     overdue=[k for k,v in state['hooks'].items() if v['status']=='open' and v['due']<=len(rows)]
     problems += [{'code':'overdue_hook','id':k} for k in overdue]
+    # A chapter with a speaker but no usable profile is a ledger/table
+    # divergence: the dispatcher only checks the chapter it is about to plan, so
+    # a suffix rebuilt by a revision or a plan edited in place can slip through.
+    from .characters import coverage as character_coverage
+    character_report=character_coverage(db,branch)
+    problems += [{'code':'character_table_gap',**gap} for gap in character_report['gaps']]
     if strict:
         require(not problems,'audit','审计发现未解决问题：'+dump(problems))
     return {'ok':not problems,'branch':branch,'chapters':len(rows),'problems':problems,
+            'character_coverage':character_report,
             'han_characters':sum(len(re.findall(r'[\u3400-\u4dbf\u4e00-\u9fff]',r['prose'])) for r in rows),
             'open_important_hooks':[k for k,v in state['hooks'].items() if v['status']=='open' and v.get('important',True)],
             'state_hash':digest(state)}

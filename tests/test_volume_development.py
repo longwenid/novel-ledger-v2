@@ -30,7 +30,7 @@ class VolumeDevelopmentTests(unittest.TestCase):
 
     def task(self):return engine.next_task(self.db,self.path)
 
-    def work(self,task):return json.loads(rpath(task).read_text(encoding='utf-8'))
+    def work(self,task):return envelope(task)
 
     def closure_task(self,budgets=True):
         c=contract();c['planning_mode']='layered'
@@ -149,7 +149,15 @@ class VolumeDevelopmentTests(unittest.TestCase):
         old=self.task();self.assertEqual(old['task_id'],task['task_id'])
         self.assertEqual(old['input_hash'],fingerprint)
         self.assertEqual(self.db.execute('SELECT input FROM tasks WHERE id=?',(task['task_id'],)).fetchone()[0],wire)
-        self.assertEqual(self.work(old),work)
+        # Delivery is an index plus per-type files; stripping the delivery layer
+        # back off must return the frozen input, and the old task must still
+        # dispatch untouched. `review_session` comes back from the live batch, so
+        # it is compared separately instead of being required to vanish.
+        delivered=envelope(old)
+        self.assertNotIn('volume_development',delivered['payload'])
+        self.assertEqual({k:v for k,v in delivered.items()
+                          if k not in ('review_session','input_files','input_read_rule',
+                                       'must_read','on_demand')},work)
         data=review(work['payload']['checks'],PROSE,2)
         data['memory']={'text':'兼容旧卷审回执。','sources':[ev(PROSE,2)]}
         engine.submit(self.db,result(old,data))
