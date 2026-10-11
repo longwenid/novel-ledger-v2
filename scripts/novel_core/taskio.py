@@ -1,6 +1,7 @@
 """Host-neutral worker handoff, result skeletons and scoped evidence location."""
 import copy
 import json
+import os
 import shlex
 from pathlib import Path
 from .store import require, get, put, write_json, digest, transaction
@@ -137,8 +138,11 @@ def delivery(db, project, task, work, envelope):
     saved = reviewflow.record(db, task['id']) if reviewflow.enabled(work) else None
     gated = reviewflow.enabled(work) and saved is None
     cli = str(Path(__file__).resolve().parents[1] / 'novel.py')
+    # Commands must be copy-paste executable: python3 does not exist on this
+    # Windows host and forced workers to hand-rewrite commands, breaking the
+    # verbatim-commands discipline the envelopes are built around.
     def command(name, *args):
-        return shlex.join(['python3', cli, name, '--project', str(base), *map(str, args)])
+        return shlex.join(['python' if os.name == 'nt' else 'python3', cli, name, '--project', str(base), *map(str, args)])
     envelope['worker_prompt'] = ('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references；只在字段说明不足或报错时查本文件引用的对应指南。'
                                  '只完成当前任务，读取 '+str(root/'task.json')+'。路径相对 PROJECT=' + str(base)
         + '。以 guide 和 result.template.json 为契约；不可复制旧审稿回执或查库猜协议。'
@@ -149,7 +153,8 @@ def delivery(db, project, task, work, envelope):
     if streaming:
         commands['submit']+=' --continue-preparation'
         envelope['preparation_session']=copy.deepcopy(work['preparation_session'])
-        envelope['worker_prompt']=('只处理当前 preparation_session.bundle 材料批次，读取 '+str(root/'task.json')
+        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references。'
+            '只处理当前 preparation_session.bundle 材料批次，读取 '+str(root/'task.json')
             +'。PROJECT='+str(base)+'。按 guide 逐页核验全部来源并写模板，执行 commands.submit；'
             'action=continue_preparation 时直接使用响应 task 继续同一批次，不重复派工或重读已交付来源。'
             '其余 action 或上下文不足时结束本次执行，返回最后已提交 task_id、bundle 与状态。'
@@ -158,8 +163,9 @@ def delivery(db, project, task, work, envelope):
         envelope['chapter_session']=copy.deepcopy(work['chapter_session'])
         commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact','--continue-chapter-batch')
         role=work['chapter_session']['role']
-        envelope['worker_prompt']=('只完成 chapter_session 绑定的当前批次与 '+role+' 角色，读取 '+str(root/'task.json')
-            +'。逐章读取最新输入和模板，按 commands.submit 提交；action=continue_chapter_batch 时直接处理响应 task。'
+        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references。'
+            '只完成 chapter_session 绑定的当前批次与 '+role+' 角色，读取 '+str(root/'task.json')
+            +'。PROJECT='+str(base)+'。逐章读取最新输入和模板，按 commands.submit 提交；action=continue_chapter_batch 时直接处理响应 task。'
             '其余 action 或上下文不足时结束，返回最后已提交 task_id、批次与状态，不 next/advance，不跨角色或批次。'
             '执笔逐章保留正文、candidate_events 和具体 self_check；候选事件仅用于承接，不自审入库。'
             '资料按 shared_read_rule 读取；有 parts 时逐份读取完整资料，同一 Worker 只复用自己已读且未变的文件。'
@@ -168,7 +174,8 @@ def delivery(db, project, task, work, envelope):
     if work.get('review_session'):
         envelope['review_session']=copy.deepcopy(work['review_session'])
         commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact','--continue-review')
-        envelope['worker_prompt']=('只完成 review_session 绑定的独立复审，读取 '+str(root/'task.json')
+        envelope['worker_prompt']=('本信封与 task.json 自含执行所需：不加载任何 skill、不通读 references。'
+            '只完成 review_session 绑定的独立复审，读取 '+str(root/'task.json')
             +'。PROJECT='+str(base)+'。按每次返回任务的 scope/first/through 与检查项举证并分别提交，不套用旧 pass。'
             'action=continue_review 时直接处理响应 task，包括本次复审材料准备；其余 action 或上下文不足时结束，返回最后已提交 task_id。'
             '同一执行已读且哈希未变的正文和 shared_materials 可复用阅读，跨卷审/修订审仍各自核对目标；疑点补读原文。'

@@ -43,6 +43,8 @@ Worker 须能读 ROOT、读写同一 PROJECT、执行命令和返回完成状态
 
 委派使用信封中程序生成的 `worker_prompt`，不用另写一套阶段协议。它包含 ROOT 的命令入口、PROJECT、task.json 绝对路径、真实提交命令和任务边界。首读阶段的 input.json 尚未交付：只读当前正文，写首读文件并执行 `commands.first_read`；成功后按响应的 task_path 读取已解锁的完整信封，取得正式模板和材料路径。
 
+**委派消息是薄包装**，只携带信封不可能知道的四类信息：①角色与历史（one-shot 空历史，或连续会话标记 chapter_session/review_session/preparation_session）；②task.json 绝对路径；③一句话任务背景（分支/章范围/作者目标）；④退出回报契约——最后已提交任务 ID、stage、状态、简短错误，不回显整章正文。ROOT、PROJECT、命令示例、执行流程一律不写进委派消息：它们已内置于 worker_prompt 与 commands，复述会形成第二真源并诱发自拼命令（生成命令按宿主平台给出 python/python3，照抄即可执行）。blocked、返修次数耗尽或 lease/stale_task 异常由 Worker 保留现场回报，主控按恢复规则接手。
+
 正式回执按 `template_path` 填写。空字符串与空证据是待填项，不代表通过。不要查库复制旧审稿回执来猜字段或补写判断；事件字段在 `event_contract_path`，引文坐标用 `commands.evidence`。
 补丁位置用 `commands.patch`；完整回执预检用 `commands.preflight`，它运行与 submit 相同的校验后回滚，不入库、不记用量、不推进任务。成功返回的 settlement 是程序按十进制计算的资源与时钟结算，主控按该值交接，不把 Worker 的口算当作后章前态。失败 details 给出事件下标、实际前值或补丁匹配位置；依本任务 state/commands.state 和事件契约修正，两轮仍失败就交回主控，不读源码、全库或目录树猜字段。
 Worker 仅在 guide 字段说明不足、报错或有疑问时查对应阶段指南：规划查 design-and-brief，人物与索引查 characters，执笔查 writing，审稿查 editorial，准备查 context-runtime；协议只查相关字段。

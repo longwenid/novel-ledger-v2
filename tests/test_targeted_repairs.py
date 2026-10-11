@@ -229,6 +229,20 @@ class TargetedRepairTests(unittest.TestCase):
         self.assertEqual(restored,view);self.assertEqual(json.loads((self.path/record['path']).read_text()),full['selected'][0])
 
 
+    def test_generated_commands_match_host_interpreter(self):
+        import os
+        t=self.cli('advance')['task']
+        expected='python' if os.name=='nt' else 'python3'
+        for name,cmd in t['commands'].items():
+            self.assertTrue(cmd.startswith(expected+' '),name+':'+cmd[:40])
+
+    def test_session_worker_prompt_stays_self_contained(self):
+        t=self.cli('advance')['task']
+        self.assertIn('chapter_session',t)
+        self.assertIn('PROJECT=',t['worker_prompt'])
+        self.assertIn('自含',t['worker_prompt'])
+
+
 class StandaloneNumericTests(unittest.TestCase):
     """Reviews without a candidate ledger (first chapter, single-chapter or
     revision flow) baseline numeric patches against their own frozen prose."""
