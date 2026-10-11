@@ -51,8 +51,9 @@ validation/           端到端验证脚本与基准（chapter_batch / review_se
 ## 开发
 
 ```bash
-python -m pytest tests/ -q          # 全量测试
-python validation/run_story.py      # 端到端故事验证
+python validation/run_tests.py            # 全量测试（单行进度条 + 预计剩余时间）
+python -m pytest tests/ -q                # 等价的直接调用
+python validation/run_story.py            # 端到端故事验证
 ```
 
 版本沿用 `scripts/novel_core/store.py` 的 `VERSION`，升级就地生效：旧任务按库内存储输入恢复，账本快照版本不符时走慢路径重放，无需迁移。
