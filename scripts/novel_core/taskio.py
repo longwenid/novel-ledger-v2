@@ -324,7 +324,7 @@ def delivery(db, project, task, work, envelope):
             envelope['worker_prompt'] += '核对信封 revision_context 的全部未完成父子修订目标，后加文风目标不撤销父级结构目标。'
         envelope['template_path'] = str((root/'result.template.json').relative_to(base))
         write_json(root/'result.template.json', template(task, work, saved, db=db))
-        envelope['worker_prompt'] += '读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。响应 task 有 task_path 时读该文件取得完整信封。'
+        envelope['worker_prompt'] += '读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。响应 task 有 task_path 时读该文件取得完整信封。brief_path 是同一任务书的可读替代视图（内容全部来自 input.json），读其中一个即可——两个都读等于把同一批信息付两遍上下文成本。'
         if task['stage'] in ('draft', 'repair', 'redesign'):
             envelope['worker_prompt'] += '程序校验合成全文及篇幅；需在提交前查看计数时可用 commands.measure。'
         if task['stage'] == 'chapter_review':

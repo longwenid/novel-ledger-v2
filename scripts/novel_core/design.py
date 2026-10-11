@@ -397,7 +397,10 @@ def render_brief(work):
     def display(value):
         if isinstance(value,list):return '；'.join(name(v) if isinstance(v,str) else json.dumps(v,ensure_ascii=False) for v in value) or '未指定'
         return name(value) if isinstance(value,str) else json.dumps(value,ensure_ascii=False)
-    lines=['# 第 '+str(work['chapter'])+' 章场景任务书','',brief['instruction'],'','## 创作任务']
+    lines=['# 第 '+str(work['chapter'])+' 章场景任务书','',
+           '（本文件是 input.json 同一任务书的可读替代视图，内容全部来自该信封。'
+           'Worker 已读 input.json 时不要读本文件，二选一即可拿到同一批信息。）',
+           '',brief['instruction'],'','## 创作任务']
     task=brief['dramatic_task']
     for key_,label in [('reader_experience','读者体验'),('goal','目标'),('conflict','冲突'),('necessary_change','必要变化'),('ending_shape','收束形态')]:lines+=['',label+'：'+(task[key_] if task.get(key_) else '未指定')]
     for c in task['character_choices']:lines+=['',f"人物 {name(c['entity'])}：想要 {c['desire']}；压力 {c['pressure']}；选择 {c['choice']}；代价 {c['cost']}"]
