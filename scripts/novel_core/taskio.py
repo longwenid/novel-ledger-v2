@@ -135,13 +135,49 @@ def template(task, work, saved=None, db=None):
                            character_choices=[{'entity': '<实体ID>', 'desire': '<想要什么>', 'pressure': '<承受什么>',
                                                'choice': '<做出什么选择>', 'cost': '<付出什么代价>'}],
                            sequence_refs=[1] if sequence else [], expression_space=[])
+            # Mirrors validate_chapter_execution's rhythm contract; workers who
+            # want rhythm without this scaffold invented shapes and died on
+            # chapter_rhythm rejections (session e354).
+            chapter['rhythm'] = {'chapter_role': '<本章在卷中的作用>', 'carries_in': '<承接的前章后果>',
+                                 'handoff': '<交给下一章的推进>',
+                                 'pressure_curve': [{'scene': 1, 'movement': '<压力走向>', 'cause': '<动因>'}],
+                                 'breathing_points': [{'scene': 1, 'placement': '<呼吸落点>',
+                                                       'function': '<落点承担的人物/认知/后果>'}]}
         data = {'chapters': [chapter]}
+    elif task['stage'] == 'volume_plan':
+        # Mirrors design.save's volume branch: same-source guarantee, one beat
+        # and one direction entry so both adjudication shapes are visible.
+        known_locations = []
+        if db is not None:
+            try:
+                from . import design as _design
+                world = _design.current(db, task['branch'], 'world')
+                known_locations = [i['id'] for i in (world or {}).get('data', {}).get('core_locations', [])]
+            except Exception:
+                known_locations = []
+        candidate = {'direction': '<候选方向>', 'payoff': '<收益>', 'cost': '<代价>', 'risk': '<风险>', 'wild': False}
+        entry = {'kind': 'direction', 'mode': 'unattended',
+                 'candidates': [candidate, {**candidate, 'direction': '<对照脑暴方向>', 'wild': True}],
+                 'chosen': '<选中候选的 direction 原文>', 'reason': '<为何优于其他候选>'}
+        location = {'id': 'design:<本卷新场所ID>', 'name': '<场所名>', 'purpose': '<用途与戏剧功能>',
+                    'layout': ['<布局要点>'], 'constraints': ['<行动限制>']}
+        data = {'volume': (work.get('payload') or {}).get('design_scope') or '<本卷ID>',
+                'purpose': '<本卷用途>', 'carries_in': '<承接上卷的后果>', 'climax': '<卷高潮与结尾方向>',
+                'handoff': '<下卷交接；末卷写如何收束到终局>',
+                'location_ids': known_locations[:1] or ['<全书核心场所 design:ID>'],
+                'new_locations': [location],
+                'sequence': ['<本卷因果节拍，按发生顺序>'], 'action_constraints': ['<本卷行动约束>'],
+                'ending_setup': ['<终局铺设>'],
+                'choice_log': [entry, {'kind': 'beat', 'beat': 1, 'mode': 'unattended',
+                                       'candidates': [dict(candidate), {**candidate, 'direction': '<关键节拍对照脑暴>', 'wild': True}],
+                                       'chosen': '<选中节拍方向>', 'reason': '<节拍裁决依据>'}]}
     elif task['stage'] == 'chapter_review':
         data['evidence_catalog']={}
         for category in ('facts', 'reader'):
             data[category] = {'verdict': '', 'checks': check_rows(work['payload'][category+'_checks']), 'findings': []}
             if reviewflow.enabled(work):
-                hint = {'chapter': task['chapter'], 'start': 0, 'quote': '<替换为本章原文引句>'}
+                hint = {'chapter': task['chapter'], 'start': 0,
+                        'quote': '<替换为本章原文引句；约定对象本章未出现也须引任一触及句并判 pass>'}
                 data[category]['obligations'] = [
                     {'id': row['id'], 'result': 'pass|fix', 'reason': '', 'evidence': [dict(hint)],
                      'challenge': {'disposition': 'satisfied|violated', 'reason': '', 'evidence': dict(hint)}}
@@ -221,7 +257,7 @@ def delivery(db, project, task, work, envelope):
         commands['measure'] = command('measure', '--result', base/envelope['output_path'])
         if work.get('chapter_session'):
             envelope['event_contract_path']=str((root/'events.json').relative_to(base))
-            write_json(root/'events.json',{'operations':EVENT_FIELDS,'before_source':'本任务 state（含前章候选事件）；候选提案须正文举证，不替正式审稿。'})
+            write_json(root/'events.json',{'operations':EVENT_FIELDS,'before_source':'本任务 state（含前章候选事件）；候选提案须正文举证，不替正式审稿。证据定位优先用 commands.evidence；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。'})
             commands['state']=command('recall','--task',task['id'],'--state','--entity','替换为实体ID')
     if gated:
         envelope.update(delivery_phase='first_read', first_read_result_path=str(root.relative_to(base)/'first_read.json'))
@@ -259,7 +295,7 @@ def delivery(db, project, task, work, envelope):
         if task['stage'] == 'chapter_review':
             envelope['event_contract_path'] = str((root/'events.json').relative_to(base))
             write_json(root/'events.json', {'evidence': {'chapter': task['chapter'], 'start': 'evidence 命令定位', 'quote': '完整原文'},
-                'operations': EVENT_FIELDS, 'before_source': '包内 state；缺项用 recall --state --entity ID --topic TOPIC。准备结论与旧回执不作前态。',
+                'operations': EVENT_FIELDS, 'before_source': '包内 state；缺项用 recall --state --entity ID --topic TOPIC。准备结论与旧回执不作前态。证据定位优先用 commands.evidence（返回精确 chapter/start/quote）；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。',
                 'references': [str(Path(cli).parents[1]/'references'/name) for name in ('protocol.md','spatial-continuity.md','characters.md')]})
             commands['state'] = command('recall', '--task', task['id'], '--state', '--entity', '替换为实体ID')
         if saved:
@@ -300,7 +336,19 @@ def locate(db, task_id, quote, chapter=None, document=None):
         while start != -1:
             matches.append({**scope, 'start': offset + start, 'quote': quote})
             start = text.find(quote, start + 1)
-    require(len(matches) == 1, 'evidence', '引文缺失或不唯一，请补足语境或指定 chapter/document')
+    if len(matches) != 1:
+        details = {'recover': '引文未在交付来源中找到；逐字核对（含标点）后重试'}
+        if matches:
+            details = {'matches': [{k: v for k, v in m.items() if k != 'quote'} for m in matches[:4]],
+                       'match_count': len(matches),
+                       'recover': '多处命中：加长 --quote 纳入语境使其唯一，或用 --chapter/--document 限定范围'}
+        elif candidates:
+            from .ledger import closest_fragment
+            closest = closest_fragment(candidates[0][1], quote)
+            if closest:
+                details = {'closest': closest,
+                           'recover': '--quote 与正文不一致：把 closest.quote 原样作为 --quote 重试'}
+        require(False, 'evidence', '引文缺失或不唯一，请补足语境或指定 chapter/document', details)
     return matches[0]
 
 

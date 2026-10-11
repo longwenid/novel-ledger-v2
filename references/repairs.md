@@ -55,7 +55,7 @@ start 是**完整基稿的 Python 字符位置**，不是片段内位置、UTF-8
 
 补丁合成候选全文后重新 facts/reader，重核事件、摘要与证据；唯一引文可重定位，见 [protocol](protocol.md)。回执和基稿快照留存，重复 submit 幂等。
 
-facts 复审须对账 prior_events。auto_carry 自动续算符合条件的事件，events 只报新增/变更；其余用 prior_dispositions 声明 dropped/replaced，也可覆盖自动续算。静默丢弃报 event_accounting；续算的语境条件见 protocol，审查仍覆盖全章。
+facts 复审须对账 prior_events。auto_carry 自动续算符合条件的事件，events 承接其余事件：原样重报即自动视为 kept，新增/变更照常提交；正文不再支持的用 prior_dispositions 声明 dropped/replaced，也可覆盖自动续算。不重报也不声明报 event_accounting；续算的语境条件见 protocol，审查仍覆盖全章。
 
 批内局部 fix 暂存后文候选稿与事件。返修模板带 `reuse_candidate_events=true` 时，可续算本任务的冻结候选事件；仅其全部本章证据完整句语境未变时成立，程序重新定位并逐条复算。语境或事件变化时改为完整 `candidate_events`，两者不混用。章末结算未变且后文连续复算成立，就保留后文候选稿，派新的独立审稿者核验剩余整批；这不沿用原审稿 pass。结算改变或后文复算失败才要求重新核对后文承接。重核的 draft 也允许 base_hash + patches，正文确实仍成立时可 reuse_original；仍须按最新前态提交候选事件。
 

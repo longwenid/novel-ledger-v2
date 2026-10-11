@@ -201,7 +201,7 @@ def draft_job(db,branch,n,draft):
             payload['prior_events']=prior['events']
             payload['prior_events_source']=prior['source']
             payload['auto_carry']=[i for i,ev in enumerate(prior['events']) if resolvable(ev)]
-            payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件须在 prior_dispositions 中明确 kept/dropped/replaced,kept须原样重报事件并核对新语境,dropped/replaced须说明正文如何变化。也可覆盖自动续算。完整语义仍需facts核验。'
+            payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件在 events 中原样重报即自动视为 kept,无须 prior_dispositions;正文不再支持的事件须在 prior_dispositions 声明 dropped/replaced 并说明如何变化,既不重报也不声明会被拒绝;也可声明覆盖自动续算。完整语义仍需facts核验。'
     if observation:payload['chapter_length']=observation
     return stage,n,payload
 
@@ -603,7 +603,9 @@ def next_task(db,project,after=None,brief=False,preparation_bundle=None,chapter_
             previous=db.execute('SELECT id,state,branch FROM tasks WHERE id=?',(after,)).fetchone()
             require(previous,'handoff_task','交接任务不存在，不能凭 Worker 的口头完成继续派工')
             if previous['branch']!=get(db,'work_branch'):
-                return {'stage':'resync','after_task':after,'handoff_reason':'branch_changed',**status(db,brief=True)}
+                return {'stage':'resync','after_task':after,'handoff_reason':'branch_changed',
+                        'note':'复核 fix 等流程已切换工作分支；旧分支的批次/审稿会话随之失效。按本响应 status 的当前 pending 任务继续派工，不重派旧分支任务。',
+                        **status(db,brief=True)}
             if previous['state']!='done':
                 return {'stage':'wait_for_submit' if previous['state']=='pending' else 'resync',
                         'after_task':after,'after_state':previous['state'],**status(db,brief=True)}
@@ -1011,10 +1013,16 @@ def validated_fact_events(db,branch,n,draft,work,data):
             d=entries.get(i)
             if d and d['disposition'] in ('dropped','replaced'):continue
             if i in auto:carried.append(reanchor(ev))
-        batch.require(all(entries.get(i) is not None or i in auto for i in range(len(prior))),'event_accounting',
-                '前序事件的证据或完整句语境已变，须在 prior_dispositions 中逐条明确 kept/dropped/replaced；kept 须原样重报事件',
-                indices=[i for i in range(len(prior)) if entries.get(i) is None and i not in auto])
         submitted={anchor(e) for e in events}
+        # kept derives from resubmission: re-typing engine-held events verbatim
+        # is transcription with no information gain (sessions e354/53bc ran 11
+        # event_accounting rejections, mostly kept bookkeeping).
+        missing=[i for i in range(len(prior)) if entries.get(i) is None and i not in auto
+                 and anchor(prior[i]) not in submitted]
+        batch.require(not missing,'event_accounting',
+                '前序事件既未原样新报（自动视为 kept）也未声明去向；沉默丢弃不被接受',
+                indices=missing,
+                recover='逐条二选一：在 events 中原样重报该事件（内容与 prior_events 该条一致，仅 evidence.start 可不同），或在 prior_dispositions 写 {index,disposition:"dropped"或"replaced",reason:"正文如何变化"}')
         batch.require(all(anchor(prior[i]) in submitted for i,d in entries.items()
                     if d['disposition']=='kept' and i not in auto),'event_accounting',
                 '声明 kept 但未出现在新 events 中；内容有变应标 replaced 并说明',

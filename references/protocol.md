@@ -175,7 +175,7 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 
 - facts 的 pass 另需 `events: []`、`summary`（完整覆盖本章核心变化，不设字符限额）。没有变化可空事件，但必须核对计划外重要变化。
 - **返修/重设计后的 facts 复审**：payload 会附 `prior_events`（改动前该章完整已登记事件，包含自动续算项，空快照也有效）与 `prior_events_note`。
-- 仅全部本章证据的完整句语境未变时可进入 auto_carry；引文存留但否定或来源语境已变、或引用历史章原因证据时，须在 prior_dispositions 逐项明确 kept/dropped/replaced。kept 需要原样重报事件并核对新语境；dropped/replaced 说明实际变化。也可用该声明覆盖 auto_carry，不能重复提交自动续算项。
+- 仅全部本章证据的完整句语境未变时可进入 auto_carry；其余事件在 events 中原样重报即自动视为 kept（引擎按内容一致核对，不需要 prior_dispositions 条目）。正文不再支持的事件须在 prior_dispositions 逐项声明 dropped/replaced 并说明实际变化；既不重报也不声明会被拒绝。也可用该声明覆盖 auto_carry，不能重复提交自动续算项。
 - 历史原因证据保留所属章坐标。机械语境相等仍不证明跨句语义相同，须独立核验。综合审稿提供 auto_carry，前序事件去向必须按本次冻结输入核验。
 - reader 另需 `first_read`，四个非空字段 `desire / obstacle / change / read_on_reason`，以实际首读感受及其依据为准，不设字符限额。先读正文再补读约定。
 - 整体 `batch/volume/revision/book` 复核的 pass 另需 `memory: {"text":"保留必要因果、分歧与未决压力的提炼，不限篇幅", "sources":[证据对象]}`；逐章 `_chunk` 不需要 memory。memory 也接受纯字符串形式（来源以分段审稿回执为准）。
@@ -185,7 +185,7 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 
 ## 事件
 
-每项必须有 `op` 与 `evidence: {chapter,start,quote}`，start 是 Python 字符位置，包含标题和换行，不是 UTF-8 字节位置。程序精确匹配原文；生产证据时用信封 `commands.evidence` 或 `evidence --task TASK --quote "精确原文"` 定位；多章/文档可加 --chapter/--document，重复引文需补足语境，不能任取第一次。start 漂移（如补丁使后文整体位移）时，若 quote 在本章正文中**唯一**出现，submit 会自动重定位并写回正确 start；引文不存在或出现多次仍报 `evidence` 错误，不能靠模糊匹配过关。
+每项必须有 `op` 与 `evidence: {chapter,start,quote}`，start 是 Python 字符位置，包含标题和换行，不是 UTF-8 字节位置。程序精确匹配原文；生产证据时用信封 `commands.evidence` 或 `evidence --task TASK --quote "精确原文"` 定位；多章/文档可加 --chapter/--document，重复引文需补足语境，不能任取第一次。start 漂移（如补丁使后文整体位移）时，若 quote 在本章正文中**唯一**出现，submit 会自动重定位并写回正确 start；引文不存在或出现多次仍报 `evidence` 错误，不能靠模糊匹配过关。被拒时 details 会给出可复制的修正材料：`closest`（最接近的原文片段及其 start，用于替换引文）或 `matches`（多处命中的位置，用于加长语境）；优先复制这些原文而不是重新猜写。若写辅助脚本组装回执，脚本读写任何文件必须显式 `encoding="utf-8"`——Windows 控制台默认编码会损坏中文引文。
 
 | op | 必填业务字段 | 含义 |
 |---|---|---|

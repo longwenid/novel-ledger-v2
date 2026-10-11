@@ -72,6 +72,38 @@ def _unique(prose, quote):
     return found if found != -1 and prose.find(quote, found + 1) == -1 else None
 
 
+def all_hits(prose, quote):
+    starts, at = [], prose.find(quote)
+    while at != -1:
+        starts.append(at)
+        at = prose.find(quote, at + 1)
+    return starts
+
+
+def closest_fragment(prose, quote):
+    """Copyable原文片段 for a drifted quote. The validator already holds the
+    prose; a rejection that omits the near match forces the worker to guess
+    again (sessions e354/53bc: evidence was the top rejection class)."""
+    import difflib
+    matcher = difflib.SequenceMatcher(None, prose, quote, autojunk=False)
+    block = max(matcher.get_matching_blocks(), key=lambda b: b.size)
+    if block.size < 4:
+        return None
+    # Sentence boundaries keep the suggestion a valid standalone quote.
+    left = max(prose.rfind(mark, 0, block.a) for mark in '。！？\n') + 1
+    stops = [pos for pos in (prose.find(mark, block.a + block.size) for mark in '。！？\n') if pos != -1]
+    right = (min(stops) + 1) if stops else len(prose)
+    if right - left > 240:  # keep suggestions copyable, match included
+        if block.a - left >= right - (block.a + block.size):
+            left = min(block.a, left + (right - left - 240))
+        else:
+            right = max(block.a + block.size, right - 240)
+    fragment = prose[left:right]
+    if not fragment.strip() or fragment == quote:
+        return None
+    return {'start': left, 'quote': fragment}
+
+
 def evidence(prose, item, chapter=None):
     require(isinstance(item, dict) and isinstance(item.get('quote'), str) and item['quote'].strip(), 'evidence', '缺少正文证据')
     quote = item['quote']
@@ -90,8 +122,18 @@ def evidence(prose, item, chapter=None):
                 found = _unique(prose, stripped)
                 if found is not None:
                     item['quote'] = quote = stripped
-        require(found is not None, 'evidence',
-                '引文与正文位置不匹配且无法唯一重定位；请引用正文中唯一出现的原文片段')
+        if found is None:
+            hits = all_hits(prose, quote)
+            if len(hits) > 1:
+                require(False, 'evidence', '引文与正文位置不匹配且无法唯一重定位；请引用正文中唯一出现的原文片段',
+                        {'matches': [{'start': s, 'excerpt': prose[s:s + 24]} for s in hits[:3]],
+                         'match_count': len(hits),
+                         'recover': '引文多次出现：加长引文纳入前后语境使其唯一，start 用任一命中位置'})
+            closest = closest_fragment(prose, quote)
+            details = {'recover': '引文与正文不一致：将引文替换为 closest.quote 原文（start 用 closest.start），或用 commands.evidence 定位'}
+            if closest:
+                details['closest'] = closest
+            require(False, 'evidence', '引文与正文位置不匹配且无法唯一重定位；请引用正文中唯一出现的原文片段', details)
         item['start'] = offset = found
     if chapter is not None:
         require(item.get('chapter') == chapter, 'evidence', '证据章号不匹配')

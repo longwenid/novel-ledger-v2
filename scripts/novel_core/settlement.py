@@ -89,5 +89,7 @@ def evaluate(db, branch, chapter, prose, events, candidate=False, initial_state=
         hi = plan['day_anchor'] + plan['day_span'][1] + 1
         require(lo <= state['clock'] <= hi, 'time_schedule', '章末时钟不在计划日程内；核对正文时间与本章计划',
                 {'chapter': chapter, 'current': state['clock'], 'expected_range': [lo, hi],
-                 'before': before['clock'], 'day_anchor': plan['day_anchor'], 'day_span': plan['day_span']})
+                 'before': before['clock'], 'day_anchor': plan['day_anchor'], 'day_span': plan['day_span'],
+                 'recover': f'正文确实推进到第{lo}~{hi}天：修正或补登记 clock 事件使 after 落入该区间（after 为章末天数）；'
+                            '正文时间合理而计划日程不符时不得硬改 clock，结束执行向主控说明，由主控 replan 调整本章计划日程'})
     return state, report(before, state, steps)
