@@ -42,7 +42,7 @@ LATE_BINDING = {
     'reviewrun': ('engine',),
     'settlement': ('engine',),
     'store': ('budget', 'dependencies', 'ledger', 'projections', 'sources'),
-    'taskio': ('engine',),
+    'taskio': ('batchflow', 'engine'),
 }
 
 

@@ -387,6 +387,25 @@ def locate(db, task_id, quote, chapter=None, document=None):
     return matches[0]
 
 
+def _handoff_boundary(db, branch):
+    """Tell the controller which shape of handoff this response is.
+
+    One blanket sentence used to answer both cases — "主控须先等待宿主 Worker
+    结束" — and it contradicts the batch design, which requires the opposite:
+    keep the writer alive and hand it the next chapter. Measured against a real
+    session, the controller followed the sentence and spawned a fresh one-shot
+    writer per chapter, so each chapter rebuilt the whole envelope from scratch
+    instead of continuing in a context that was already warm.
+    """
+    from .batchflow import active as active_batch
+    batch = active_batch(db, branch)
+    if batch:
+        return ('本响应属于进行中的写作批次 %s：下一任务交给仍在运行的同一执笔者继续，'
+                '不要新建 Worker。新建会重建全部上下文，把同一批材料再付一遍；'
+                '由返回的 task 决定角色与阶段。' % batch['id'][:8])
+    return '主控须先等待宿主 Worker 结束；此结果只核对真实提交，不证明新旧宿主会话空闲。'
+
+
 def advance(db, project, after=None):
     """Controller handoff: verify actual completion and obtain one next task.
 
@@ -398,7 +417,7 @@ def advance(db, project, after=None):
     snapshot = engine.status(db, brief=True)
     checkpoint(db, project)
     result = {'schema':'novel-ledger-v2.handoff/1','after_task':after,'status':snapshot,
-              'boundary':'主控须先等待宿主 Worker 结束；此结果只核对真实提交，不证明新旧宿主会话空闲。'}
+              'boundary':_handoff_boundary(db, snapshot['work_branch'])}
     if following.get('task_id'):
         result.update(action='task_ready',task=following)
     else:

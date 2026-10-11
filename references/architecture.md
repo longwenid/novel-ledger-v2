@@ -129,7 +129,7 @@ L0  store transitions
 | `settlement` | `engine` | `evaluate` 需要时间词表与 hook 期限校验 |
 | `design` | `engine` | `save` 需要 `load_draft` 判断"有草稿的章计划不得删" |
 | `reviewflow` | `engine` `batchflow` | `seal` 物化信封并读取批次正文 |
-| `taskio` | `engine` | 模板与信封生成需要状态机常量 |
+| `taskio` | `engine` `batchflow` | 模板与信封生成需要状态机常量；交接边界要判断当前是否处于写作批次 |
 | `batchflow` | `engine` | 候选入账复用 `draft_job` / `save_draft` |
 | `contextflow` | `memory` | 归并页需要记忆视图 |
 | `reviewrun` | `engine` | 会话续接需要 `next_task` |
