@@ -41,7 +41,7 @@ assets/               契约与实体示例 JSON
 references/           阶段指南（creation/runtime/writing/protocol/voices… 16 篇）
 scripts/novel.py      CLI 入口
 scripts/novel_core/   引擎（engine/store/memory/ledger/batchflow/reviewflow… ）
-tests/                467 个测试（pytest）
+tests/                479 个测试（pytest）
 validation/           端到端验证脚本与基准（chapter_batch / review_session / material_efficiency）
 ```
 

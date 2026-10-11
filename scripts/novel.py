@@ -54,7 +54,7 @@ def parser():
         if name=='html':
             s.add_argument('--out');s.add_argument('--branch')
         if name=='config':
-            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','preparation_policy','published_through','style_anchor','review_chunk','chapter_target_han','character_views','writer_batch','chapter_batch_size','batch_through']);s.add_argument('--value')
+            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','preparation_policy','published_through','style_anchor','review_chunk','chapter_target_han','character_views','writer_batch','chapter_batch_size','batch_through','revision_chain_limit']);s.add_argument('--value')
         if name=='candidate':
             s.add_argument('--task',required=True);s.add_argument('--start',type=int,default=0);s.add_argument('--end',type=int)
         if name=='character':
@@ -362,16 +362,20 @@ def dispatch_raw(args):
                 if args.discard:
                     work=get(db,'work_branch')
                     require(work!=get(db,'active_branch'),'revision','没有候选修订')
+                    parent=db.execute('SELECT parent FROM branches WHERE id=?',(work,)).fetchone()['parent']
+                    parent_row=db.execute('SELECT status FROM branches WHERE id=?',(parent,)).fetchone() if parent else None
+                    # Nested chains fall back to the parent candidate, not the active branch.
+                    restore=parent if parent_row and parent_row['status']=='candidate' else get(db,'active_branch')
                     db.execute("UPDATE tasks SET state='cancelled' WHERE state='pending'")
                     db.execute("UPDATE branches SET status='discarded' WHERE id=?",(work,))
-                    put(db,'work_branch',get(db,'active_branch'));put(db,'status','ready')
+                    put(db,'work_branch',restore);put(db,'status','ready');put(db,'pause_reason',None)
                     if get(db,'style_only_branch')==work:put(db,'style_only_branch',None)
-                    log(db,'revision_discard',{'branch':work})
+                    log(db,'revision_discard',{'branch':work,'restore':restore})
                     return engine.status(db)
                 return engine.begin_revision(db,args.from_chapter,args.reason,style_only=args.style_only)
         if cmd=='config':
             if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'preparation_policy':get(db,'preparation_policy','adaptive'),'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full'),'writer_batch':get(db,'writer_batch',10),'chapter_batch_size':get(db,'chapter_batch_size',5),'batch_through':get(db,'batch_through',0)}
-            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key,{'preparation_policy':'adaptive','writer_batch':10,'chapter_batch_size':5,'batch_through':0}.get(args.key))}
+            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key,{'preparation_policy':'adaptive','writer_batch':10,'chapter_batch_size':5,'batch_through':0,'revision_chain_limit':2}.get(args.key))}
             if args.key=='style_anchor':
                 try:
                     from novel_core.store import validate_style
@@ -388,6 +392,7 @@ def dispatch_raw(args):
                 batch=active(db)
                 require(not batch or not value or value>=batch['last'],'chapter_range','已有候选批次超出新范围，须先处理已保存正文')
             if args.key=='writer_batch':require(1<=value<=10,'config','writer_batch 为 1~10 章的执笔会话上限，不改变逐章提交')
+            if args.key=='revision_chain_limit':require(1<=value<=5,'config','revision_chain_limit 为 1~5 的修订链嵌套深度上限；调整即作者决策，自主会话不得代替作者放宽')
             if args.key=='chapter_target_han':
                 from novel_core.budget import validate_chapter_target
                 validate_chapter_target(value)

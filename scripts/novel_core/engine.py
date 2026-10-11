@@ -259,7 +259,7 @@ def _choose_single(db):
         while ancestor and original is None:
             original=db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(ancestor,n+1)).fetchone()
             ancestor=db.execute('SELECT parent FROM branches WHERE id=?',(ancestor,)).fetchone()[0]
-        payload = {'original_prose':original[0] if original else '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。'}
+        payload = {'original_prose':original[0] if original else '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。事实/数字/清单类目标先对账再动笔：用 impact 与正文检索列出该事实在各章的全部出现位置，一次把所有耦合章改平，对齐结论写进 repair_note；只改被点名章而其他章残留旧口径，修订整体复审判未完成。'}
     observation=chapter_length(db,branch,n+1)
     if observation:payload['chapter_length']=observation
     return 'draft',n+1,payload
@@ -397,7 +397,7 @@ def review_job(db,branch,scope,first,n):
         payload['instruction']+=' volume_development 必须用正文证据判断本卷职责和重要过程、选择代价及余波是否充分演出；sequence_refs 出现不等于节拍完成。design 是 proposal_not_canon，须与实际正文对照。结合实际篇幅、参考预算偏离和全书剩余区间说明收卷是否合理，以及后卷职责与承载路径是否成立；未配置参考预算仍须审查展开充分性。预算仅供解释，不因字数差额、固定比例或章数自动判失败，也不能用后卷自动重分配代替展开判断。'
     if scope=='revision':
         payload['checks']+=('revision_intent',)
-        payload['instruction']+=' revision_intent 须对照 revision_context.chain 中每个修订目标核对已写范围，不能仅核验最后一次文风修改。超出 through 的长期展开目标须在有效设计和后续计划中继续保留，不要求本次历史修订写完未来全卷。旧稿传播范围结束和沿用的 volume_end 不证明父级结构目标完成；过早收卷或已写内容违背目标须 fix 并举证。原因有歧义须报告，不能自行视为已撤销。'
+        payload['instruction']+=' revision_intent 须对照 revision_context.chain 中每个修订目标核对已写范围，不能仅核验最后一次文风修改。超出 through 的长期展开目标须在有效设计和后续计划中继续保留，不要求本次历史修订写完未来全卷。旧稿传播范围结束和沿用的 volume_end 不证明父级结构目标完成；过早收卷或已写内容违背目标须 fix 并举证。原因有歧义须报告，不能自行视为已撤销。事实对齐类目标须逐章举证全部耦合章口径一致；被点名章已改而其他章残留旧口径的判 fix，并列出残留章与位置。'
     return scope+'_review',n,payload
 
 
@@ -1132,12 +1132,17 @@ def submit(db, result, brief=False):
                 # End current task before branching; new branch re-reviews the dependent suffix.
                 db.execute("UPDATE tasks SET state='done',result_hash=?,receipt=? WHERE id=?",(hashed,dump(result),task['id']))
                 start=min(f['evidence']['chapter'] for f in data['findings'] if f['severity']!='note')
-                if get(db,'revision_failures',0)>=2:
+                limit=get(db,'revision_chain_limit',2)
+                if get(db,'revision_failures',0)>=2 or _chain_depth(db)+1>limit:
+                    from .recovery import revision_context
                     put(db,'status','paused')
-                    put(db,'pause_reason',{'code':'revision_exhausted','findings':data['findings']})
+                    put(db,'pause_reason',{'code':'revision_exhausted','findings':data['findings'],
+                        'chain_depth':_chain_depth(db)+1,'limit':limit,
+                        'chain':(revision_context(db,branch) or {}).get('chain',[]),
+                        'directive':'自主修订到此为止：向作者报告修订链摘要与全部发现后结束会话，等待作者决策；不得 resume 重派同一整体复审，也不得再开新链。'})
                 else:
                     put(db,'revision_failures',get(db,'revision_failures',0)+1)
-                    begin_revision(db,start,dump(data['findings']),internal=True)
+                    begin_revision(db,start,dump(data['findings']))
             else:
                 if signature is not None and not scope.endswith('_chunk'):
                     summary=data.get('memory')
@@ -1166,11 +1171,37 @@ def submit(db, result, brief=False):
         return {'accepted':True,'task_id':task['id'],**extra,**status(db,brief=brief)}
 
 
-def begin_revision(db,start,reason,internal=False,style_only=False):
+def _chain_depth(db):
+    """Consecutive candidate branches topped by the current work branch."""
+    depth=0
+    branch=get(db,'work_branch')
+    while branch:
+        row=db.execute('SELECT status,parent FROM branches WHERE id=?',(branch,)).fetchone()
+        if not row or row['status']!='candidate':break
+        depth+=1
+        branch=row['parent']
+    return depth
+
+
+def begin_revision(db,start,reason,style_only=False):
     parent=get(db,'work_branch')
     n=head(db,parent)
     parent_meta=db.execute('SELECT * FROM branches WHERE id=?',(parent,)).fetchone()
     through=max(n,parent_meta['through'] or n)
+    limit=get(db,'revision_chain_limit',2)
+    depth=_chain_depth(db)
+    def _chain_details():
+        from .recovery import revision_context
+        return {'chain_depth':depth+1,'limit':limit,
+                'chain':(revision_context(db,parent) or {}).get('chain',[]),
+                'options':['完成当前候选链全部任务，修订整体复核通过后合并（promote）',
+                           'revise --discard 丢弃顶层候选，回到父分支续作',
+                           '作者明示后 config --key revision_chain_limit --value N 调整上限；自主会话不得代替作者调整']}
+    # Chain topology is checked before range sanity: at the cap the caller must see
+    # the escalation options, not a range complaint against an empty child branch.
+    require(depth+1<=limit,'revision_chain_limit',
+            f'修订链深度将达 {depth+1}，超过上限 {limit}，嵌套候选链不再延伸：先完成并合并当前链、revise --discard 丢弃顶层候选，或由作者调整上限',
+            details=_chain_details)
     require(type(start) is int and 1<=start<=n and reason.strip(),'revision','修订范围必须属于已提交正文且需说明原因')
     require(start>get(db,'published_through',0),'published','已发布章节冻结，不允许自主改写')
     pending=db.execute("SELECT id FROM tasks WHERE state='pending'").fetchone()

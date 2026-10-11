@@ -214,4 +214,8 @@ CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧�
 
 `replay_conflict` 表示该任务已成功入库，修正稿不能覆盖：停止重提并交回主控核实。同一任务修正两轮仍被其他错误拒绝时同样停止，保留现场、返回最后已提交任务 ID 与错误原文，由主控 advance 接续。
 
+修订链护栏：整体审稿 fix 自动建链，嵌套候选默认最多两层（`revision_chain_limit`，config 可调，调整属作者决策）；连续两次整体 fix 或链深触顶时暂停，`pause_reason` 带 code=revision_exhausted、chain_depth、链摘要、发现与 directive。`begin_revision` 触顶返回 `revision_chain_limit`，details 附链深度、链摘要与三条出路（完成并合并当前链、`revise --discard` 丢弃顶层候选、作者调整上限）。
+
+`revision_exhausted` 暂停属于需作者决策的阻碍：主控报告链摘要与全部发现后结束会话，不得 resume 重派同一整体复审，也不得再开新链。嵌套候选被 `revise --discard` 丢弃时回到父候选续作，而非直接跳回正式分支。
+
 核心项 coverage/continuity/read_on/character/change/language/substance/causality/character_arcs/payoffs/pacing/ending/length/core_promises/stable_facts/spatial/character_consistency/voice_evolution 不能使用 not_applicable 绕过证据；其余项不适用也必须提供非空字符串理由。
