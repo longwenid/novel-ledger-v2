@@ -353,7 +353,7 @@ def writer_brief(plan):
             'scene_proposals':plan.get('scenes',[]),
             'continuity_sources':{'current_state':'state','layout':'continuity','historical_evidence':'selected','prospective_world':'design_context','character_profiles':'character_context'},
             'expression_space':plan.get('expression_space',[]),
-            'instruction':'场景提案、人物选择和必要变化是创作方向，未发生前不是事实。可围绕一件核心事件充分演出行动、反馈、抉择及关系/认知/代价的变化，不靠新增无关事件或重复解释凑字数。按本章作用调节压力和留白，呼吸处须承接人物或后果，避免各章套同一曲线；章尾不加悬念钩子：不悬置、不吊胃口、不生硬切断，章末落在行动、抉择或后果的自然完成上。结合当前状态写完整正文；可调整场景顺序、动作与对话，新细节在事实审稿中提取，不把任务书写成正文或替自己审稿。'}
+            'instruction':'场景提案、人物选择和必要变化是创作方向，未发生前不是事实。可围绕一件核心事件充分演出行动、反馈、抉择及关系/认知/代价的变化。按本章作用调节压力和留白，呼吸处须承接人物或后果，避免各章套同一曲线；章尾不加悬念钩子，章末落在行动、抉择或后果的自然完成上。结合当前状态写完整正文；可调整场景顺序、动作与对话，新细节在事实审稿中提取，不把任务书写成正文或替自己审稿。'}
     for key_ in ('execution','rhythm'):
         if key_ in plan:brief[key_]=plan[key_]
     return brief
