@@ -178,6 +178,24 @@ def _auto_render_html(project, db=None):
         return failed
 
 
+def _output_target(project, given, default):
+    """Resolve a derived-view output path (P2 single policy for html/export).
+
+    Writing outside the project is a legitimate export, so it is allowed — but
+    the route is decided BEFORE anything is written and reported as
+    `inside_project`. The previous `str(target).startswith(str(project))` test
+    matched sibling directories, so it wrote the file outside the project and
+    only then raised ValueError from relative_to: a half-performed side effect
+    plus an opaque failure.
+    """
+    root = Path(project).resolve()
+    chosen = Path(given) if given else Path(default)
+    target = (chosen if chosen.is_absolute() else root / chosen).resolve()
+    inside = target.is_relative_to(root)
+    route = target.relative_to(root).as_posix() if inside else str(target)
+    return target, inside, route
+
+
 def dispatch_raw(args):
     cmd=args.command
     if cmd=='init':
@@ -523,25 +541,15 @@ def dispatch_raw(args):
             return engine.status(db)
         if cmd=='html':
             from novel_core.bookpage import render, save
-            from pathlib import Path as _P
-            root=_P(args.project).resolve()
-            given=_P(args.out) if args.out else _P('book.html')
-            target=(given if given.is_absolute() else root/given).resolve()
-            # Decide the reported route BEFORE writing. The old prefix test
-            # (`str(target).startswith(str(root))`) matched sibling directories,
-            # so it wrote the file outside the project and only then raised
-            # ValueError from relative_to — a partial side effect plus an
-            # opaque failure. Writing outside is a legitimate export, so it is
-            # allowed and declared rather than half-performed.
-            inside=target.is_relative_to(root)
-            rel=target.relative_to(root).as_posix() if inside else str(target)
+            target,inside,route=_output_target(args.project,args.out,'book.html')
             page_branch=args.branch or get(db,'active_branch')
             page=render(db,page_branch)
             save(target,page)
-            return {'file':rel,'branch':page_branch,'chars':len(page),
+            return {'file':route,'branch':page_branch,'chars':len(page),
                     'inside_project':inside}
         if cmd=='export':
-            root=Path(args.out).resolve();root.mkdir(parents=True,exist_ok=True)
+            root,inside,_=_output_target(args.project,args.out,'export')
+            root.mkdir(parents=True,exist_ok=True)
             branch=get(db,'active_branch'); manifest=[]
             # A manifest identifies the current export; old unrelated files are not deleted.
             for row in chapters(db,branch):
@@ -550,7 +558,8 @@ def dispatch_raw(args):
                 temp=path.with_suffix('.tmp');temp.write_text(row['prose']+'\n',encoding='utf-8');temp.replace(path)
                 manifest.append({'chapter':row['number'],'file':filename,'hash':row['hash']})
             write_json(root/'manifest.json',{'branch':branch,'title':get(db,'contract')['title'],'chapters':manifest,'status':get(db,'status')})
-            return {'directory':str(root),'chapters':len(manifest),'status':get(db,'status')}
+            return {'directory':str(root),'chapters':len(manifest),'status':get(db,'status'),
+                    'inside_project':inside}
     finally:
         db.close()
 

@@ -234,6 +234,17 @@ def _profile_html(name, record):
     return ''.join(out)
 
 
+def _carried_pill(data):
+    """INV-6: a carried chapter reached canon without per-chapter independent
+    review. That exception has to be visible where the author actually looks,
+    not only in the controller's status payload."""
+    source = data.get('carried_from')
+    if not source:
+        return ''
+    return (f'<span class="pill" title="原审结论由分支 {_esc(source)} 携带；'
+            f'本分支未对这一章做逐章独立审稿，只由修订范围复核覆盖">未逐章重审</span>')
+
+
 def render(db, branch):
     from .store import get, chapters as chapter_rows
     from .ledger import replay
@@ -532,7 +543,7 @@ def render(db, branch):
             title_like = len(first) <= 25 and first[:1] in '第卷'
             ttl = first if title_like else f'第{row["number"]}章'
             page.append(f'<div class="item" onclick="showChapter({row["number"]})"><span class="no">第{row["number"]}章</span>'
-                        f'<span class="ttl">{_esc(ttl)}</span><span class="sum">{_esc(data.get("summary",""))}</span></div>')
+                        f'<span class="ttl">{_esc(ttl)}</span>{_carried_pill(data)}<span class="sum">{_esc(data.get("summary",""))}</span></div>')
     else:
         page.append('<p class="note">尚无已提交章节。</p>')
     page.append('</div>')
@@ -549,7 +560,7 @@ def render(db, branch):
         next_btn = ('disabled' if not next_n else f"onclick='showChapter({next_n})'")
         page.append(f'<section class="chapter" id="read-{row["number"]}" hidden>'
                     f'<div class="ch-head"><div class="orn">❖ ❖ ❖</div><h3>{_esc(ttl)}</h3>'
-                    f'<div class="meta">{len(row["prose"]):,} 字 · {_esc(data.get("summary",""))}</div></div>'
+                    f'<div class="meta">{_carried_pill(data)}{len(row["prose"]):,} 字 · {_esc(data.get("summary",""))}</div></div>'
                     f'<div class="prose">{prose}</div>'
                     f'<div class="ch-nav"><button {prev_btn}>← 上一章</button>'
                     f"<button class='back' onclick='showIndex()'>目录</button>"

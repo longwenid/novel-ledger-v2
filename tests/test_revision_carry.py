@@ -109,6 +109,19 @@ class RevisionCarryTests(unittest.TestCase):
         self.assertEqual(following['stage'], 'revision_review')
         self.assertEqual(engine.status(self.db).get('carried_chapters'), [3])
 
+    def test_book_page_marks_carried_chapters(self):
+        """INV-6's other half: the author reads book.html, so a chapter that
+        skipped per-chapter independent review must be marked there too."""
+        p3 = '第3天，周行翻出旧案卷宗，按自己的计划排好了顺序。'
+        self._book_three_chapters(
+            [self._state_event('hero', 'plan', None, '追索', '旧案', p3, 3)], p3)
+        branch = self._revise_ch2()
+        self.task()                      # carries are lazy: they land on dispatch
+        from novel_core.bookpage import render
+        page = render(self.db, branch)
+        self.assertIn('未逐章重审', page)
+        self.assertIn('第3章', page)
+
     def test_downstream_precondition_blocks_carry(self):
         p3 = '第3天，宋禾把' + CH2_OLD + '逐笔核对了一遍。'
         self._book_three_chapters(
