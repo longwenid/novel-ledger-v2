@@ -106,7 +106,7 @@ character_views=scoped 的新档案先派 character_index，data={"indexes":[...
 
 ### plan
 
-`chapters` 为从任务章号开始的连续 1～10 章数组，一般 5～10 章。每章：
+`chapters` 为从任务章号开始的连续 1～10 章数组，一般 5～6 章。每章：
 
 - 必填 `number / volume / goal / conflict / change / entities`；entities 为已登记实体 ID，新增人物在综合审稿的 facts 子回执中登记，再用于下一次细化。
 - 可选 `scenes`：数组，每项为 `{"place":"已登记地点ID","present":["人物ID"]}`；未登记者改用 `{"label":"候选新场所","present":[]}`，不能把提案当事实。

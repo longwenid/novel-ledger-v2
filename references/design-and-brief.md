@@ -9,7 +9,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 |---|---|---|
 | **全书设计** | `world_plan` | 核心规则、势力限制、大地理区域、四层事件脊柱（`event_spine`）、终局依赖 |
 | **分卷设计** | `volume_plan` | 本卷区域与场所布局、因果序列（`sequence`）、卷纲三件套（`carries_in/climax/handoff`）、裁决留痕（`choice_log`） |
-| **章节计划** | `plan` | 未来 5～10 章的读者体验、推进节拍、人物选择、场景展开依据、压力变化及前后承接 |
+| **章节计划** | `plan` | 未来 5～6 章的读者体验、推进节拍、人物选择、场景展开依据、压力变化及前后承接 |
 
 ## 约束分层原则
 

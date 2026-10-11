@@ -242,7 +242,7 @@ def _choose_single(db):
         if not design.usable(db,branch,volume):return design.job(db,branch,volume,n+1)
     next_plan = db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n+1)).fetchone()
     if not next_plan:
-        payload={'window':[n+1,n+10], 'instruction':'细化未来 5～10 章；临近结局可少于 5 章。重要转折比较两个实质不同方案。每章按作用安排真正可演出的场景展开，不以账本事件条数估算篇幅；有作者篇幅目标时用 execution.expansion_units 说明承载依据，短章须事先说明作用和目标。'}
+        payload={'window':[n+1,n+6], 'instruction':'细化未来 5～6 章；临近结局可少于 5 章。重要转折比较两个实质不同方案。每章按作用安排真正可演出的场景展开，不以账本事件条数估算篇幅；有作者篇幅目标时用 execution.expansion_units 说明承载依据，短章须事先说明作用和目标。'}
         if get(db,'contract').get('chapter_target_han'):
             payload['chapter_target_han']=get(db,'contract')['chapter_target_han']
         return 'plan',n+1,payload
@@ -685,7 +685,7 @@ def nonempty_scene(scene,state):
 
 def validate_plan(db,branch,start,data):
     plans = data.get('chapters')
-    require(isinstance(plans,list) and 1<=len(plans)<=10, 'plan','每批计划为 1～10 章，通常 5～10 章')
+    require(isinstance(plans,list) and 1<=len(plans)<=10, 'plan','每批计划为 1～10 章，通常 5～6 章')
     volumes = [v['id'] for v in get(db,'contract')['volumes']]
     from . import design
     layered=design.enabled(db)
