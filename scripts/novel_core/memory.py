@@ -381,6 +381,8 @@ def pack(db, branch, chapter, stage, payload):
     # One ordered instruction section; the plan view drops everything the
     # writer brief already carries so workers read each fact exactly once.
     base['guide'] = guide(stage, base.pop('instruction', None))
+    if stage in ('draft', 'repair', 'redesign'):
+        base['guide'] += '\n[身份] 以职业连载作者的手艺执笔，判断落在人物与场景里。'
     if 'writer_brief' in base:
         base['plan'] = {k: v for k, v in base['plan'].items() if k not in WRITER_BRIEF_FIELDS}
     if chapter_session and chapter_session['role']=='writer':

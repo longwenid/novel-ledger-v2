@@ -196,7 +196,7 @@ def delivery(db, project, task, work, envelope):
         write_json(root/'first_read.template.json', first)
         envelope['first_read_template_path'] = str((root/'first_read.template.json').relative_to(base))
         commands['first_read'] = command('first-read', '--task', task['id'], '--result', root/'first_read.json','--compact')
-        envelope['worker_prompt'] += '先只读 first_read_files（存在时为整批）或 first_read_path，填写 first_read.template.json 到 first_read_result_path，执行 commands.first_read；成功后读响应 task.task_path 取得已解锁完整信封、input_path 与正式模板。'
+        envelope['worker_prompt'] += '先以目标读者的身份真实读完 first_read_files（存在时为整批）或 first_read_path 再记录四项体验——回执是你的阅读事实，不是表格作业；填写 first_read.template.json 到 first_read_result_path，执行 commands.first_read；成功后读响应 task.task_path 取得已解锁完整信封、input_path 与正式模板。'
     else:
         envelope['delivery_phase'] = 'review' if reviewflow.enabled(work) else 'task'
         if task['stage'] in ('draft','repair','redesign','chapter_review'):
