@@ -47,7 +47,7 @@ class VolumeDevelopmentTests(unittest.TestCase):
             task=self.task();p=copy.deepcopy(EXAMPLE['chapter_plan'])
             p.update(number=number,volume='v1',volume_end=number==2,book_end=False)
             p['sequence_refs']=[1]
-            p['ending_shape']='交接:共同作证成立' if number==2 else '悬念:证人提出条件'
+            p['ending_shape']='交接:共同作证成立' if number==2 else '反转:证人提出条件'
             engine.submit(self.db,result(task,{'chapters':[p]}))
             respond(self.db,self.path,self.task(),prose=prose)
             respond(self.db,self.path,self.task())

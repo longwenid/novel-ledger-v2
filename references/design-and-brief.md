@@ -44,7 +44,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 ```text
 创作任务：reader_experience（情感期待）、goal、conflict、change
 节拍推进：sequence_refs（对应的卷纲节拍序号）
-收束形态：ending_shape（类别:说明；悬念/闭环/交接/爆发/静收/反转/余波，可因剧情连续使用）
+收束形态：ending_shape（类别:说明；闭环/交接/爆发/静收/反转/余波，可因剧情连续使用；章尾不加悬念钩子，收束落在行动、抉择或后果的自然完成上）
 人物选择：character_choices（entity/desire/pressure/choice/cost）
 场景提案：scenes（地点、拟在场者、intent/conflict/turn、动作与感知限制）
 展开依据：execution（目标依据、展开单元及各自作用）

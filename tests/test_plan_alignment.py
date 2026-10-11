@@ -59,16 +59,16 @@ class PlanAlignmentTests(unittest.TestCase):
         self.submit(self.task(),{'chapters':[self.plan(1)]})  # 合法引用通过
 
     def test_closing_category_can_repeat_when_story_requires_it(self):
-        self.chapter(1,shape='悬念:当铺掌柜认出旧币')
+        self.chapter(1,shape='余波:当铺掌柜认出旧币')
         self.chapter(2,shape='闭环:案子交割')
         self.chapter(3,shape='交接:账册移交事务所')
         t=self.task()
-        self.submit(t,{'chapters':[self.plan(4,shape='悬念:追索所得使旧币的归属再次成疑')]})
+        self.submit(t,{'chapters':[self.plan(4,shape='余波:追索所得使旧币的归属再次成疑')]})
         self.assertEqual(self.task()['stage'],'draft')
 
     def test_rhythm_navigation_contains_adjacent_intentions_not_full_history(self):
-        self.chapter(1,shape='悬念:当铺掌柜认出旧币')
-        self.chapter(2,shape='悬念:追问留下更多疑点')
+        self.chapter(1,shape='余波:当铺掌柜认出旧币')
+        self.chapter(2,shape='余波:追问留下更多疑点')
         work=pack(self.db,'main',3,'plan',{})
         rows=[item for item in work['selected'] if item['kind']=='recent_rhythm']
         self.assertEqual([r['chapter'] for r in rows],[2,1])

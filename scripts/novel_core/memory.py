@@ -27,7 +27,7 @@ DISCIPLINE = {
     'hooks': '钩子只为正文已写明的重大承诺登记(约定定调或读者可指认的明确伏笔),不为章末效果硬造,无钩可留就不留;延期上限 2 次且每次须 reason;closed 不可重开;due 为最迟章号,到期章必须兑现/关闭/再延',
     'clock': '证据须引用含时间词(日/夜/晨/时…)的正文语句;计划 scenes 的 D+N 是日程锚',
     'patches': 'start 为完整基稿的字符位置,old 必须与该处原文精确一致',
-    'plan': '分层计划:每章需 ending_shape(收束形态"类别:说明",类别: 悬念/闭环/交接/爆发/静收/反转/余波);卷纲有 sequence 时 sequence_refs 为 1 起的节拍序号数组。近期章纲用 execution 说明场景展开依据及已约定篇幅，用 rhythm 说明本章作用、压力变化原因、呼吸落点与承接；不固定事件数、松紧曲线或章末类别轮换。未设通常篇幅时按场景估计本章 target_han 并解释依据，不由全书总量机械均分。',
+    'plan': '分层计划:每章需 ending_shape(收束形态"类别:说明",类别: 闭环/交接/爆发/静收/反转/余波;章尾不加悬念钩子,收束落在行动、抉择或后果的自然完成上);卷纲有 sequence 时 sequence_refs 为 1 起的节拍序号数组。近期章纲用 execution 说明场景展开依据及已约定篇幅，用 rhythm 说明本章作用、压力变化原因、呼吸落点与承接；不固定事件数、松紧曲线或章末类别轮换。未设通常篇幅时按场景估计本章 target_han 并解释依据，不由全书总量机械均分。',
 }
 
 # Per-stage discipline routing: a stage only carries the rules governing what

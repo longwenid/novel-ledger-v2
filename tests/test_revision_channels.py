@@ -116,7 +116,7 @@ def test_discipline_carries_clock_hint():
 def test_writer_brief_discourages_default_hooks():
     brief = design.writer_brief({'number': 1, 'goal': 'g', 'conflict': 'c', 'change': 'x',
                                  'ending_shape': '静收:余波落在决定上'})
-    assert '非必要不添加' in brief['instruction']
+    assert '章尾不加悬念钩子' in brief['instruction']
     assert brief['dramatic_task']['ending_shape'] == '静收:余波落在决定上'
 
 
