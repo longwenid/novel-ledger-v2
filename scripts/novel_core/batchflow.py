@@ -28,7 +28,7 @@ def candidate_state(db,branch,through):
     state=replay(db,branch);previous=head(db,branch)
     for n,draft in rows(db,branch,through):
         require(n==previous+1 and isinstance(draft.get('candidate_events'),list),
-                'candidate_sequence','候选账本必须连续且带已验证的临时事件')
+                'candidate_sequence','候选事件必须连续且带已验证的临时事件')
         require(draft.get('candidate_prefix_hash')==digest(state),'candidate_stale','候选稿前态已变化，先重核承接')
         for event in copy.deepcopy(draft['candidate_events']):apply(state,event,draft['prose'],n)
         previous=n
@@ -177,7 +177,7 @@ def accept_candidate(db,branch,n,draft,data,work=None):
         require('candidate_events' not in data,'candidate_events','完整 candidate_events 与 reuse_candidate_events 只能选一种')
         from .patches import source
         snapshot=(work or {}).get('payload',{}).get('candidate_events_snapshot')
-        require(isinstance(snapshot,list),'candidate_events','此冻结任务没有可续算候选事件快照，须完整提交 candidate_events')
+        require(isinstance(snapshot,list),'candidate_events','此冻结任务没有可沿用候选事件快照，须完整提交 candidate_events')
         base=source(db,work);events=copy.deepcopy(snapshot)
         for index,event in enumerate(events):
             for field in engine.EVENT_EVIDENCE_FIELDS:
@@ -205,7 +205,7 @@ def accept_candidate(db,branch,n,draft,data,work=None):
             batch['phase']='review';put(db,key(branch),batch)
             log(db,'local_repair_suffix_retained',{'batch':batch['id'],'chapter':n,'last':batch['last']})
         else:
-            invalidate(db,batch,n+1,'局部修订改变结算或后文事件不能续算，须重核承接')
+            invalidate(db,batch,n+1,'局部修订改变事件落定或后文事件不能沿用，须重核承接')
     return settled
 
 
@@ -304,7 +304,7 @@ def after_review(db,branch,n,proposed,accepted_events,passed,proposed_state=None
     actual=replay(db,branch)
     failed,aligned=rebind_suffix(db,batch,n+1,actual,base=n)
     if failed is not None:
-        invalidate(db,batch,failed,'后续章候选事件与新正式账本硬前件矛盾，须重核承接')
+        invalidate(db,batch,failed,'后续章候选事件与新正式记录硬前件矛盾，须重核承接')
     elif aligned or (proposed_state is not None and state_hash(proposed_state)!=state_hash(actual)):
         log(db,'chapter_batch_rebound',{'branch':branch,'after':n,'last':batch['last'],'chapters':sorted(aligned)})
 

@@ -204,16 +204,16 @@ def apply(state, event, prose, chapter):
                  'recover': '先登记有正文证据的 entity，再登记该实体的 resource；不要凭空补实体'})
         require(bool(event.get('reason')), 'resource', '资源流动需要原因，外部获得与消耗也必须说明')
         qty = amount(event['quantity'])
-        require(qty > 0, 'resource', '资源流水必须大于零')
+        require(qty > 0, 'resource', '资源数量必须大于零')
         for holder, sign, field in ((src, -1, 'from_before'), (dst, 1, 'to_before')):
             if holder is None:
                 continue
             key = resource_key(holder, asset, unit)
             if key not in state['resources'] and field in event and amount(event[field]) != 0:
-                raise Error('precondition', f'{holder} 名下没有已登记的 {asset}（{unit}）；未入账道具不补记非零流水，先在正文成立取得/清点，或删除该 resource 事件')
+                raise Error('precondition', f'{holder} 名下没有已登记的 {asset}（{unit}）；未登记道具不补记非零记录，先在正文成立取得/清点，或删除该 resource 事件')
             old = amount(state['resources'].get(key, '0'))
             require(field in event and amount(event[field]) == old, 'precondition',
-                    f'{holder} 当前 {asset}={old}（{unit}），事件 {field}={event.get(field)!r} 与账本期初不符；以账本为准照抄',
+                    f'{holder} 当前 {asset}={old}（{unit}），事件 {field}={event.get(field)!r} 与当前登记值不符；以登记值为准照抄',
                     {'holder': holder, 'asset': asset, 'unit': unit, 'field': field,
                      'current': str(old), 'submitted': event.get(field)})
             with localcontext() as ctx:
@@ -230,7 +230,7 @@ def apply(state, event, prose, chapter):
         require(event.get('before') == (old['status'] if old else None), 'precondition', '承诺前态不匹配',
                 {'hook': hid, 'current_status': old['status'] if old else None, 'submitted': event.get('before')})
         require(old is not None or status == 'open', 'hook', '未埋设承诺不能直接兑现')
-        require(old is None or old['status'] == 'open', 'hook', '已结算承诺不能重复结算或重新打开')
+        require(old is None or old['status'] == 'open', 'hook', '已兑现或关闭的承诺不能重复处理或重新打开')
         if not old:
             require(event.get('text') and type(event.get('due')) is int and event['due'] >= chapter, 'hook', '新承诺需要内容和合理的最迟回收章')
         result = copy.deepcopy(old) if old else {'text': event['text'], 'seed': event['evidence'], 'extensions': 0, 'important': event.get('important', True)}

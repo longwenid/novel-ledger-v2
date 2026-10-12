@@ -10,7 +10,7 @@ semantic claim. It is a conservative filter, not a proof, and it is blind in
 exactly the direction of what prose can do that keys cannot:
 
   * a value reached only through free text whose owning entity the chapter
-    never names (指代、称谓、"那笔本钱") — this one now has a channel: the
+    never names (指代、称谓、"那把柴刀") — this one now has a channel: the
     writer can declare the coordinate in `reads`, and a declared read always
     refuses the carry. Without a declaration the blind spot stands;
   * a surface form the sweep does not enumerate (paraphrase, dropped unit,
@@ -240,7 +240,7 @@ def _declared_reads(db, branch, parent, n):
     Accepting a declaration can only narrow the carry set, never widen it, so an
     incomplete one is safe and an absent one keeps the previous behaviour. This
     is the only channel through which a chapter that refers to a value by
-    description ("那笔本钱") can state the dependency at all — entity names and
+    description ("那把柴刀") can state the dependency at all — entity names and
     literal values cannot express it.
     """
     for source in (branch, parent):

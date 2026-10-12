@@ -217,7 +217,7 @@ def draft_job(db,branch,n,draft):
             payload['prior_events']=prior['events']
             payload['prior_events_source']=prior['source']
             payload['auto_carry']=[i for i,ev in enumerate(prior['events']) if resolvable(ev)]
-            payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动续算,不要在 events 中重复提交;其余事件在 events 中原样重报即自动视为 kept,无须 prior_dispositions;正文不再支持的事件须在 prior_dispositions 声明 dropped/replaced 并说明如何变化,既不重报也不声明会被拒绝;也可声明覆盖自动续算,条目形如 {"index":0,"disposition":"dropped","reason":"正文如何变化"}。完整语义仍需facts核验。'
+            payload['prior_events_note']='本章为返修/重设计后的重新事实登记:auto_carry 中的前序事件仅在全部证据的完整句语境未变时自动沿用,不要在 events 中重复提交;其余事件在 events 中原样重报即自动视为 kept,无须 prior_dispositions;正文不再支持的事件须在 prior_dispositions 声明 dropped/replaced 并说明如何变化,既不重报也不声明会被拒绝;也可声明覆盖自动沿用,条目形如 {"index":0,"disposition":"dropped","reason":"正文如何变化"}。完整语义仍需facts核验。'
     if observation:payload['chapter_length']=observation
     return stage,n,payload
 
@@ -263,7 +263,7 @@ def _choose_single(db):
         if not design.usable(db,branch,volume):return design.job(db,branch,volume,n+1)
     next_plan = db.execute('SELECT data FROM plans WHERE branch=? AND number=?',(branch,n+1)).fetchone()
     if not next_plan:
-        payload={'window':[n+1,n+6], 'instruction':'细化未来 5～6 章；临近结局可少于 5 章。重要转折比较两个实质不同方案。每章按作用安排真正可演出的场景展开，不以账本事件条数估算篇幅；有作者篇幅目标时用 execution.expansion_units 说明承载依据，短章须事先说明作用和目标。'}
+        payload={'window':[n+1,n+6], 'instruction':'细化未来 5～6 章；临近结局可少于 5 章。重要转折比较两个实质不同方案。每章按作用安排真正可演出的场景展开，不以已登记事件条数估算篇幅；有作者篇幅目标时用 execution.expansion_units 说明承载依据，短章须事先说明作用和目标。'}
         if get(db,'contract').get('chapter_target_han'):
             payload['chapter_target_han']=get(db,'contract')['chapter_target_han']
         return 'plan',n+1,payload
@@ -284,7 +284,7 @@ def _choose_single(db):
     rev = db.execute('SELECT * FROM branches WHERE id=?',(branch,)).fetchone()
     if rev['status']=='candidate':
         original=atoms.ancestor_chapter_prose(db,rev['parent'],n+1)
-        payload = {'original_prose':original or '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。事实/数字/清单类目标先对账再动笔：用 impact 与正文检索列出该事实在各章的全部出现位置，一次把所有耦合章改平，对齐结论写进 repair_note；只改被点名章而其他章残留旧口径，修订整体复审判未完成。'}
+        payload = {'original_prose':original or '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。事实/数字/清单类目标先逐项核对再动笔：用 impact 与正文检索列出该事实在各章的全部出现位置，一次把所有耦合章改平，对齐结论写进 repair_note；只改被点名章而其他章残留旧口径，修订整体复审判未完成。'}
         if execution.settings(db)['execution_mode']==execution.SINGLE:
             payload['instruction']=('检查修订传播。表达类缺陷在被点名章优先用 patches 定点修改，仍成立的正文可用 reuse_original 避免重传；'
                 '本次任务提交后重新独立 facts/reader 核验，不沿用历史 pass。事实与数字目标先用 impact 和原文检索核对全部耦合章节，'
@@ -960,7 +960,7 @@ def validate_hook_deadlines(state,chapter):
     if first:
         total=1+sum(1 for _ in overdue)
         hid,hook=first
-        raise Error('overdue_hook',f'第 {chapter} 章结算后仍有 {total} 项到期承诺；请核对首项并在本章兑现、关闭或按因果合法延期',
+        raise Error('overdue_hook',f'第 {chapter} 章事件落定后仍有 {total} 项到期承诺；请核对首项并在本章兑现、关闭或按因果合法延期',
                     {'chapter':chapter,'total':total,'first':{'id':hid,'due':hook['due']},
                      'retrieval':{'command':'recall','topic':hid,'instruction':'按此话题查询完整埋设和变更证据；处理后再次提交会报告下一项'}})
 
@@ -971,7 +971,7 @@ def validate_reads(value):
     Carry decides "this chapter is unaffected" by intersecting changed ledger
     keys with the chapter's read-set. That read-set is derived structurally —
     plan entities plus entities named in the prose — so a chapter that refers
-    to a value by description ("那笔本钱") contributes nothing, and could be
+    to a value by description ("那把柴刀") contributes nothing, and could be
     carried while its prose asserted a value the revision had just changed.
 
     The writer knows what it read; this is where it says so. Declaring reads can
@@ -979,7 +979,7 @@ def validate_reads(value):
     not a safety regression and an absent one keeps the previous behaviour.
     """
     require(isinstance(value,list) and all(isinstance(item,str) and item.strip() for item in value),
-            'reads','reads 为账本坐标字符串数组，如 ["周行:装备","patron:loan"]；它声明本章正文依赖的账本键')
+            'reads','reads 为事实键字符串数组，如 ["周行:装备","白鹭:信物"]；它声明本章正文依赖的事实键')
     return sorted(set(value))
 
 
@@ -992,7 +992,7 @@ def commit_draft(db,branch,n,draft):
     require(n==head(db,branch)+1,'sequence','不能跳章提交')
     observation=chapter_length(db,branch,n,draft['prose'])
     require(not observation or observation['status']!='needs_development','chapter_development',
-            '作者已明确本章目标；须先保留短稿并完成自然展开及语义复核，不能直接入账')
+            '作者已明确本章目标；须先保留短稿并完成自然展开及语义复核，不能直接登记')
     stored={k:draft[k] for k in ('events','summary','facts_review','reader_review')}
     stored.update(facts_context_hash=draft.get('facts_context_hash'),reader_context_hash=draft.get('reader_context_hash'))
     if draft.get('numeric_correction'):stored['numeric_correction']=copy.deepcopy(draft['numeric_correction'])
@@ -1151,7 +1151,7 @@ def validated_fact_events(db,branch,n,draft,work,data):
                 indices=[i for i,d in sorted(entries.items()) if d['disposition']=='kept' and i not in auto and anchor(prior[i]) not in submitted])
         carried_anchors={anchor(c) for c in carried}
         batch.require(all(anchor(e) not in carried_anchors for e in events),'event_accounting',
-                '该前序事件已由引擎自动续算,勿重复提交;要变更请用 prior_dispositions 声明 replaced/dropped',
+                '该前序事件已由引擎自动沿用,勿重复提交;要变更请用 prior_dispositions 声明 replaced/dropped',
                 indices=[i for i,e in enumerate(events) if anchor(e) in carried_anchors])
         batch.raise_if_any()
         events=carried+events
@@ -1340,7 +1340,7 @@ def submit(db, result, brief=False, preview=False):
             if 'numeric_correction' in data:
                 from .numeric import compose as numeric_compose
                 require(proposed_state is not None or not work.get('chapter_session'),
-                        'numeric_correction','此任务无账本基线，按正常 fix 返修')
+                        'numeric_correction','此任务无登记基线，按正常 fix 返修')
                 draft=copy.deepcopy(draft)
                 name_scan=proposed_state if proposed_state is not None else replay(db,branch)
                 draft['prose'],correction=numeric_compose(work,draft,data,name_scan)

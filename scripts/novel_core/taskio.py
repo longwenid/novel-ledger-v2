@@ -320,7 +320,7 @@ def envelope(project, work, root):
         view['input_files'] = files
         view['input_read_rule'] = ('本文件是信封索引：按字段路由到各自类型文件，读取本文件不等于读到被外置的字段。'
             'needed=true 的材料属于本任务必读，先读它再处理。needed=false 的材料是同一版本里的其余内容，'
-            '仍在账本内：先按任务书摘要与 must_read 动笔，疑点用 recall/character/material 等任务内命令按需补读——'
+            '仍在事实记录内：先按任务书摘要与 must_read 动笔，疑点用 recall/character/material 等任务内命令按需补读——'
             '不读它不等于它不存在。contract/guide 是项目级文档，已读过同一版本的不必重读，'
             '但它是作者约定与出场口径的判据：涉及约定、称谓、篇幅、检查项时先核它再judge。'
             '输入文件命名与字段同名（<任务目录>/input/<字段>.json），'
@@ -422,7 +422,7 @@ def shared_delivery(project,work):
         view['shared_materials']=materials
         view['shared_read_rule']=('完整资料按版本引用。shared_materials 有 parts 时，'
             'needed=true 的 part 属于本任务必读，先读完再动笔；needed=false 的 part 是同一版本里的其余记录，'
-            '用 pointer 路径按需补读，不读它不等于它不存在（例如省略的认知或人物档案仍在账本内）。'
+            '用 pointer 路径按需补读，不读它不等于它不存在（例如省略的认知或人物档案仍在事实记录内）。'
             'pointer=[] 为基础对象，其余按 pointer 路径填回，等价于该字段的完整文件；基础对象与 parts 二者选一，不重复读。'
             'selected.material 与 candidate_ledger.prefix.events_material 中被本章事件、证据或承接引用的必须读取。'
             'writer_brief.continuity_sources 点到的字段若出现在 shared_materials，按上一条规则处理。'
@@ -573,7 +573,7 @@ def delivery(db, project, task, work, envelope):
     if execution.controller_owned(work):
         envelope['worker_prompt']+='本章单任务会话：提交后立即结束，由主控等待真实结束后派下一任务的新 Worker。不得跨章或跨执笔/审稿角色复用历史。'
         if task['stage'] in execution.WRITER_STAGES:
-            envelope['worker_prompt']+='保留 summary 与具体 self_check；事实事件由独立审稿重建，自查不替入账审核。'
+            envelope['worker_prompt']+='保留 summary 与具体 self_check；事实事件由独立审稿重建，自查不替登记把关。'
         else:
             envelope['worker_prompt']+='同一个独立审稿者先冻结首读，再完成 facts 与 reader 两类全部检查并一次提交；首读解锁继续同一 task_id，不重新派工、不改冻结体验。'
     if streaming:
@@ -665,7 +665,7 @@ def delivery(db, project, task, work, envelope):
             envelope['worker_prompt']+='若当前上下文未保留自己已读的本章冻结首读，读取 first_read_receipt_path 恢复原体验；不据补读资料改写。'
         if work['payload'].get('numeric_correction'):
             envelope['numeric_correction']=copy.deepcopy(work['payload']['numeric_correction'])
-            envelope['worker_prompt']+='明确数值笔误可按 numeric_correction 修正，针对合成稿完成两类全部检查后同次提交；账本效果改变或其他缺陷仍判 fix。'
+            envelope['worker_prompt']+='明确数值笔误可按 numeric_correction 修正，针对合成稿完成两类全部检查后同次提交；已登记事件效果改变或其他缺陷仍判 fix。'
     if not gated and envelope.get('reading_view'):
         envelope['worker_prompt'] += ('当前首选阅读入口是 reading_view.pages，顺序读取完整必读记录；'
             '无需再读 input_path 与已覆盖分片。JSON 留作按需定位和排错，正文按 prose 文件原文阅读。'

@@ -138,7 +138,7 @@ def append(path, events):
             descriptor=os.open(lock,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
             os.close(descriptor);owned=True
         except FileExistsError:
-            require(time.monotonic()<deadline,'observation_busy','观测流正被写入；未改故事账本，稍后重试。遗留锁需核实原进程已结束后清理')
+            require(time.monotonic()<deadline,'observation_busy','观测流正被写入；未改故事数据，稍后重试。遗留锁需核实原进程已结束后清理')
             time.sleep(.02)
     try:
         old=[json.loads(line) for line in target.read_text(encoding='utf-8').splitlines() if line.strip()] if target.is_file() else []

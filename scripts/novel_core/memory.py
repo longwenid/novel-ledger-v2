@@ -24,8 +24,8 @@ def recall(db, branch, query='', entity=None, topic=None, start=1, end=None, off
 
 
 DISCIPLINE = {
-    'review': 'checks 结果只能 pass/fix;审稿以充分核验为先:quote 精确定位必要语境,reason 说明事实/因果与阅读影响,不设字数限制;避免重复抄录与自辩,必要证据不得省略;pass 时 findings 必须为 [];'+EVIDENCE_RULE+'证据使用任务 branch 字段所指分支的库存正文，不适用须 not_applicable+具体理由',
-    'events': 'before 照抄账本当前值(首次登记为 null);clock.before 恒为包内 state.clock 当前值(首章为 0),不是 null;move 必须引用 continuity 中已登记的 links ID,不确定先 recall;resource 只登记已入账资产,from_before/to_before 照账本,未登记道具不补流水',
+    'review': 'checks 结果只能 pass/fix;审稿以充分核验为先:quote 精确定位必要语境,reason 说明事实/因果与阅读影响,不设字数限制;避免重复抄录与自辩,必要证据不得省略;pass 时 findings 必须为 [];'+EVIDENCE_RULE+'证据使用任务 branch 字段所指分支的正式正文，不适用须 not_applicable+具体理由',
+    'events': 'before 照抄已登记的当前值(首次登记为 null);clock.before 恒为包内 state.clock 当前值(首章为 0),不是 null;move 必须引用 continuity 中已登记的 links ID,不确定先 recall;resource 只登记既有资产,from_before/to_before 照抄当前登记值,未登记道具不补记录',
     'hooks': '钩子只为正文已写明的重大承诺登记(约定定调或读者可指认的明确伏笔),不为章末效果硬造,无钩可留就不留;延期上限 2 次且每次须 reason;closed 不可重开;due 为最迟章号,到期章必须兑现/关闭/再延',
     'clock': '时间引句须解释实际经过时间与倒计时；有时间词只证明引句类型，不证明天数。新 time/timeline 按声明 basis 核对，旧冻结 D+N 才相对本章首时钟。time_schedule 冲突须据正文改判 fix，不能照允许范围改 clock 凑数。',
     'patches': 'start 为完整基稿的字符位置,old 必须与该处原文精确一致',
@@ -66,12 +66,12 @@ STAGE_PRIMERS = {
                       '逐项登记全部 payload.inputs；kept/duplicate 的完整因果证据须整体继承到对应输出。'
                       'cannot_compact:true+reason 保留全部节点；不得新增未读来源。',
     'draft': 'data={prose:完整正文非空字符串可含章标题,summary:本章摘要覆盖选择/后果/未决压力,reads?:["实体:键",...]}。'
-             'reads 声明本章正文实际依赖的账本坐标，包括用「那笔本钱」这类指代引用的值——名字和数值扫荡看不到指代，只有你的声明能表达它。'
+             'reads 声明本章正文实际依赖的事实键，包括用「那把柴刀」这类指代引用的值——名字和数值的机械匹配看不到指代，只有你的声明能表达它。'
              '历史修订据此判断后文是否受影响：声明过的键一旦被改，这一章就会重做而不是被携带。漏声明不会报错，只会让后文保守地全部重做。'
              '执笔不替自己签发审稿,不提交 events 或 findings。短章目标见包内 chapter_length,目标不能擅改。',
     'repair': '局部返修交 data={base_hash,patches:[{start,old,new}],repair_note};old 须与基稿该处精确一致且 start 按完整基稿定位。整章重写才交 prose+repair_note,必须实际改文。reuse_original 仅限历史修订 draft，不用于 repair/redesign。新增依赖可附 reads。',
     'redesign': 'data 同 draft 的 prose/summary（可带 reads），另必交 design_change 说明设计改变，须产生实际变化的正文;可附 plan_update 仅调当章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm,不可改卷序、终局标记或篇幅目标。',
-    'facts': '另必交 events:[{op,evidence:{chapter,quote},...}] 和非空 summary（覆盖选择/后果/未决压力）。'+EVIDENCE_RULE+'事件字段见信封 event_contract_path（events.json），返修去向按 prior_events_note；前态照抄 state，不重报 auto_carry 续算事件。',
+    'facts': '另必交 events:[{op,evidence:{chapter,quote},...}] 和非空 summary（覆盖选择/后果/未决压力）。'+EVIDENCE_RULE+'事件字段见信封 event_contract_path（events.json），返修去向按 prior_events_note；前态照抄 state，不重报 auto_carry 沿用事件。',
     'reader': '另必交 first_read={desire,obstacle,change,read_on_reason}（四项均非空），保留读取 input 前记录的首读体验；档案不能替正文辩护。',
     'world_plan': 'data 只含引擎允许字段(报错会列出收到键与允许键);不能提交正文事件或覆盖作者约定;event_spine 四层 main/subplot/timeline/tension,触点 id 用 sp: 前缀。',
     'volume_plan': 'data 必含 volume/purpose/carries_in/climax/handoff/sequence/action_constraints/ending_setup/choice_log;choice_log 每条 kind=direction|beat、mode、candidates≥2 且含 wild:true、chosen、reason;sequence 支线节拍用 {line:"sp:触点ID",text} 与主线节拍交织。',
@@ -162,11 +162,11 @@ def guide(stage, instruction=None):
         lines.append('[任务] ' + instruction)
     for key in stage_discipline(stage):
         lines.append('[纪律] ' + DISCIPLINE[key])
-    lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的账本为准。')
+    lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的登记事实为准。')
     if stage=='plan':lines.append('[时间坐标] '+time_contract()['rule'])
     helpers='信封提供时用 commands.patch 定位补丁、commands.preflight 只读验证完整回执；' if stage in ('plan','draft','repair','redesign','chapter_review') else ''
     lines.append('[纠错] '+helpers+'回执/result 文件用 Python 脚本 UTF-8 无 BOM 整体写入，不在命令行内联 JSON（弯引号与转义易错，PowerShell 写文件会带 BOM）。'
-                 '错误定位按 message/details 修正，details.issues 一次列出全部不合格项，逐项修完再重提，不逐条试探。结算以前后值和 settlement 为准，不从自评推算余额；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
+                 '错误定位按 message/details 修正，details.issues 一次列出全部不合格项，逐项修完再重提，不逐条试探。落定结果以前后值和 settlement 为准，不从自评推算数量；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
     lines.append('[观测] 协议字符仅观测，不是配额；缺项可用 recall/material 定向补读，未选入不表示不存在。')
     return '\n'.join(lines)
 
@@ -288,7 +288,7 @@ def pack(db, branch, chapter, stage, payload):
             if omitted:
                 base['omitted'].append({'kind':'knowledge_topics','count':omitted,
                     'selected_topics':sorted(topics),'retrieve':'recall --state --entity ID --topic TOPIC',
-                    'boundary':'其他认知仍在账本；写作或审稿涉及新话题时先核对，不能据本包缺项判定人物未知。'})
+                    'boundary':'其他认知仍在事实记录；写作或审稿涉及新话题时先核对，不能据本包缺项判定人物未知。'})
         if characters.enabled(db) and stage in ('character_plan','character_index','draft','repair','redesign','chapter_review'):
             ids=sorted(e for e in refs if characters.person(state,e))
             base['character_context']=characters.context(db,branch,ids,state,plan=plan,stage=stage)
@@ -339,7 +339,7 @@ def pack(db, branch, chapter, stage, payload):
                 data=prior['data']
                 base['prior_volume']={'volume':order[order.index(scope)-1],
                     'carries_out':{'climax':data.get('climax',''),'handoff':data.get('handoff',''),'ending_setup':data.get('ending_setup',[])},
-                    'note':'前卷设计是意图,不是事实;前卷实际写成的内容以账本 recall 为准,carries_in 须与实际对齐。'}
+                    'note':'前卷设计是意图,不是事实;前卷实际写成的内容以 recall 重放为准,carries_in 须与实际对齐。'}
     if stage in ('draft','repair','redesign') and plan:
         base['writer_brief']=design.writer_brief(plan)
     anchor = get(db,'style_anchor')
@@ -393,7 +393,7 @@ def pack(db, branch, chapter, stage, payload):
     if 'writer_brief' in base:
         base['plan'] = {k: v for k, v in base['plan'].items() if k not in WRITER_BRIEF_FIELDS}
     if chapter_session and chapter_session['role']=='writer':
-        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选账本] 正文整章一次写入 output_path，不用多次小步编辑拼装；篇幅门槛是精确线：shortfall_han 必须为 0（汉字数 ≥ target_han 才 ready），没有九成达标的区间，初写按 target 上浮约百分之五落笔可避免反复补写；measure 仅在确需提前计数时用。data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。返修模板有 reuse_candidate_events=true 时可续算证据句语境未变的冻结事件，语境改变则完整重报 candidate_events，不混用。候选事件不替审稿，不写正式账本；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
+        base['guide']+='\n'+'\n'.join(DISCIPLINE[k] for k in ('events','hooks','clock'))+'\n[候选事件] 正文整章一次写入 output_path，不用多次小步编辑拼装；篇幅门槛是精确线：shortfall_han 必须为 0（汉字数 ≥ target_han 才 ready），没有九成达标的区间，初写按 target 上浮约百分之五落笔可避免反复补写；measure 仅在确需提前计数时用。data 必含 candidate_events（按正文举证，无变化填 []）、summary、self_check 非空具体自查。返修模板有 reuse_candidate_events=true 时可沿用证据句语境未变的冻结事件，语境改变则完整重报 candidate_events，不混用。候选事件不替审稿，不写正式记录；前态用本任务 state 与 candidate_ledger，补读用 commands 的 --task。'
     attach_prose(db, base)
     if stage == 'chapter_review':
         from .reviewflow import PROTOCOL, obligations
@@ -409,7 +409,7 @@ def pack(db, branch, chapter, stage, payload):
                           'facts.events 由你从正文独立重报（数值前值照抄本任务 state），无需也无法对齐执笔者表述——入库后引擎自动重排后章承接。'
                           '事件字段见 task.json 的 event_contract_path，证据位置用 commands.evidence。')
     if stage=='chapter_review' and payload.get('numeric_correction'):
-        base['guide']+='\n[数值定点修正] '+payload['numeric_correction']['instruction']+' 用 commands.patch 取得 Python 字符位置；正式检查、义务与事件证据均引用合成稿的坐标。commands.preflight 验证两类全额检查、原首读、精确补丁与结算不变，失败用普通 fix，不重写首读。'
+        base['guide']+='\n[数值定点修正] '+payload['numeric_correction']['instruction']+' 用 commands.patch 取得 Python 字符位置；正式检查、义务与事件证据均引用合成稿的坐标。commands.preflight 验证两类全额检查、原首读、精确补丁与落定结果不变，失败用普通 fix，不重写首读。'
     if stage.endswith('_review') or (chapter_session and chapter_session['role']=='writer'):
         base['guide']+='\n[证据复用] data.evidence_catalog 可把精确 chapter/start/quote 一次登记为编号；检查、义务、发现、事件的证据位置用 {ref:编号} 引用，同一引文不重复输出。也可直接写完整证据。各项判断与理由仍独立填写，不生成总 pass 或套用理由。'
     if bounded:

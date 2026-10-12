@@ -14,10 +14,10 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 ## 约束分层原则
 
 1. **创作约定（contract）**：全书总约束，包含字数区间、文风红线与终局方向，不可被设计提案擅自修改。
-2. **客观事实账本（SQLite）**：已入库的有效正文事件、人物站位、资产流水与地图。
+2. **客观事实记录（SQLite）**：已登记的有效正文事件、人物站位、资产数量与地图。
 3. **未来设计提案（`proposal_not_canon`）**：未入库的候选布局与剧情设想，可调整，但不能覆盖已发生事实。
 
-文风修订继承已有设计时，`source_branch` 保留设计证据的原始分支，`sources` 继续核对原稿哈希；修订提升后仍保留该来源，不将改稿冒充为原设计证据。任务选入的这类 `required_chapter` 标明来源 `branch`，只用于核验设计依据；当前事实和审稿证据仍以任务分支为准。修订期间尚未重写的章节所确立的事实引用可按原来源核对，当前账本已有的冲突值不会被原稿覆盖。普通事实/因果修订仍使受影响设计失效。
+文风修订继承已有设计时，`source_branch` 保留设计证据的原始分支，`sources` 继续核对原稿哈希；修订提升后仍保留该来源，不将改稿冒充为原设计证据。任务选入的这类 `required_chapter` 标明来源 `branch`，只用于核验设计依据；当前事实和审稿证据仍以任务分支为准。修订期间尚未重写的章节所确立的事实引用可按原来源核对，当前已登记的冲突值不会被原稿覆盖。普通事实/因果修订仍使受影响设计失效。
 
 ## 设计回执规范
 
@@ -25,7 +25,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 - `overview`：世界支撑全书核心体验的简要说明。
 - `causal_spine`：主要因果节点字符串数组（必填非空）。
 - `event_spine`：四层事件脊柱（`main` / `subplot` / `timeline` / `tension`），触点格式 `{"id":"sp:...","span":"幕跨度","event":"触点推进"}`。重大转折必须引用脊柱触点。
-- `factions`：势力组织数组（`name/drive/limits`）。这里的势力是设计意图；需要账目级管理的势力（阵营战争、粮饷军械、结盟与背叛）应注册为 entity（kind 如 org），粮饷兵力走 `resource` 流水，阵营间立场用 `relation` 有向边登记——设计层写目标，账本层记事实，两层不混。
+- `factions`：势力组织数组（`name/drive/limits`）。这里的势力是设计意图；需要逐项追踪的势力（阵营战争、补给军械、结盟与背叛）应注册为 entity（kind 如 org），补给兵力走 `resource` 事件登记，阵营间立场用 `relation` 有向边表达——设计层写目标，事实层记事实，两层不混。
 - `geography`：宏观区域 `regions` 与连接 `connections`。
 - `core_locations`：候选场所数组（`id/name/purpose`，可选 `canon_place`）。
 - `ending_dependencies`：终局所需的空间、机制或关系前置条件。
@@ -33,7 +33,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 ### volume_plan.data
 - `volume`：卷 ID，与任务一致。
 - `purpose`：本卷用途（必填非空）。
-- `carries_in` / `climax` / `handoff`：承接上卷债务、本卷高潮走向与下卷交接说明。
+- `carries_in` / `climax` / `handoff`：承接上卷遗留压力、本卷高潮走向与下卷交接说明。
 - `sequence`：因果推进节拍数组。字符串为主线节拍；支线/时间线节拍用 `{"line":"sp:触点ID","text":"节拍"}` 声明服务线，夹在主线节拍之间交织排布——支线在对应主线触点前后切入并合流，不是平铺在卷尾的后缀。
 - `choice_log`：方向与关键节拍裁决。按 [创意工具箱](hatch-ideas.md) 给至少 2 个候选，含至少一个 wild:true；每项 direction/payoff/cost/risk，记录 chosen/reason。
 
@@ -71,7 +71,7 @@ topics 与 dialogue_intents.knowledge_topics 列本章需用或核验的认知�
 
 新章纲提供 execution/rhythm，旧章纲兼容。通常目标取 contract.chapter_target_han；未设时按场景估 execution.target_han，并写 target_reason。目标不是上限，不均分全书字数、不按事件数算；刻意短章事先说明作用与原因。
 
-execution.expansion_units 每项含 id/scene/focus/development/expected_change；scene 从 1 起，可选正数 weight 表相对注意力。同场景可多单元，无需新增账本事件。development 写阻力和演出方法，expected_change 写删后损失。spare_options 为有因果依据的备用展开；scene.dramatization 为动作、试探与潜台词提示字符串数组。
+execution.expansion_units 每项含 id/scene/focus/development/expected_change；scene 从 1 起，可选正数 weight 表相对注意力。同场景可多单元，无需新增登记事件。development 写阻力和演出方法，expected_change 写删后损失。spare_options 为有因果依据的备用展开；scene.dramatization 为动作、试探与潜台词提示字符串数组。
 
 `rhythm` 含：
 
@@ -92,4 +92,4 @@ python3 "$ROOT/scripts/novel.py" design --project "$PROJECT" --scope v1 --histor
 python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope volume --volume v1 --reason "原因"
 python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope world --reason "原因"
 ```
-replan 仅清理未写计划，已提交正文与账本保持完好。
+replan 仅清理未写计划，已提交正文与事实记录保持完好。

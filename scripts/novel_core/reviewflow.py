@@ -20,8 +20,8 @@ def scrutiny_contract():
     return {'protocol':SCRUTINY_PROTOCOL,'checks':copy.deepcopy(SCRUTINY_CHECKS),
             'rule':'time 与 language 检查须 challenge={risk,disposition,reason,evidence}。'
                    '选最可能推翻结论的正文语段，解释疑点和核验结果，不用有利例句证明全章无问题。'
-                   'time 判 pass 还须 elapsed_days（非负整数），说明真实经过天数与倒计时，和事件结算一致。'
-                   '发现冲突判 fix 并给可执行 finding；程序只校验声明、证据和结算一致，不证明语义真伪。'}
+                   'time 判 pass 还须 elapsed_days（非负整数），说明真实经过天数与倒计时，和事件推算结果一致。'
+                   '发现冲突判 fix 并给可执行 finding；程序只校验声明、证据和推算结果一致，不证明语义真伪。'}
 
 
 def validate_scrutiny(work, facts, reader, prose, chapter):
@@ -53,7 +53,7 @@ def reconcile_clock(work, facts, settlement):
     if work.get('capabilities',{}).get('review_scrutiny')!=SCRUTINY_PROTOCOL:return
     row=next(r for r in facts['checks'] if r['id']=='time')
     clock=settlement['clock'];actual=clock['after']-clock['before']
-    require(row['elapsed_days']==actual,'time_review','正文推算的经过天数与事件结算不一致',
+    require(row['elapsed_days']==actual,'time_review','正文声明的经过天数与事件推算不一致',
             {'declared_elapsed_days':row['elapsed_days'],'settled_elapsed_days':actual,'clock':clock,
              'recover':'重新核对正文、前态及时间基准；据正文纠正事件，存在计划冲突则改判 fix。不要同时改声明和 clock 凑数。'})
 
@@ -179,7 +179,7 @@ def require_material_access(db):
     task = db.execute("SELECT id,input FROM tasks WHERE state='pending'").fetchone()
     if task and enabled(json.loads(task['input'])):
         require(record(db, task['id']) is not None, 'first_read_required',
-                '先只读正文并执行 first-read，之后才可补读约定、账本或历史')
+                '先只读正文并执行 first-read，之后才可补读约定、事实记录或历史')
 
 
 def validate(db, task, work, facts, reader, prose, first_read_prose=None):

@@ -83,7 +83,7 @@ class PlanAlignmentTests(unittest.TestCase):
         prior=work['prior_volume']
         self.assertEqual(prior['volume'],'v1')
         self.assertEqual(prior['carries_out']['handoff'],EXAMPLE['volume_plan']['handoff'])
-        self.assertIn('以账本 recall 为准',prior['note'])
+        self.assertIn('以 recall 重放为准',prior['note'])
         base=pack(self.db,'main',1,'volume_plan',{'design_scope':'v1','previous_design':None})
         self.assertNotIn('prior_volume',base)  # 第一卷没有前卷可承接
 
