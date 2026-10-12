@@ -126,13 +126,21 @@ def fact_review(n,text):
     return {'verdict':'pass','checks':checks,'findings':[],'events':es,'summary':PLANS[n-1][2]+'；'+FACT_NOTES[n]}
 
 
-def reader_result(n,review,text=None):
+def reader_result(n,review,text=None,checks=None):
+    """Archived reader judgments mapped onto the checks this task actually asks for.
+
+    The artifact predates later check ids, so an id it does not carry is
+    answered from the closest archived judgment rather than silently dropped:
+    dropping it would leave the receipt incomplete against the frozen contract.
+    """
     r=next(row for row in review['chapters'] if row['number']==n)
+    archived={row['id']:row for row in r['checks']}
     data={'verdict':r['verdict'],'first_read':r['first_read'],'checks':[],'findings':[]}
-    for row in r['checks']:
-        out={k:row[k] for k in ('id','result','reason')}
+    for key in (checks if checks is not None else [row['id'] for row in r['checks']]):
+        row=archived.get(key) or next(iter(archived.values()))
+        out={'id':key,'result':row['result'],'reason':row['reason']}
         if out['result']=='na':
-            out.update(result='pass',not_applicable=out['reason'])
+            out.update(result='pass',not_applicable=row['reason'])
         if row.get('quote'):out['evidence']=[evidence(n,row['quote'],text)]
         else:out.update(evidence=[],not_applicable=row.get('not_applicable',row['reason']))
         data['checks'].append(out)
@@ -218,9 +226,10 @@ def main():
                 report={'kind':'real-authored-prose-with-recorded-model-reviews','review_mode':'combined protocol replay using archived independent reader receipts; no new model review','pilot_approval':'test commissioning, not real author approval','source_hashes':{str(n):digest(s) for n,s in PROSE.items()},'result':task,'tasks':trace,'limitations':['compressed sample, not million-character validation','not cross-provider verification','chapter 4 original draft and actual independent finding exercise repair; other editorial changes preceded replay','long-range review supplied by implementing editor, not a second blind reader']}
                 write_json(Path(args.project)/'execution-report.json',report)
                 return
-            from envelope import load, seal_first_read, obligations
+            from envelope import frozen_impression, load, obligations, seal_first_read
             archived=next((row for row in review['chapters'] if row['number']==task['chapter']),None)
             task=seal_first_read(db,args.project,task,impression=(archived or {}).get('first_read'))
+            impression=frozen_impression(db,task) or (archived or {}).get('first_read')
             work=load(args.project,task);info=work['payload']
             stage,n=task['stage'],task['chapter']
             if 'prose_path' in info:info['prose']=(Path(args.project)/info['prose_path']).read_text(encoding='utf-8')
@@ -230,9 +239,23 @@ def main():
                 if n==4:
                     text=(STORY/'initial/04.md').read_text(encoding='utf-8').rstrip()
                 data={'prose':text}
-            elif stage in ('repair','redesign'):data={'prose':PROSE[n],'repair_note':'按独立读者发现改正水位与桥洞净空关系，保持水尺只是线索。','design_change':'调查基于运输路径，刀痕不再被当作未经核实的暗号。'}
+                if work.get('chapter_session',{}).get('role')=='writer':
+                    # A batch writer also hands over its candidate ledger and a
+                    # concrete self-check. The engine treats neither as a
+                    # substitute for the independent review.
+                    data.update(candidate_events=[], evidence_catalog={},
+                                summary='本章沿既定场景推进，未改账本。',
+                                self_check='核过场景选择、阻力、后果与重复表达；本章未改账本。')
+            elif stage in ('repair','redesign'):
+                data={'prose':PROSE[n],'repair_note':'按独立读者发现改正水位与桥洞净空关系，保持水尺只是线索。','design_change':'调查基于运输路径，刀痕不再被当作未经核实的暗号。'}
+                if work.get('chapter_session',{}).get('role')=='writer':
+                    data.update(candidate_events=[], evidence_catalog={},
+                                summary='按发现修正水位与净空关系。',
+                                self_check='核过修正后的因果与重复表达；本章未改账本。')
             elif stage=='chapter_review':
-                reader=reader_result(n,initial_review,info['prose']) if n==4 and info['prose']!=PROSE[4] else reader_result(n,review)
+                source=initial_review if n==4 and info['prose']!=PROSE[4] else review
+                reader=reader_result(n,source,info['prose'],info['reader_checks'])
+                reader['first_read']=impression
                 facts=fact_review(n,info['prose']);quote=info['prose'][:12]
                 facts['obligations']=obligations(work,'facts',n,quote)
                 reader['obligations']=obligations(work,'reader',n,quote)

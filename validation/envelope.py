@@ -59,11 +59,25 @@ def obligations(work, category, chapter, quote):
     return rows
 
 
+def frozen_impression(db, task):
+    """The impression already frozen for this task, or None.
+
+    A replay that reaches a review task also reaches whatever first read was
+    sealed earlier for it; reading it back is the only way to keep the formal
+    receipt byte-identical to that reading.
+    """
+    from novel_core.reviewflow import record
+    saved = record(db, task['task_id'])
+    return saved['receipt']['first_read'] if saved else None
+
+
 def seal_first_read(db, project, task, impression=None):
     """Freeze a first-read receipt, then return the unlocked full envelope.
 
     Engineering fixture: it records a reading, it makes no claim about literary
-    quality. A task that is not in the sealed-first-read phase is returned as is.
+    quality. A task that is not in the sealed-first-read phase is returned as is
+    — its receipt was frozen earlier, and a replay must use `frozen_impression`
+    rather than inventing a new reading.
     """
     if task.get('delivery_phase') != 'first_read':
         return task

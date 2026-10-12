@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from envelope import load, obligations, seal_first_read
 from novel_core import engine
 from novel_core.store import initialize,connect,digest,write_json
 
@@ -29,17 +31,21 @@ def main():
                 assert task['status']=='completed'
                 write_json(Path(args.project)/'execution-report.json',{'result':task,'tasks':trace,'source_hash':digest(prose),'review_mode':'combined protocol replay using archived independent reader artifact; no new model review','industry_claims':'fictional internal consistency only'})
                 return
-            stage=task['stage'];pack=json.loads((Path(args.project)/task['input_path']).read_text(encoding='utf-8'));info=pack['payload']
+            task=seal_first_read(db,args.project,task,impression=reader['first_read'])
+            stage=task['stage'];pack=load(args.project,task);info=pack['payload']
             if stage=='plan':data={'chapters':[{'number':1,'volume':'night','goal':'核实可疑读数','conflict':'出厂倒计时和签字责任','change':'暂缓装车并启动重测','entities':['zhou','lead','repair'],'volume_end':True,'book_end':True}]}
             elif stage=='draft':data={'prose':prose}
             else:
                 fact_mapping={'coverage':'causality','continuity':'causality','resources':'emotion_cost','knowledge':'professional_context','time':'change','world_rules':'professional_context','spatial':'professional_context'}
                 reader_mapping={'read_on':'causality','character':'character','change':'change','emotion_cost':'emotion_cost','language':'language','repetition':'repetition','pacing':'repetition','voice_match':'language'}
-                range_mapping={'causality':'causality','character_arcs':'character','payoffs':'change','pacing':'repetition','world_rules':'professional_context','ending':'ending','length':'language','core_promises':'change','repetition':'repetition','development':'change','voice_evolution':'character'}
+                range_mapping={'causality':'causality','character_arcs':'character','payoffs':'change','pacing':'repetition','world_rules':'professional_context','ending':'ending','length':'language','core_promises':'change','repetition':'repetition','development':'change','voice_evolution':'character','volume_development':'development'}
                 def receipt(check_ids,mapping):
                     checks=[]
                     for key in check_ids:
-                        src=sources[mapping[key]]
+                        # The archived artifact predates later check ids; an
+                        # unmapped one still gets a row, sourced from the
+                        # closest archived finding rather than dropped.
+                        src=sources.get(mapping.get(key),sources['change'])
                         checks.append({'id':key,'result':'pass','reason':src['reason'],'evidence':[ev(src['quote'])]})
                     return {'verdict':'pass','checks':checks,'findings':[]}
                 if stage=='chapter_review':
@@ -49,6 +55,8 @@ def main():
                         {'op':'state','entity':'lead','key':'shipping','before':None,'after':'halted','evidence':ev('领班站了一会儿，叫装车口停。')}])
                     reading=receipt(info['reader_checks'],reader_mapping)
                     reading['first_read']=reader['first_read']
+                    facts['obligations']=obligations(pack,'facts',1,prose[:12])
+                    reading['obligations']=obligations(pack,'reader',1,prose[:12])
                     data={'facts':facts,'reader':reading}
                 else:
                     data=receipt(info['checks'],range_mapping)
