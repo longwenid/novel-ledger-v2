@@ -1,6 +1,50 @@
 # novel-ledger-v2
 
-跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.52.1**。
+**懒人长篇写作**——作者只做关键决策，其余交给引擎。跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.52.1**。
+
+## 懒人长篇写作是什么
+
+写百万字通常败在两件事：写着写着忘了自己埋的设定，以及逐章盯稿的精力耗尽。这个 Skill 把长篇做成一条**作者只出选择题、引擎出体力**的流水线：
+
+作者做的事（全是决策，没有体力活）：
+
+- **开书选门**：每轮 2～3 个候选，回 `A/B/C`，或 `换一组` / `自定义`（见下节）。
+- **试章定调**：首章过两类检查后交作者，认可 `approve`；只给一句文风意见（形容词密度、章末处理）用 `pilot` 驳回重写，设计原样保留；要改情节走向才 `revise`。
+- **授权与暂停**：告诉主控写到哪（若干章/某卷/完本），随时 `pause` / `resume`。
+- **看书**：`book.html` 全书视图在章节边界自动刷新，汇报带文件链接。
+
+引擎做的事（无人值守）：
+
+- **`advance` 循环**：取任务 → 派工 → 核实真实提交 → 接续，直到目标完成或真阻碍；主控只收短状态，不自行读写正文。
+- **批次连写**：默认每批 3 章给单一执笔角色，同会话逐章提交自查，程序校验实际篇幅。
+- **独立审稿**：每批写完派一个新的独立审稿者，先只读整批正文冻结首读，再一次提交事实+读者两类检查；缺陷自动返修（最多两轮，再重设计重写一次），数字笔误定点补丁。
+- **滚动规划**：未来 5～6 章的章计划随进度细化，伏笔、时钟、资源账本随章结算——书越写越厚，设定不会丢。
+- **断点恢复**：所有状态在账本里，会话崩了、隔天再来、换一个模型，`advance` 从上次提交接续；`work/` 目录只是派生视图，崩溃可重建。
+
+流程图见 [references/workflow.md](references/workflow.md)。
+
+## 开书：概念设计
+
+开书把「想写一本什么书」拆成八道门，每道门都是一次选择题，选完即映射进约定（contract）入库：
+
+| 门 | 决策内容 | 映射约定字段 |
+|---|---|---|
+| 1 读者承诺 | 题材定位、核心看点、一句话高概念 | `reader_promise` |
+| 2 推进引擎 | 核心驱动力与全书各卷职责 | `arcs` |
+| 3 主角设定 | 行动逻辑、欲望与底线 | `protagonist_drive` |
+| 4 核心关系 | 驱动故事的人际或对抗关系（可为无） | 人物线与 `arcs` |
+| 5 世界对抗 | 世界秩序、资源限制与核心压力 | `world_rules` |
+| 6 机制设定 | 特殊机制原理、代价与失效条件（可为无） | `world_rules` |
+| 7 终局节点 | 终局事实与 4～8 个核心因果节点 | `ending` 与 `arcs` 脊柱 |
+| 8 体量文风 | 分卷字数预算、章篇幅与文风锚点 | `volumes[].word_budget`、`style` |
+
+- **候选不是换名字**：每轮候选必须因果不同，写清收益、代价与风险，且至少一个可支撑长篇的高概念脑爆项（`wild`）；同质化时按 [创意工具箱](references/hatch-ideas.md) 的八大设定生成方法切换透镜（高概念混搭、倒置公理、不可逆代价、限制驱动、认知差张力、规则推演极限、对抗绑定、终局因果闭环）。
+- **先定终局再动笔**：第 7 门把终局事实与因果脊柱先入库，后续各卷向它收拢，避免百万字写到一半没了方向。
+- **人物命名**：契合阶层、出身与行当；定名前 `recall` 查重，外号经 `alias` 登记。
+- **分层展开**：门后按 全书世界设计（`world_plan`）→ 分卷设计（`volume_plan`：本卷要改变的局面、代价与交接压力）→ 章节计划（`plan`：未来 5～6 章滚动细化）流转；各卷 `word_budget` 合计落入全书 `word_range`，后卷按实际偏差自适应，防终局草草收尾。
+- **一条命令落地**：约定确定后 `init --project "$PROJECT" --contract contract.json`，试写首章、定调，进入上面的写作循环。
+
+细节见 [references/creation.md](references/creation.md) 与 [references/hatch-ideas.md](references/hatch-ideas.md)。
 
 ## 核心理念
 
@@ -15,11 +59,11 @@
 - **章节批次连写**：`chapter_session` 默认 3 章、最多 5 章给单一执笔角色，同会话逐章提交并自查；程序在提交时校验合成全文的实际篇幅。
 - **整批密封审稿**：每批完成后派一个新的独立审稿者，先只读整批正文、`first-read` 逐章持久冻结首读，再一次提交事实+读者两类检查。
 - **连续会话**：跨章复审（`review_session`）由同一独立审稿者连续处理分块与综合判断；材料准备（`preparation_session`）由同一 Worker 连续处理同批材料任务。
-- **定点修订**：审稿冻结稿（批次候选或单章/修订稿）的简单数字笔误可在一次独立审稿中用版本补丁修正；普通局部返修在结算未变且后文仍可复算时保留后文候选。完整两类审稿与账本核验继续执行，历史章仍走修订分支。修订范围按依赖推导：后缀章经依赖差分、表面形扫荡与事件重放三重核验后自动携带原审结论，不受影响不再重写重审；分块与整体复核仍是安全网。
+- **定点修订**：审稿冻结稿的简单数字笔误可在一次独立审稿中用版本补丁修正；普通局部返修在结算未变且后文仍可复算时保留后文候选。完整两类审稿与账本核验继续执行，历史章仍走修订分支。修订范围按依赖推导：后缀章经依赖差分、表面形扫荡与事件重放三重核验后自动携带原审结论，不受影响不再重写重审；分块与整体复核仍是安全网。
 - **确定性定位和结算**：`patch` 返回精确补丁位置，`preflight` 回滚执行完整提交校验，`submit` 返回实际资源/时钟结算；历史与候选事件分别按完整版本引用交付。校验拒绝自带答案：引文错误附最接近的原文片段或多处命中位置，前序事件 kept 由重报内容自动推导，日程冲突给出两条修正出口。
 - **输入输出去重**：人物、设计及较大的账本与连续性资料按完整记录分片，同一 Worker 复用已读且未变的版本；主控用 `advance --compact`，生成的提交命令返回简洁交接，完整信封从 `task_path` 读取。重复原文证据可在 `evidence_catalog` 定义一次、各检查按编号引用，展开后仍执行全部核验。正式回执用本任务冻结首读哈希引用原体验，恢复时有完整首读文件，不重复抄写。
 
-流程图见 [references/workflow.md](references/workflow.md)，协议细节见 [references/protocol.md](references/protocol.md)。
+协议细节见 [references/protocol.md](references/protocol.md)。
 
 ## 使用
 
@@ -31,7 +75,7 @@
 python scripts/novel.py <command> --project "$PROJECT"
 ```
 
-常用子命令：`init`（开书）、`advance`/`next`/`submit`（派工与提交）、`measure`（篇幅）、`preflight`（完整预检）、`patch`（定点定位）、`approve`（首章定调）、`recall`（定向检索）、`revise`（修订分支）、`audit`（全书审计）、`export`/`html`（导出与书刊视图）、`doctor`（环境诊断）、`status`/`pause`/`resume`/`complete`（运行管理），以及 `config`/`replan`/`candidate`/`design`/`character`/`map`/`material`/`impact`/`pilot`/`first-read`/`evidence`/`checkpoint`/`dependencies`/`tidy` 等视图与治理命令。
+常用子命令：`init`（开书）、`advance`/`next`/`submit`（派工与提交）、`approve`（首章定调）、`pilot`（文风驳回）、`measure`（篇幅）、`preflight`（完整预检）、`patch`（定点定位）、`recall`（定向检索）、`revise`（修订分支）、`audit`（全书审计）、`export`/`html`（导出与书刊视图）、`doctor`（环境诊断）、`status`/`pause`/`resume`/`complete`（运行管理），以及 `config`/`replan`/`candidate`/`design`/`character`/`map`/`material`/`impact`/`first-read`/`evidence`/`checkpoint`/`dependencies`/`tidy` 等视图与治理命令。
 
 依赖：Python 3.9+，仅标准库，无第三方包。
 
@@ -45,8 +89,8 @@ references/           阶段指南与架构契约（creation/runtime/writing/pro
 scripts/novel.py      CLI 入口（含默认拒绝的访问分级守卫）
 scripts/novel_core/   引擎（engine/store/ledger/batchflow/reviewflow/atoms/transitions… ）
 tests/                引擎与行为边界测试（pytest；含架构守护）
-validation/           端到端验证脚本与测量工具（delivery_probe / session_cost /
-                      chapter_batch / review_session / material_efficiency，envelope 为共用读取约定）
+validation/           端到端验证脚本与测量工具（delivery_probe / run_story /
+                      session_cost / chapter_batch / review_session / material_efficiency）
 ```
 
 ## 架构
