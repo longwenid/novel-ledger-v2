@@ -100,11 +100,12 @@ python scripts/novel.py <command> --project "$PROJECT"
 SKILL.md              Skill 入口与核心规则
 agents/               宿主 agent 展示配置
 assets/               契约与实体示例 JSON
+docs/                 非功能文档：历史测量报告、调试样本与盲评数据（不参与运行）
 references/           阶段指南与架构契约（creation/runtime/writing/protocol/architecture… 17 篇）
 scripts/novel.py      CLI 入口（含默认拒绝的访问分级守卫）
 scripts/novel_core/   引擎（engine/store/ledger/batchflow/reviewflow/atoms/transitions… ）
 tests/                引擎与行为边界测试（pytest；含架构守护）
-validation/           端到端验证脚本与测量工具（delivery_probe / run_story /
+validation/           端到端验证脚本、测量工具与测试夹具（delivery_probe / run_story /
                       session_cost / chapter_batch / review_session / material_efficiency）
 ```
 
