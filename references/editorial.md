@@ -7,6 +7,19 @@
 
 ## 综合审稿 chapter_review
 
+```mermaid
+flowchart TD
+    S["执笔提交正文+summary+self_check<br/>（单章执行不交候选事件）"] --> F["先只读正文，冻结四项首读<br/>哈希绑定任务/输入/正文"]
+    F --> M["解锁正式材料：约定/计划/账本/人物<br/>不读执笔自评"]
+    M --> R["同一回执两类检查<br/>facts 事实 + reader 读者"]
+    R --> SC["scrutiny：time/language 反证核验<br/>elapsed_days 须与事件结算一致"]
+    SC --> V{"两类 verdict"}
+    V -->|任一 fix| RP["返修/重设计（见 repairs）"]
+    V -->|均 pass| SE["事件结算：replay 前态逐事件校验"]
+    SE --> CM["原子入库：正文+事件+两审+首读"]
+    RP --> S2["新正文必经新的独立综合审稿<br/>不复用历史 pass"] --> F
+```
+
 每个章节批次派一个新的审稿 Worker，独立于执笔者，逐章完成下述事实与读者两类检查；旧任务、试章和历史修订仍逐章新派。批次先只读 task.json 的 first_read_files 全部正文，在 first_reads 逐章冻结四项体验后才解锁正式资料；无批次标记时先读取 first_read_path 正文，填写首读模板的 desire/obstacle/change/read_on_reason，执行信封的 `commands.first_read`；首读哈希绑定任务、输入与正文，落库后才交付 input.json 中的约定、计划、账本和人物材料；不读执笔自评。已首读的同版本正文不重复加载，核对疑点时补读必要语境。这是一个独立审稿者的两类检查；整批也不能称为每章分别由不同读者盲审。
 
 data={facts:{...},reader:{...}}，两类子回执分别给 verdict/checks/findings。facts 的 pass 另给 events/summary，reader 给 first_read；字段与事件去向见 [任务协议](protocol.md)。任一 fix 先返修，两类 pass 且事件和版本验证通过后才原子入库。
@@ -52,6 +65,20 @@ profiled 模式增加 dialogue_identity：判断不同人物的关注点、关�
 每次修改重新综合审稿，事实与读者两类检查都须通过，旧稿与回执留存。返工上限见 [核心规则](../SKILL.md)；偏好争议须给可检验的阅读影响。
 
 ## 十章、卷末及全书复核
+
+```mermaid
+flowchart TD
+    T{"触发"} -->|每 10 章| C["review_session 分块复审<br/>同一审稿者连续处理各分块"]
+    T -->|卷末 volume_end| V["volume_review + volume_development<br/>职责/代价/余波/预算偏离"]
+    T -->|末卷终章 book_end| B["book_review：ending/length/core_promises"]
+    C --> G["综合：跨章因果/人物弧/节奏/重复<br/>整体 pass 另提 memory"]
+    V --> G
+    B --> G
+    G --> P{"发现影响后文？"}
+    P -->|否| OK["pass 入库"]
+    P -->|表达类| PA["patch 定点修改（repair_route）"]
+    P -->|事实/因果/认知/时间类| RV["revise 从最早受影响章重验后缀"]
+```
 
 代码可定位已选证据、计数和写出已判断的回执，不得批量造 pass、套理由或任取引文。
 

@@ -87,6 +87,17 @@ expand_context 保留草稿和次数，派完整正文 repair；只允许一次�
 
 ## 已有正文修订
 
+```mermaid
+flowchart TD
+    F["整体复审发现（repair_route 声明类别）"] -->|表达类| PA["patch 定点修改<br/>原首读与结算不变"]
+    F -->|事实/因果/认知/时间类| RV["revise 建候选分支<br/>target_chapter 可显式回溯"]
+    RV --> CR["候选 draft 带 base_hash<br/>可 patches 局部改或 reuse_original 原样复用"]
+    CR --> CY["后缀章按依赖推导携带<br/>（Δ 为空的隐式读取绝不携带）"]
+    CY --> RR["revision_review 对 chain 全部目标<br/>逐项核对并附正文证据"]
+    RR -->|全部 pass| PR["promote 转正<br/>（转正前正式分支不变；discard 丢弃）"]
+    RR -->|连续 fix 或触顶| BL["暂停上报作者裁决<br/>候选链嵌套上限两层"]
+```
+
 必须先走 revise 建立候选分支。该分支 draft 有原稿时，提供 base_hash；可提交同样的 patches/repair_note，不必重发整章。后续某章经核对无需改变，可提交：
 
 ```json

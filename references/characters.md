@@ -34,6 +34,22 @@
 - `arc`：major 必填，包含 `direction` 与 `not_yet_earned`（未兑现成长）。
 - `change_reason`：更新旧档案时必填，说明变更原因。
 
+档案链路（usable 判定按分支头全量重放，coverage 审计按落地章参与人核对）：
+
+```mermaid
+flowchart TD
+    A["next_job 发现本章参与人缺可用档案"] --> B["character_plan 建档/更新三层档案"]
+    B --> I{"character_views=scoped<br/>且 worth_indexing 判定值得？"}
+    I -->|默认否| W["本章参与者档案整份交付"]
+    I -->|是| X["character_index 建索引<br/>执笔/审稿包裁成场景视图"]
+    W --> E["facts 回执提交 character_development 事件<br/>转变附 change/cause 双引文"]
+    X --> E
+    E --> U["档案 growth_hash 随分支头更新"]
+    U --> COV{"coverage 审计：落地章参与人都有可用档案？"}
+    COV -->|有缺口| B
+    COV -->|无| OK["人物线闭环，arc.not_yet_earned 待正文兑现"]
+```
+
 ## 场景发言与意图规范
 
 计划中指定 `speakers`（纯动作场景显式 `speakers: []`），拟发言者附 `dialogue_intents`：

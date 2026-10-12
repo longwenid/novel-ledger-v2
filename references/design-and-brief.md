@@ -39,6 +39,17 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 
 卷纲说明冲突、选择和后果如何承载预算。sequence/sequence_refs 是导航，编号用完不等于展开充分。多线卷把 subplot/tension 触点织进 sequence：支线节拍穿插在主线节拍之间，合流点与主线互证，避免整卷单线推土；章以 sequence_refs 指向支线节拍即声明本章服务该线。volume_end 前结合正文和 volume_budget 核对过程、代价与余波；偏离时说明原因及后卷承载，不机械移预算或补字。
 
+```mermaid
+flowchart TD
+    SP["世界脊柱 event_spine 四层<br/>main/subplot/timeline/tension，sp: 触点"] --> VB["卷纲节拍 sequence<br/>字符串=主线；{line,text}=支线/时间线"]
+    VB --> WE["交织排布：支线夹在主线节拍之间<br/>合流点与主线互证，不做卷尾后缀"]
+    WE --> CH["章声明：sequence_refs 指向支线节拍<br/>即本章服务该线"]
+    CH --> RO["rhythm.chapter_role：<br/>支线章/关系章/呼吸章制造起伏"]
+    CH --> MT["major_turn 章<br/>必须 spine_refs 引用触点"]
+    RO --> HJ["支线合流回主线时兑现积累"]
+    MT --> HJ
+```
+
 ## 场景任务书（writer_brief）
 
 章计划（`plan`）通过后，引擎自动为执笔任务生成 `writer_brief` 并派生 `brief_path`：

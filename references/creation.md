@@ -33,6 +33,19 @@
 3. **分批章节计划（`plan`）**：每次细化未来 5～6 章的 `goal/conflict/change/entities/scenes`；
 4. **试章定调**：首章通过事实与读者两类检查后交作者（新项目默认由独立综合审稿者一次完成）。认可后 `approve`；只调文风（形容词密度、章末处理等表达层意见）用 `pilot --reason "<意见>"` 驳回重写，设计、计划与小传原样保留，直接重跑 draft——不建分支；要改情节、事实或走向才 `revise`。
 
+```mermaid
+flowchart TD
+    G["八门选择链<br/>每门 2~3 候选，至少一项可落地"] --> C["contract 入库：约定即真源"]
+    C --> W["world_plan<br/>脊柱四层 + 势力地理 + 核心场所"]
+    W --> V["volume_plan<br/>卷纲节拍，支线 {line,text} 织入"]
+    V --> P["plan<br/>每批 5~6 章，sequence_refs 对齐节拍"]
+    P --> D["试章执笔 → 独立综合审稿"]
+    D --> A{"作者裁决"}
+    A -->|认可| N["approve 定调，进入滚动写作"]
+    A -->|只调文风| PI["pilot 驳回重跑 draft<br/>设计/计划/小传不动，不建分支"]
+    A -->|改情节事实走向| RV["revise 建候选分支"]
+```
+
 ## 篇幅预算与滚动扩纲
 
 - **卷字数分配**：新书在 `volumes[].word_budget` 中分配各卷参考汉字数，合计需落入全书 `word_range`。
