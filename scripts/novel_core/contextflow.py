@@ -143,15 +143,6 @@ def _documents(base,db=None):
     return core,documents
 
 
-def needs_preparation(base,policy='adaptive'):
-    """A grouping decision based on record count, never character count."""
-    _,documents=_documents(base)
-    counts=[len(d['units']) for d in documents]
-    if sum(counts)<=DIRECT_UNITS:return False
-    if policy=='semantic' or base.get('context_questions'):return True
-    return any(n>DIRECT_UNITS for n in counts) or sum(counts)>EXACT_UNITS
-
-
 def _frame(base,ident,core_document):
     plan=base.get('plan',{});payload=base.get('payload',{})
     brief=(base.get('writer_brief') or {}).get('dramatic_task') or {}

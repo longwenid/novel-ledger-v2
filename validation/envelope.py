@@ -33,11 +33,6 @@ def impression_of(task):
             'change': '用交换条件替代信任', 'read_on_reason': '后果落在主角身上'}
 
 
-def first_read_fields(task):
-    """The impression the seal must carry for this task, as one object."""
-    return impression_of(task)
-
-
 def obligations(work, category, chapter, quote):
     """Pass rows for every author obligation of one category.
 

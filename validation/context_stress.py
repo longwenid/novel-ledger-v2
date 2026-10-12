@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'scripts'))
 from novel_core import engine, design, characters
-from novel_core.store import initialize, connect, get, put, dump, digest, transaction, Error, write_json
+from novel_core.store import initialize, connect, get, dump, digest, transaction, Error, write_json
 from novel_core.ledger import seed, append_events, replay
 from novel_core.memory import pack, recall
 from novel_core.budget import han_count
