@@ -344,7 +344,7 @@ def make_receipt(db, project, task, visit=1):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', default=str(ROOT / 'validation' / 'delivery-probe.json'))
-    parser.add_argument('--chapters', type=int, default=14)
+    parser.add_argument('--chapters', type=int, default=20)
     parser.add_argument('--keep', action='store_true')
     args = parser.parse_args()
 

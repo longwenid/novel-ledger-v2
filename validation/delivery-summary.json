@@ -1,0 +1,19 @@
+{
+  "schema": "novel-ledger-v2.delivery-summary/1",
+  "scale": {
+    "persons": 26,
+    "chapters_committed": 20,
+    "stages_measured": 20
+  },
+  "index_bytes": {
+    "max": 10949
+  },
+  "must_read_bytes": {
+    "max": 23935
+  },
+  "read_everything_bytes": {
+    "max": 44221
+  },
+  "character_coverage_gaps": 0,
+  "boundary": "探针用重复正文与合成回执量交付成本；它证明交付结构，不评价文学质量。"
+}
