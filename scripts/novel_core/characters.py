@@ -292,10 +292,55 @@ def index_read(db,branch,eid):
             'instruction':'索引为独立解读，不是新事实；未知、全局或失效条件需保留完整材料。'}
 
 
+# A scoped view carries the same core plus one provenance reference per kept
+# item, so it only saves bytes on a large profile. Measured against real shapes:
+# an example-asset profile (2 items) costs 396 bytes MORE scoped, a 16-item
+# profile saves 4.7K, and the saving is linear in item count beyond that.
+#
+# Building the index is a whole independent dispatch — measured at ~262K tokens
+# and 10 worker turns on a real run — and a worker that needs the profile reads
+# the scoped file exactly once, so the saving is never paid back twice. That
+# makes the break-even point unreachable in practice: the default threshold sits
+# above any saving a profile can produce, and a project that wants the scoped
+# view anyway lowers it (one constant, and every test still exercises the path).
+DISPATCH_COST_BYTES=10**9
+MIN_SCOPED_SAVING_BYTES=DISPATCH_COST_BYTES
+
+
+def scoped_saving(record):
+    """Bytes a scoped view saves over the whole profile, at best case.
+
+    Mirrors `scoped_profile`'s own representation choice, so the gate and the
+    builder cannot disagree about what a scoped view costs. The best case is one
+    kept item per section — the smallest a scoped view can ever be — charged with
+    the provenance reference every kept item needs. That is the largest saving an
+    index could buy on this profile.
+    """
+    from .store import dump
+    branch=record.get('source_branch') or 'main'
+    full=len(dump([copy.deepcopy(record),[source_ref(branch,'',record)],{}]))
+    view=copy.deepcopy(record);view['data']=section_value(record,'core')
+    refs=[source_ref(branch,'',record,'core')]
+    for section in PROFILE_SECTIONS:
+        values=section_value(record,section)
+        parts=section.split('.')
+        destination=view['data']
+        for part in parts[:-1]:destination=destination.setdefault(part,{})
+        destination[parts[-1]]=copy.deepcopy(values[:1])
+        if values:refs.append(source_ref(branch,'',record,section,0))
+    return full-len(dump([view,refs,{}]))
+
+
+def worth_indexing(record):
+    return bool(record) and indexed_items(record) and scoped_saving(record)>=MIN_SCOPED_SAVING_BYTES
+
+
 def next_index_job(db,branch,chapter,plan,state=None):
     if not enabled(db) or get(db,'contract').get('character_views','full')!='scoped':return None
     state=state if state is not None else replay(db,branch)
-    ids=[eid for eid in participants(plan,state) if usable(db,branch,eid,state) and indexed_items(current(db,branch,eid)) and not valid_index(db,branch,eid,state)]
+    ids=[eid for eid in participants(plan,state)
+         if usable(db,branch,eid,state) and worth_indexing(current(db,branch,eid))
+         and not valid_index(db,branch,eid,state)]
     if not ids:return None
     return ('character_index',chapter,{'entities':ids,'instruction':'独立完整阅读本次人物档案与历史来源，逐条建立适用范围和因果依赖索引。relevance 标签只是提案，不能直接认定无关。只有适用范围穷尽且可解释时写 scoped；不确定写 unknown，普遍影响动机/声音写 global。逐条覆盖 experiences、relationship_modes、examples；必填 core_depends_on 列出完整核心动机/声音所依赖的条目，无关联才可空，跨条目影响用 depends_on 明确关联。全部 sources 原章用 recall --chapter 实际完整补读。不得以关键词、最近经历或字符截断代替判断；见 references/characters.md。'})
 
@@ -428,6 +473,7 @@ def scoped_profile(db,branch,eid,record,plan,state):
     full_refs=[source_ref(branch,eid,record),query_ref]
     if len(dump([view,refs,omitted]))>=len(dump([record,full_refs,{}])):
         return copy.deepcopy(record),full_refs,{}
+    view['saving_bytes']=len(dump([record,full_refs,{}]))-len(dump([view,refs,omitted]))
     return view,refs,omitted
 
 

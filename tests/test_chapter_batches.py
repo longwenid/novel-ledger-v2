@@ -262,14 +262,21 @@ class ChapterBatchTests(unittest.TestCase):
         self.assertEqual(engine.load_draft(self.db,'main',2)['stage'],'draft');self.assertEqual(head(self.db,'main'),1)
 
     def test_shared_files_are_exact_versioned_and_repaired_on_restore(self):
-        t=self.cli('advance')['task'];view=self.work(t)
-        self.assertNotIn('contract',view);self.assertIn('contract',view['shared_materials'])
-        ref=view['shared_materials']['contract'];path=self.path/ref['path']
+        """契约这类项目级文档按版本交付：整份不内联，地址与哈希可复原。"""
+        t=self.cli('advance')['task']
+        raw=json.loads((self.path/t['input_path']).read_text(encoding='utf-8'))
+        self.assertNotIn('contract',raw,'契约不内联进索引')
+        entry=raw['shared_materials'].get('contract') or raw['input_files'].get('contract')
+        self.assertIsNotNone(entry,'契约必须作为带地址与哈希的版本交付')
+        path=self.path/entry['path']
         self.assertEqual(json.loads(path.read_text(encoding='utf-8')),get(self.db,'contract'))
-        full=digest(json.loads(path.read_text(encoding='utf-8')));self.assertTrue(full.startswith(ref['hash']));self.assertTrue(ref['path'].endswith(full[:16]+'.json'))
-        a=self.submit(t,self.write(t));self.assertEqual(self.work(a['task'])['shared_materials']['contract'],ref)
+        full=digest(json.loads(path.read_text(encoding='utf-8')))
+        self.assertTrue(full.startswith(entry['hash']));self.assertTrue(entry['path'].endswith(full[:16]+'.json'))
+        a=self.submit(t,self.write(t))
+        again=json.loads((self.path/a['task']['input_path']).read_text(encoding='utf-8'))
+        self.assertEqual(again['shared_materials'].get('contract') or again['input_files'].get('contract'),entry)
         path.write_bytes(b'\xff\xfe');self.cli('advance')
-        self.assertTrue(digest(json.loads(path.read_text(encoding='utf-8'))).startswith(ref['hash']))
+        self.assertTrue(digest(json.loads(path.read_text(encoding='utf-8'))).startswith(entry['hash']))
         self.assertIn('同一 Worker',a['task']['worker_prompt'])
 
     def test_volume_end_closes_batch_before_next_volume_or_long_review(self):

@@ -3,6 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 from support import *
 from novel_core import characters
 from novel_core.ledger import replay,apply
@@ -61,11 +62,17 @@ class ProfileViewTests(unittest.TestCase):
         self.assertTrue(any(ref.get('path')=='/biography/experiences/17' for ref in view['source_refs']))
         self.assertEqual(characters.next_index_job(self.db,'main',2,self.plan),None)
     def test_unreviewed_relevance_labels_do_not_authorize_omission(self):
+        """没经过独立索引的档案整份交付，也不为它派一次索引任务。
+
+        索引的价值是省字节，而它本身是一次独立派工（实测约 26 万 token、
+        10 轮）。示例档案这种「一节一条」的形状，场景视图比整份还大，所以
+        默认不派索引：整份交付既更省也更不含糊。
+        """
         record=self.prepare();view=self.view()
         self.assertEqual(view['profiles']['hero']['data'],record['data'])
         self.assertEqual(view['omitted_profiles'],{})
-        job=characters.next_index_job(self.db,'main',2,self.plan)
-        self.assertEqual(job[0],'character_index');self.assertEqual(job[2]['entities'],['hero'])
+        self.assertIsNone(characters.next_index_job(self.db,'main',2,self.plan))
+        self.assertLess(characters.scoped_saving(record),characters.MIN_SCOPED_SAVING_BYTES)
     def test_missing_scene_topics_and_unscoped_legacy_calls_keep_all_items(self):
         record=self.prepare();self.index(record)
         missing=copy.deepcopy(self.plan);missing.pop('topics')
@@ -237,28 +244,108 @@ class ProfileViewTests(unittest.TestCase):
         self.assertFalse(dependencies.inspect(self.db,'index-fixture')['entries'][-1]['versions_unchanged'])
 
 
+# A scoped view only pays for itself on a profile with enough trimmable items:
+# each kept item carries a provenance reference, so a thin profile costs *more*
+# scoped than whole. Dispatch therefore never builds an index by default — the
+# saving is linear in item count, and even a rich profile saves an order of
+# magnitude less than the dispatch that buys it. These fixtures exist to prove
+# the scoped path itself still works when a project asks for it.
+SCOPE_WORTHY = {'profiles': []}
+for _profile in json.loads((Path(__file__).resolve().parents[1]
+                            / 'assets/characters.example.json').read_text(encoding='utf-8'))['profiles']:
+    _fat = copy.deepcopy(_profile)
+    # Items must be long enough that trimming them outpaces the provenance
+    # reference each kept item needs; short items make a scoped view *larger*.
+    _line = ('她在旧案里反复核对过交接顺序，知道每一步该留下什么凭证，也知道哪一步会让人'
+             '把自己的责任推给别人；这些细节决定她当场问什么、不问什么。')
+    _fat['biography']['experiences'] = [{'text': f'{_line}{index}', 'status': 'design'}
+                                        for index in range(6)]
+    _fat['voice']['relationship_modes'] = [{'audience': 'ally', 'approach': f'{_line}{index}'}
+                                           for index in range(6)]
+    # `examples` may cite an earlier chapter, so they stay empty here: this
+    # fixture is about how much a scoped view can trim, not about citations.
+    _fat['examples'] = []
+    SCOPE_WORTHY['profiles'].append(_fat)
+
+
 class ProfilePipelineTests(unittest.TestCase):
     def test_scoped_mode_dispatches_index_with_complete_profiles_before_draft(self):
+        """项目显式要求索引时，这条通路仍然完整可用。"""
         from test_characters import PLAN
         with tempfile.TemporaryDirectory() as temp:
             c=contract();c.update(character_mode='profiled',character_views='scoped')
             initialize(temp,c);db=connect(temp)
             try:
-                task=engine.next_task(db,temp);engine.submit(db,result(task,{'chapters':[copy.deepcopy(PLAN)]}))
-                task=engine.next_task(db,temp);self.assertEqual(task['stage'],'character_plan')
-                engine.submit(db,result(task,copy.deepcopy(PROFILES)))
-                index_task=engine.next_task(db,temp);self.assertEqual(index_task['stage'],'character_index')
-                work=envelope(index_task);state_before=digest(replay(db,'main'));indexes=[]
-                for eid in work['payload']['entities']:
-                    record=characters.current(db,'main',eid)
-                    self.assertEqual(work['character_context']['profiles'][eid]['data'],record['data'])
-                    indexes.append({'entity':eid,'profile_hash':record['hash'],'core_hash':digest(characters.section_value(record,'core')),'core_depends_on':[],
-                        'coverage':'complete','items':[{'section':section,'item':number,'value_hash':digest(value),'classification':'unknown','reason':'工程流程测试无法判断语义，保留完整材料。'} for (section,number),value in characters.indexed_items(record).items()]})
-                self.assertEqual(engine.next_task(db,temp)['task_id'],index_task['task_id'])
-                receipt=result(index_task,{'indexes':indexes});engine.submit(db,receipt)
-                self.assertTrue(engine.submit(db,receipt)['idempotent']);self.assertEqual(digest(replay(db,'main')),state_before)
-                self.assertEqual(engine.next_task(db,temp)['stage'],'draft')
+                # The default gate refuses every index; raise it to exercise the
+                # scoped dispatch path itself. The gate is read inside
+                # `next_index_job`, which runs within `next_task`, so the patch
+                # has to cover every dispatch in this scenario.
+                with patch.object(characters,'MIN_SCOPED_SAVING_BYTES',1):
+                    task=engine.next_task(db,temp);engine.submit(db,result(task,{'chapters':[copy.deepcopy(PLAN)]}))
+                    task=engine.next_task(db,temp);self.assertEqual(task['stage'],'character_plan')
+                    engine.submit(db,result(task,copy.deepcopy(SCOPE_WORTHY)))
+                    index_task=engine.next_task(db,temp);self.assertEqual(index_task['stage'],'character_index')
+                    work=envelope(index_task);state_before=digest(replay(db,'main'));indexes=[]
+                    for eid in work['payload']['entities']:
+                        record=characters.current(db,'main',eid)
+                        # `envelope()` materialises the sliced index, so the
+                        # frozen full profile is visible the way the worker
+                        # sees it.
+                        self.assertEqual(work['character_context']['profiles'][eid]['data'],record['data'])
+                        indexes.append({'entity':eid,'profile_hash':record['hash'],'core_hash':digest(characters.section_value(record,'core')),'core_depends_on':[],
+                            'coverage':'complete','items':[{'section':section,'item':number,'value_hash':digest(value),'classification':'unknown','reason':'工程流程测试无法判断语义，保留完整材料。'} for (section,number),value in characters.indexed_items(record).items()]})
+                    self.assertEqual(engine.next_task(db,temp)['task_id'],index_task['task_id'])
+                    receipt=result(index_task,{'indexes':indexes});engine.submit(db,receipt)
+                    self.assertTrue(engine.submit(db,receipt)['idempotent']);self.assertEqual(digest(replay(db,'main')),state_before)
+                    self.assertEqual(engine.next_task(db,temp)['stage'],'draft')
             finally:db.close()
+
+    def test_a_thin_profile_never_pays_for_an_index_dispatch(self):
+        """薄档案不建索引：省下的字节买不回一次独立派工。
+
+        实测：一节一条的档案，场景视图比整份档案还大（每条保留项都要带
+        provenance 引用）。索引本身是一次独立任务（实测一次约 26 万 token、
+        10 轮），所以默认闸门必须拒绝它。
+        """
+        from test_characters import PROFILES
+        thin = {'data': copy.deepcopy(PROFILES['profiles'][0]), 'hash': 'h', 'revision': 1,
+                'active': True, 'sources': {}, 'source_branch': 'main',
+                'growth_hash': 'g', 'growth_count': 0}
+        self.assertLess(characters.scoped_saving(thin), 0,
+                        '一条一节的档案，场景视图必须比整份更大')
+        self.assertFalse(characters.worth_indexing(thin))
+
+        fat = copy.deepcopy(thin)
+        fat['data']['biography']['experiences'] = [{'text': '经历' * 40, 'status': 'design'}
+                                                   for _ in range(6)]
+        fat['data']['voice']['relationship_modes'] = [{'audience': 'ally', 'approach': '语气' * 40}
+                                                      for _ in range(6)]
+        saving = characters.scoped_saving(fat)
+        self.assertGreater(saving, characters.scoped_saving(thin),
+                           '节省必须随可裁剪条目增加而单调上升')
+        self.assertLess(saving, characters.MIN_SCOPED_SAVING_BYTES,
+                        '即使宽档案，节省也远小于一次派工的成本，所以默认仍不建索引')
+        self.assertFalse(characters.worth_indexing(fat))
+        with patch.object(characters, 'MIN_SCOPED_SAVING_BYTES', 1):
+            self.assertTrue(characters.worth_indexing(fat), '闸门必须是唯一的开关')
+
+    def test_the_gate_and_the_builder_agree_on_what_a_view_costs(self):
+        """闸门与构造器必须用同一套表示比较，否则会各自算出相反的结论。"""
+        from test_characters import PROFILES
+        record = {'data': copy.deepcopy(PROFILES['profiles'][0]), 'hash': 'h', 'revision': 1,
+                  'active': True, 'sources': {}, 'source_branch': 'main',
+                  'growth_hash': 'g', 'growth_count': 0}
+        measured = characters.scoped_saving(record)
+        self.assertLess(measured, 0, '这条档案的场景视图更大，节省必须是负数')
+        self.assertFalse(characters.worth_indexing(record))
+        # A rich profile is where scoping does save bytes; the gate is the only
+        # thing standing between that measurement and a dispatch.
+        rich = copy.deepcopy(record)
+        rich['data']['biography']['experiences'] = [{'text': '经历' * 120, 'status': 'design'}
+                                                    for _ in range(8)]
+        rich['data']['voice']['relationship_modes'] = [{'audience': 'ally', 'approach': '语气' * 120}
+                                                       for _ in range(8)]
+        self.assertGreater(characters.scoped_saving(rich), 1000)
 
 
 if __name__=='__main__':unittest.main()

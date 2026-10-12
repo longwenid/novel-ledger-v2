@@ -198,17 +198,13 @@ def typed_delivery(project, root, view, materials=None):
         if not isinstance(value, dict):
             return
         rows = []
-        for collection in ('profiles', 'developments'):
+        for collection in ('profiles', 'developments', 'entities', 'facts', 'knowledge',
+                           'resources', 'hooks', 'clock_threads', 'placements', 'anchors',
+                           'places', 'links', 'relations', 'clocks'):
             entries = value.get(collection)
             if isinstance(entries, dict):
                 rows += [{'pointer': [collection, key], 'record': record}
                          for key, record in entries.items() if isinstance(record, dict)]
-        for key, record in value.items():
-            if key in ('profiles', 'developments', 'status', 'instruction', 'view_policy',
-                       'validity', 'omitted_profiles', 'source_refs', 'omitted_developments'):
-                continue
-            if isinstance(record, dict) and record:
-                rows.append({'pointer': [key], 'record': record})
         mark_parts(field, rows)
 
     for field in ('character_context', 'design_context', 'state', 'continuity'):

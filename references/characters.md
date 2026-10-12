@@ -1,6 +1,14 @@
 # 人物档案、声线与成长
 何时读：profiled 人物档案、character_plan/character_index 回执与人物审稿检查项。
 
+## 档案交付：默认整份，不做场景裁剪
+
+`character_views=scoped` 会按本章场景把档案裁成「场景视图」，但每个保留条目都要带 provenance 引用，所以裁剪只在档案本身很大时才省字节：实测「一节一条」的档案，场景视图比整份**大 396 字节**；16 条的档案才省约 4.7K。而建立索引是一次独立派工（实测一次约 262K token、10 轮），省下的字节买不回它。
+
+因此默认不派索引任务：本章参与者的档案整份交付，Worker 一次读完。`characters.worth_indexing` 是唯一开关，判据是「最好情况的节省 ≥ 派工成本」；项目若确实想要场景视图，调低 `MIN_SCOPED_SAVING_BYTES` 即可，scoped 通路与定向补读都保持可用。
+
+裁剪只改变交付方式，从不减少可用内容：省略的条目仍在账本内，用 `character --entity ID --section SECTION --topic TOPIC` 读原版本。
+
 ## 三层人物数据结构
 
 启用 `character_mode: "profiled"` 时，人物档案分为三层：

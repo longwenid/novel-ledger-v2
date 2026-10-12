@@ -53,14 +53,16 @@ def envelope(task):
     """Read the complete envelope the way a worker does.
 
     `input.json` is an index: fields above the delivery threshold live in
-    per-type files next to it (`input_files`), and the index says which
-    material is required reading. A caller that wants the whole object must put
-    those fields back, exactly as the worker-facing rule describes.
+    per-type files next to it (`input_files`), and block materials live under
+    `shared_materials` as one file or a base part plus pointered parts. A caller
+    that wants the whole object must put both back, exactly as the worker-facing
+    rules describe.
     """
     work=json.loads(rpath(task).read_text(encoding='utf-8'))
-    base=rpath(task).parent
     for field,pointer in (work.get('input_files') or {}).items():
         work[field]=json.loads((Path(task['project'])/pointer['path']).read_text(encoding='utf-8'))
+    for field in list(work.get('shared_materials') or {}):
+        work[field]=restore_material(task['project'],work,field)
     return work
 
 

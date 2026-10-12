@@ -3,17 +3,23 @@
   "scale": {
     "persons": 26,
     "chapters_committed": 20,
-    "stages_measured": 20
+    "stages_measured": 17
+  },
+  "dispatches": {
+    "batch_review": 5,
+    "chapter_review": 6,
+    "draft": 5,
+    "plan": 1
   },
   "index_bytes": {
-    "max": 10949
+    "max": 11803
   },
   "must_read_bytes": {
-    "max": 23935
+    "max": 22649
   },
   "read_everything_bytes": {
-    "max": 44221
+    "max": 43466
   },
   "character_coverage_gaps": 0,
-  "boundary": "探针用重复正文与合成回执量交付成本；它证明交付结构，不评价文学质量。"
+  "boundary": "探针用重复正文与合成回执量交付成本；它证明交付结构与派工数量，不评价文学质量。"
 }

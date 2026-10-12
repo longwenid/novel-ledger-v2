@@ -88,8 +88,9 @@ Worker 的成本 ≈ **读入量 × 轮数**，而每一轮都要重发全部历
 2. **信封按类型切片，不随全书增长**。`input.json` 是索引：字段超过阈值就落到同任务目录的 `input/<字段>.json`，索引里的 `input_files` 给出地址、`must_read`/`on_demand` 给出必读与按需。实测 27–36K 的整份信封被 Worker 读成 2–3 页（某修订章 27.3K + 26.9K + 27.4K），每页都留在上下文里；切片后索引与每个分片都能一次读完。
 3. **大块材料按需交付，必读且小的内联**。`design_context`、`character_context` 按内容寻址外置且逐条标记 `needed`；`contract`、`guide` 是项目级文档，按字段外置并只在必须核对作者约定的阶段标为必读；`state`、`style_anchor` 留在信封里。判据是「Worker 会不会跳过它」，不是「它大不大」——定点返修会跳过完整世界设计，却不会跳过前态。
 4. **分片标记只收窄必读，从不减少交付**。`needed:false` 的分片仍在账本内、仍有地址与补读命令：程序无法证明某个人物或事实与本章无关，所以缺省是「可读但不强制读」，绝不「不交付」。
+5. **省字节的手段必须先付清自己的派工成本**。人物场景视图（`character_views=scoped`）是典型反例：它按场景裁掉档案条目，但每个保留条目都要带 provenance 引用，所以「一节一条」的档案场景视图比整份**更大**（实测 +396 字节），16 条的档案才省 4.7K；而建索引是一次独立派工（实测一次约 262K token、10 轮），省下的字节永远买不回它。判据是 `characters.scoped_saving` + `characters.worth_indexing`：只有「最好情况能省下的字节」超过派工成本才建索引，默认阈值高于任何档案能产生的节省。**任何以「省 token」为名的额外派工，都要先出示这条算式。**
 
-判据 2–4 由 `tests/test_architecture_layers.py::EnvelopeSlicingTests` 锁定，判据 1 与其余由同文件的 `DeliveryCostTests` 锁定。
+判据 2–5 由 `tests/test_architecture_layers.py::EnvelopeSlicingTests` 与 `tests/test_profile_views.py` 的闸门测试锁定，判据 1 由同文件的 `DeliveryCostTests` 锁定。
 
 ### 角色表与章节的一致性
 
