@@ -6,7 +6,10 @@ import json
 import sqlite3
 import sys
 from pathlib import Path
-from novel_core import access, atoms, engine
+from novel_core import access, atoms, engine, execution
+from novel_core.wire import EVIDENCE_INPUT
+from novel_core.taskview import PROTOCOL as READING_PROTOCOL
+from novel_core.schedule import PROTOCOL as TIMELINE_PROTOCOL
 from novel_core.store import Error, VERSION, connect, initialize, get, put, transaction, chapters, write_json, log, require, head
 from novel_core.memory import recall
 
@@ -42,7 +45,7 @@ def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','advance','submit','measure','preflight','patch','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot','first-read','evidence','checkpoint'):
+    for name in ('init','status','next','advance','submit','measure','preflight','patch','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot','first-read','evidence','checkpoint','task-view'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
@@ -57,7 +60,8 @@ def parser():
         if name=='submit':
             s.add_argument('--continue-preparation',action='store_true');s.add_argument('--continue-chapter-batch',action='store_true')
             s.add_argument('--continue-review',action='store_true')
-        if name in ('first-read','evidence','patch'): s.add_argument('--task',required=True)
+        if name in ('first-read','evidence','patch','task-view'): s.add_argument('--task',required=True)
+        if name=='task-view':s.add_argument('--read',action='store_true')
         if name=='preflight': s.add_argument('--task')  # optional; workers pass it by patch habit
         if name=='patch':
             s.add_argument('--old',required=True);s.add_argument('--new',required=True);s.add_argument('--start',type=int)
@@ -82,7 +86,7 @@ def parser():
         if name=='html':
             s.add_argument('--out');s.add_argument('--branch')
         if name=='config':
-            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','preparation_policy','published_through','style_anchor','review_chunk','chapter_target_han','character_views','writer_batch','chapter_batch_size','batch_through','revision_chain_limit']);s.add_argument('--value')
+            s.add_argument('--key',choices=['context_chars','context_output_chars','context_retrieval_chars','context_overhead_chars','context_mode','preparation_policy','published_through','style_anchor','review_chunk','chapter_target_han','character_views','writer_batch','chapter_batch_size','batch_through','revision_chain_limit','writer_session_policy','execution_mode']);s.add_argument('--value')
         if name=='candidate':
             s.add_argument('--task',required=True);s.add_argument('--start',type=int,default=0);s.add_argument('--end',type=int)
         if name=='character':
@@ -207,6 +211,20 @@ def dispatch_raw(args):
         # P2 default-deny: the tier table is the single registry; an unlisted
         # command is refused rather than silently unguarded.
         access.guard(db,cmd,args)
+        if cmd=='task-view':
+            task=db.execute('SELECT * FROM tasks WHERE id=?',(args.task,)).fetchone()
+            require(task and task['state']=='pending' and task['branch']==get(db,'work_branch'),
+                    'task','阅读视图只用于当前工作分支的 pending')
+            envelope=engine.task_files(db,args.project,dict(task))
+            if args.read:
+                from novel_core.taskview import read_bundle
+                view=envelope.get('reading_view')
+                require(view is not None,'task_view_unavailable','此任务无阅读视图；按 input_path 和必读分片读取',
+                        {'input_path':envelope['input_path'],'recover':'旧冻结任务不升级交付协议；沿用原任务信封。'})
+                return read_bundle(args.project,read(Path(args.project).resolve()/view['manifest_path']))
+            return {'task_id':task['id'],'input_hash':task['input_hash'],
+                    'reading_view':envelope.get('reading_view'),'input_path':envelope['input_path'],
+                    'reading_view_error':envelope.get('reading_view_error')}
         if cmd=='first-read':
             from novel_core.reviewflow import seal
             given=Path(args.result)
@@ -306,6 +324,10 @@ def dispatch_raw(args):
         if cmd=='submit':
             receipt=read_receipt(db,args.project,args.result)
             task=db.execute('SELECT * FROM tasks WHERE id=?',(receipt.get('task_id') if isinstance(receipt,dict) else None,)).fetchone()
+            frozen=json.loads(task['input']) if task else {}
+            if execution.controller_owned(frozen):
+                require(not any((args.continue_preparation,args.continue_chapter_batch,args.continue_review)),
+                        'worker_boundary','单章写审提交后结束；由主控 advance 派下一任务，不使用连续处理选项')
             require(sum((args.continue_preparation,args.continue_chapter_batch,args.continue_review))<=1,'chapter_session','连续处理选项只能选一个')
             if args.continue_review:
                 from novel_core.reviewrun import PROTOCOL,allowed
@@ -338,7 +360,21 @@ def dispatch_raw(args):
                 # P4: surface the degraded step instead of reporting a clean
                 # `accepted` while book.html stays stale.
                 res={**res,'html_render_error':html_failed}
+            if execution.controller_owned(frozen) or (execution.settings(db)['execution_mode']==execution.SINGLE and task and task['stage'] in execution.WRITER_STAGES+('chapter_review',)):
+                snapshot=engine.status(db,brief=True)
+                draft=engine.load_draft(db,task['branch'],task['chapter'])
+                action='paused' if snapshot['status']=='paused' else ('chapter_written' if task['stage'] in execution.WRITER_STAGES
+                        else 'chapter_reviewed' if head(db,task['branch'])>=task['chapter'] else 'repair_required')
+                if task['stage'] in execution.WRITER_STAGES and draft and draft['stage']!='chapter_review':action='repair_required'
+                return {'accepted':True,'task_id':task['id'],'action':action,'worker_boundary':'finished',
+                        **{k:res[k] for k in ('idempotent','settlement','numeric_correction','html_render_error') if k in res},
+                        'boundary':'当前 Worker 结束；主控核实实际结束后 advance --after 本任务 ID，不自行取下一任务'}
             if args.continue_chapter_batch:
+                frozen=json.loads(task['input'])
+                if frozen.get('writer_session_policy')=='chapter' and frozen.get('chapter_session',{}).get('role')=='writer':
+                    return {'accepted':True,'task_id':task['id'],'action':'writer_chapter_done',
+                            **{k:res[k] for k in ('settlement',) if k in res},
+                            'boundary':'本章执笔会话结束；主控核实 Worker 结束后 advance --after 接续，逻辑批次不变'}
                 from novel_core.batchflow import continue_session
                 return {**continue_session(db,args.project,task),**{k:res[k] for k in ('settlement','numeric_correction') if k in res}}
             if args.continue_review:
@@ -397,9 +433,16 @@ def dispatch_raw(args):
             from novel_core.reviewflow import PROTOCOL
             import platform
             report={'skill_root':str(Path(__file__).resolve().parents[1]),'skill_version':VERSION,'db_version':get(db,'version'),
+                    'skill_realpath':str(Path(__file__).resolve().parents[1]),
+                    'entry_path':str(Path(__file__).absolute()),
+                    'entry_realpath':str(Path(__file__).resolve()),
+                    'runtime_code_editing':'unsupported; repair story or plan through task receipts',
+                    'evidence_input':EVIDENCE_INPUT,'reading_view':READING_PROTOCOL,
+                    'timeline_protocol':TIMELINE_PROTOCOL,'host_token_usage':'external observations only',
                     'context_mode':get(db,'context_mode','bounded'),'preparation_policy':get(db,'preparation_policy','adaptive'),'character_limits_enforced':False,
                     'review_protocol':PROTOCOL,'review_verification':'order_and_evidence_coverage_only',
-                    'chapter_batch_size':get(db,'chapter_batch_size',3),'chapter_batch_protocol':'chapter-batch/1',
+                    **execution.settings(db),'execution_protocol':execution.PROTOCOL,'execution_upgrade':get(db,'execution_upgrade'),
+                    'chapter_batch_protocol':'chapter-batch/1',
                     'candidate_ledger':'drafts_only; canonical_commit_requires_independent_review',
                     'material_structure':{'scan_units_per_page':SCAN_UNITS,'scan_layout':'multi-document/1','direct_material_units':DIRECT_UNITS,
                                           'exact_record_units':EXACT_UNITS,'preparation_session':SESSION_PROTOCOL,
@@ -485,8 +528,10 @@ def dispatch_raw(args):
                     return engine.status(db)
                 return engine.begin_revision(db,args.from_chapter,args.reason,style_only=args.style_only)
         if cmd=='config':
-            if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'preparation_policy':get(db,'preparation_policy','adaptive'),'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full'),'writer_batch':get(db,'writer_batch',10),'chapter_batch_size':get(db,'chapter_batch_size',3),'batch_through':get(db,'batch_through',0)}
-            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key,{'preparation_policy':'adaptive','writer_batch':10,'chapter_batch_size':3,'batch_through':0,'revision_chain_limit':2}.get(args.key))}
+            effective=execution.settings(db)
+            if args.value is None and args.key in effective:return {args.key:effective[args.key]}
+            if not args.key: return {**{k:get(db,k) for k in ('context_chars','context_mode','published_through','style_anchor')},'preparation_policy':get(db,'preparation_policy','adaptive'),'chapter_target_han':get(db,'contract').get('chapter_target_han'),'character_views':get(db,'contract').get('character_views','full'),'writer_batch':get(db,'writer_batch',10),'writer_session_policy':get(db,'writer_session_policy','batch'),'chapter_batch_size':get(db,'chapter_batch_size',3),'batch_through':get(db,'batch_through',0),**effective}
+            if args.value is None: return {args.key:get(db,'contract').get(args.key,'full' if args.key=='character_views' else None) if args.key in ('chapter_target_han','character_views') else get(db,args.key,{'preparation_policy':'adaptive','writer_batch':10,'chapter_batch_size':3,'batch_through':0,'revision_chain_limit':2,'writer_session_policy':'batch'}.get(args.key))}
             if args.key=='style_anchor':
                 try:
                     from novel_core.store import validate_style
@@ -494,15 +539,19 @@ def dispatch_raw(args):
                 except ValueError:
                     require(False,'config','style_anchor 需为合法 JSON 对象 {"traits":[...],"sample":"..."}')
             else:
-                value=args.value if args.key in ('context_mode','character_views','preparation_policy') else int(args.value)
+                value=args.value if args.key in ('context_mode','character_views','preparation_policy','writer_session_policy','execution_mode') else int(args.value)
+            if args.key=='execution_mode':require(value in execution.MODES,'config','无人值守仅支持 single_chapter；旧项目自动升级，不支持回切批次')
+            if args.key in execution.LEGACY_OPTIONS and effective['execution_mode']==execution.SINGLE:
+                require(value==effective[args.key],'execution_mode','无人值守统一固定为单章写审；旧批次参数只允许查询或原值确认，不支持回切')
             if args.key=='review_chunk':require(1<=value<=5,'config','review_chunk 为 1~5 章的分段审稿粒度;覆盖范围不变,只调成本')
-            if args.key=='chapter_batch_size':require(1<=value<=5,'config','chapter_batch_size 为 1~5；1 为逐章审稿')
+            if args.key=='chapter_batch_size':require(1<=value<=5,'config','chapter_batch_size 固定为 1；旧范围只用于冻结任务兼容')
             if args.key=='batch_through':
                 require(value>=0,'config','batch_through 为授权终止章号；0 清除范围')
                 from novel_core.batchflow import active
                 batch=active(db)
                 require(not batch or not value or value>=batch['last'],'chapter_range','已有候选批次超出新范围，须先处理已保存正文')
-            if args.key=='writer_batch':require(1<=value<=10,'config','writer_batch 为 1~10 章的执笔会话上限，不改变逐章提交')
+            if args.key=='writer_session_policy':require(value in ('batch','chapter'),'config','writer_session_policy 固定为 chapter；batch 仅为旧冻结任务字段')
+            if args.key=='writer_batch':require(1<=value<=10,'config','writer_batch 固定为 1；旧范围只用于冻结任务兼容')
             if args.key=='revision_chain_limit':require(1<=value<=5,'config','revision_chain_limit 为 1~5 的修订链嵌套深度上限；调整即作者决策，自主会话不得代替作者放宽')
             if args.key=='chapter_target_han':
                 from novel_core.budget import validate_chapter_target
@@ -513,6 +562,11 @@ def dispatch_raw(args):
             if args.key=='published_through': require(get(db,'published_through',0)<=value<=engine.head(db,get(db,'active_branch')),'config','发布边界只能前进至已验收章号')
             with transaction(db):
                 require(not db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone(),'pending','修改配置前先完成或取消当前任务')
+                if args.key=='execution_mode' and value!=effective['execution_mode']:
+                    from novel_core.batchflow import active
+                    branch=get(db,'work_branch')
+                    require(not active(db,branch) and not engine.load_draft(db,branch,head(db,branch)+1),
+                            'execution_boundary','切换执行模式须先完成当前候选批次和未验收正文，不能跳过独立审稿')
                 if args.key in ('chapter_target_han','character_views'):
                     contract=get(db,'contract');contract[args.key]=value;put(db,'contract',contract)
                 else:put(db,args.key,value)

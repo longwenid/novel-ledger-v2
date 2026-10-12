@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from support import combined_review, connect, contract, envelope, ev, fixture_first_read, fixture_obligations, initialize, plan, respond
+from support import legacy_initialize, combined_review, connect, contract, envelope, ev, fixture_first_read, fixture_obligations, initialize, plan, respond
 from novel_core import engine, batchflow, reviewflow
 from novel_core.store import dump, digest, Error, head, get
 from novel_core.ledger import replay
@@ -14,7 +14,7 @@ import novel
 class TargetedRepairTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory();self.path=Path(self.tmp.name)
-        c=contract();c['chapter_batch_size']=3;initialize(self.path,c);self.db=connect(self.path)
+        c=contract();c['chapter_batch_size']=3;legacy_initialize(self.path,c);self.db=connect(self.path)
         for _ in range(3):respond(self.db,self.path,engine.next_task(self.db,self.path))
         engine.approve(self.db)
         engine.validate_plan(self.db,'main',2,{'chapters':[plan(n) for n in range(2,11)]})

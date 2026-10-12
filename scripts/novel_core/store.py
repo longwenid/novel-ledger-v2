@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.52.1'
+VERSION = '1.55.0'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -92,7 +92,7 @@ def write_json(path, value, compact=False, newline=None):
     os.replace(temp, path)
 
 
-def connect(project):
+def connect(project,upgrade=True):
     path = Path(project).resolve() / 'novel.sqlite3'
     require(path.exists(), 'not_initialized', f'项目尚未初始化：{path}')
     db = sqlite3.connect(path, timeout=30, isolation_level=None)
@@ -103,6 +103,9 @@ def connect(project):
         db.execute('PRAGMA journal_mode=WAL')
         db.execute('PRAGMA synchronous=FULL')
         ensure_derived_schema(db)
+        if upgrade:
+            from .execution import upgrade as upgrade_execution
+            upgrade_execution(db,project)
     except BaseException:
         db.close()
         raise
@@ -138,8 +141,10 @@ def put(db, key, value):
 
 def initialize(project, contract):
     from .ledger import seed
+    from .execution import initial_mode, SINGLE_OPTIONS
     required = ('title', 'reader_promise', 'protagonist_drive', 'world_rules', 'ending', 'arcs', 'volumes', 'word_range')
     require(isinstance(contract, dict) and all(contract.get(k) for k in required), 'contract', '缺少创作约定必填项')
+    execution_mode=initial_mode(contract)
     band = contract['word_range']
     require(isinstance(band, list) and len(band) == 2 and all(type(v) is int for v in band) and 0 < band[0] <= band[1], 'contract', 'word_range 必须是正整数上下限')
     require(isinstance(contract['volumes'], list) and all(isinstance(v, dict) and v.get('id') and v.get('purpose') for v in contract['volumes']), 'contract', '每卷需要 id 和 purpose')
@@ -155,6 +160,7 @@ def initialize(project, contract):
     require(contract.get('context_mode','bounded') in ('bounded','legacy'),'contract','context_mode 为 bounded/legacy')
     require(type(contract.get('chapter_batch_size',3)) is int and 1<=contract.get('chapter_batch_size',3)<=5,'contract','chapter_batch_size 为 1~5')
     require(type(contract.get('writer_batch',10)) is int and 1<=contract.get('writer_batch',10)<=10,'contract','writer_batch 为 1~10 章的执笔会话上限')
+    require(contract.get('writer_session_policy','batch') in ('batch','chapter'),'contract','writer_session_policy 为 batch/chapter')
     require(type(contract.get('review_chunk',3)) is int and 1<=contract.get('review_chunk',3)<=5,'contract','review_chunk 为 1~5 章的跨章复审粒度')
     style_anchor = validate_style(contract['style']) | {'source': 'author'} if isinstance(contract.get('style'), dict) else None
     seed(contract)
@@ -186,7 +192,7 @@ def initialize(project, contract):
         CREATE TABLE logs(id INTEGER PRIMARY KEY, created REAL, action TEXT, data TEXT);
         ''')
         with transaction(db):
-            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), 'writer_batch': contract.get('writer_batch',10), 'chapter_batch_size':contract.get('chapter_batch_size',3), 'review_chunk': contract.get('review_chunk',3), 'seq': 0}.items():
+            for k, v in {'schema': SCHEMA, 'version': VERSION, 'contract': contract, 'active_branch': 'main', 'work_branch': 'main', 'status': 'ready', 'pilot_approved': False, 'context_chars': 48000, 'context_mode': contract.get('context_mode','bounded'), **SINGLE_OPTIONS, 'review_chunk': contract.get('review_chunk',3), 'seq': 0, 'execution_mode':execution_mode}.items():
                 put(db, k, v)
             if style_anchor is not None:
                 put(db, 'style_anchor', style_anchor)

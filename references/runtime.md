@@ -28,7 +28,7 @@ python3 "$ROOT/scripts/novel.py" advance --project "$PROJECT" --compact
 
 | 宿主 | 常见委派入口 | 新 Worker 与历史隔离 | 等待完成 |
 |---|---|---|---|
-| Claude Code | `Agent`，旧版可能为 `Task` | 新建用 `subagent_type: "general-purpose"` 或空历史自定义 Worker，不选 `fork`；批内执笔续派可用宿主支持的 `resume`，材料在单次执行内按响应连续处理 | 前台返回或后台完成通知/等待工具 |
+| Claude Code | `Agent`，旧版可能为 `Task` | 新建用 `subagent_type: "general-purpose"` 或空历史自定义 Worker，不选 `fork`；旧冻结任务的恢复可用宿主支持的 `resume`，材料在单次执行内按响应连续处理 | 前台返回或后台完成通知/等待工具 |
 | Zcode | `Agent` | 新建 `general-purpose` 或等价 Worker，角色字段按 schema 填写 | 前台返回或后台完成通知 |
 | Codex | `spawn_agent`，如 `collaboration.spawn_agent` | 支持 `fork_turns` 时设为 `"none"`，核实历史隔离 | 当前等待工具或完成通知，如可用的 `collaboration.wait_agent` |
 | Antigravity | `invoke_subagent` | `Subagents` 仅一个规格：`TypeName: "self"`、`Workspace: "inherit"`、`Model: "inherit"`；`Role` 标阶段，`Prompt` 带任务材料 | 子会话完成通知或状态工具 |
@@ -41,11 +41,11 @@ Worker 须能读 ROOT、读写同一 PROJECT、执行命令和返回完成状态
 
 其他入口按相同能力核验；隔离不明则报告未知，不杜撰工具或把工具调用当终端命令。doctor/advance/next 只生成和检查任务，主控须真实调用委派工具。
 
-委派使用信封中程序生成的 `worker_prompt`，不用另写一套阶段协议。它包含 ROOT 的命令入口、PROJECT、task.json 绝对路径、真实提交命令和任务边界。首读阶段的 input.json 尚未交付：只读当前正文，写首读文件并执行 `commands.first_read`；成功后按响应的 task_path 读取已解锁的完整信封，取得正式模板和材料路径。
+委派使用信封中程序生成的 `worker_prompt`，不用另写一套阶段协议。它包含 ROOT 的命令入口、PROJECT、task.json 绝对路径、真实提交命令和任务边界。首读阶段的 input.json 尚未交付：只读当前正文，写首读文件并执行 `commands.first_read`；成功后按响应的 task_path 读取已解锁的完整信封，取得正式模板和材料路径；有 reading_view 时读 pages，不再重复读已覆盖的 JSON 和分片。
 
 **委派消息是薄包装**，只携带信封不可能知道的四类信息：①角色与历史（one-shot 空历史，或连续会话标记 chapter_session/review_session/preparation_session）；②task.json 绝对路径；③一句话任务背景（分支/章范围/作者目标）；④退出回报契约——最后已提交任务 ID、stage、状态、简短错误，不回显整章正文。ROOT、PROJECT、命令示例、执行流程一律不写进委派消息：它们已内置于 worker_prompt 与 commands，复述会形成第二真源并诱发自拼命令（生成命令按宿主平台给出 python/python3，照抄即可执行）。blocked、返修次数耗尽或 lease/stale_task 异常由 Worker 保留现场回报，主控按恢复规则接手。
 
-正式回执按 `template_path` 填写。空字符串与空证据是待填项，不代表通过。不要查库复制旧审稿回执来猜字段或补写判断；事件字段在 `event_contract_path`，引文坐标用 `commands.evidence`。
+正式回执按 `template_path` 填写。空字符串与空证据是待填项，不代表通过。不要查库复制旧审稿回执来猜字段或补写判断；事件字段在 `event_contract_path`。证据填 chapter/quote，唯一原文由程序批量补 start；歧义或排错才调用 commands.evidence。
 补丁位置用 `commands.patch`；完整回执预检用 `commands.preflight`，它运行与 submit 相同的校验后回滚，不入库、不记用量、不推进任务。成功返回的 settlement 是程序按十进制计算的资源与时钟结算，主控按该值交接，不把 Worker 的口算当作后章前态。失败 details 给出事件下标、实际前值或补丁匹配位置；依本任务 state/commands.state 和事件契约修正，两轮仍失败就交回主控，不读源码、全库或目录树猜字段。
 Worker 仅在 guide 字段说明不足、报错或有疑问时查对应阶段指南：规划查 design-and-brief，人物与索引查 characters，执笔查 writing，审稿查 editorial，准备查 context-runtime；协议只查相关字段。
 
@@ -54,6 +54,14 @@ Worker 仅在 guide 字段说明不足、报错或有疑问时查对应阶段指
 材料信封带 `preparation_session` 时，生成的提交命令附 `--continue-preparation`：成功后只返回同一 bundle 的下一准备任务，或结束状态。Worker 按响应 task 连续处理，简洁视图先读新 task_path，不重复读已读且未变的来源；批次结束、暂停、依赖变化、上下文不足时返回最后已提交任务 ID。正式执笔/审稿、作者批准或另一材料批次均由主控接手。旧信封仍单页交接；中断时主控确认旧执行结束后恢复现有 pending。
 
 character_index 须完整阅读档案和来源章，不能证明适用范围时标 unknown/global，保留原文。
+
+## 运行边界与派工规格
+
+新信封的 host_dispatch_path 指向 host-dispatch/1：包含角色、真实任务身份、提示、输出路由和生命周期。它不是启动回执，launched 与 permissions_enforced 均为 false，宿主须实际启动、等待并核实独立历史。按当前工具 schema 填原生参数；要求数组时不要二次字符串化。
+
+运行期间不热修 ROOT、不直连 SQLite、不从他人回执复制判断。字段问题先查当前模板、事件契约或 task-view；仍失败保留现场。doctor 的真实路径用于识别软链接，两种路径解析到同一文件不表示两个安装副本。提示词约束不能替代宿主文件/工具权限。
+
+唯一执行模式是 single_chapter，执笔与综合审稿各按章新派会话。旧项目自动升级，旧 pending 输入与哈希不改；实际 token 和跨章质量通过真实运行观测，不宣称文件外置会清除模型历史。
 
 ## 无人值守的持续派工循环
 
@@ -64,7 +72,7 @@ character_index 须完整阅读档案和来源章，不能证明适用范围时�
 1. 启动或恢复时执行 `advance`。`action=task_ready` 时按会话复用规则派发 `task.worker_prompt`，保留 Worker ID 和 task_id。
 2. 等待宿主确认 Worker 结束；超时继续等待。运行中不重复派工、不抢写 output、不取下一任务；启动成功、partial 或轮数耗尽不代表提交成功。
 3. 执行 `advance --after Worker报告的最后已提交任务ID`，一次核对数据库真实提交并取得下一任务。章节或材料 Worker 可能已连续提交多项，不能沿用最初派发的 ID。`task_ready` 时直接派发返回的 `task.worker_prompt`，回到第 2 步等待；`wait_for_submit` 时按真实错误恢复同一 pending。`resync` 表示回调已过时、任务取消或分支变化，读返回状态与恢复点，核实旧执行结束后用不带 after 的 `advance` 恢复；不重放过时回调。`revision_promoted` 后继续 advance；`target_reached` 表示已达指定章范围；`await_author`、`paused`、`completed` 按相应边界处理。返回任务只证明账本可派工，不证明宿主会话空闲。
-4. 已结束且不再复用的 Worker 若占用宿主并发名额，使用宿主实际提供的释放/关闭能力回收。保留当前执笔会话且确保能派独立审稿者；不能因名额不足让执笔者自审。
+4. 已结束且不再复用的 Worker 若占用宿主并发名额，使用宿主实际提供的释放/关闭能力回收。单章执笔结束后释放会话，并确保能派独立审稿者；不能因名额不足让执笔者自审。
 
 章节、卷、规划批次或 Worker 完成均继续循环。可每 3～5 章用非终结消息汇报进度，随后续派；运行中收到进度询问时简短回答后继续。上下文压缩后从保存的目标和 `advance` 恢复，不要求作者再次说“继续”。
 
@@ -76,6 +84,10 @@ character_index 须完整阅读档案和来源章，不能证明适用范围时�
 
 ## 快速写作与质量门禁
 
+新任务有 commands.read 时，可一次取得全部必读完整记录与按需地址；与 reading_view.pages、JSON 入口选一种，不重读等价资料。宿主输出不完整时沿 pages 完整补读。回执少量字段修正可修改已生成的结果文件，随后运行 preflight，无需反复重新生成整份脚本。
+
+新规划硬日程按 time_contract 声明坐标，整批倒计时用 batch_anchor；不能只写 D+N。新审稿按 review_contract 核对时间和文风的反证，经过天数声明与事件结算一致。time_schedule 的 recovery=review_fix 是发现冲突后的返修出口，范围不是改 clock 的授权。缺前态只用本任务 state、事件契约和带 task/entity 的 recall；不查库或读旧 pass 猜字段。
+
 作者要求快速写作时，优先减少调度和重复阅读开销：
 
 - `plan` 一次规划未来 5～6 章，按任务窗口与剧情承载选择；已有有效计划继续使用。
@@ -85,21 +97,24 @@ character_index 须完整阅读档案和来源章，不能证明适用范围时�
 
 用 `config --project "$PROJECT" --key review_chunk --value 3` 调整粒度；恢复时沿用已有设置。usage 观察重复成本，真实 token/费用以宿主为准。
 
-## 章节批次执笔与整批独立审稿
+## 单章写审与全局调度
 
-`chapter_batch_size` 默认 3、范围 1～5，设为 1 沿用逐章审稿。批次越小连坐返修范围越小、派工次数越多，默认 3 平衡两者。每批从现有计划取连续章节，遇卷末、终章、十章复核点、计划缺失或新人物准备边界提前结束；试章与历史修订保留逐章流程。`writer_batch` 仍是执笔会话最多处理 1～10 个不同章节的上限，也约束本批长度。已有 pending 与旧材料 bundle 按原协议完成后，新批次才采用此模式。
+所有新旧 v2 项目统一使用 `execution_mode=single_chapter`。有效执行参数由单一策略固定为一章，不分别调小两个批次旋钮。主控只保存作者范围和任务身份，按“advance → 派新 Worker → 等真实结束 → advance --after”接续，不读全文或拼装回执。
 
-1. 主控将带 `chapter_session.role=writer` 的信封派给空历史执笔者。每次仍写一章，提交正文、实际摘要、带证据的 `candidate_events` 与非空具体 `self_check`。程序核验候选事件前态、证据、资源、时钟和到期承诺；候选状态仅服务下一章承接，不表示审稿通过。真实事实、导出、HTML 与审计只读取正式账本。
-2. `commands.submit` 带 `--continue-chapter-batch`，`action=continue_chapter_batch` 时直接处理响应 task，同一次执行内逐章推进；不是主控逐章 resume。批次完成、暂停、范围/依赖变化或上下文不足即停止，返回最后已提交 ID。不能 next/advance 或跨角色。公共资料在 `shared_materials` 的完整 JSON 文件中，只在同一 Worker 已读且版本未变时复用；新 Worker 须重新读。
-3. 主控核实执笔者结束后 advance，派一个新的独立审稿者。审稿信封 `first_read_files` 只交付本批全部正文；首读模板的 `first_reads` 逐章绑定正文哈希与四项体验，顶层 `first_read` 与当前章一致。整批首读持久冻结后才解锁约定和账本。
-4. 同一审稿者在同次执行内逐章完成 facts/reader、作者约定与证据核验；后续任务绑定此前真实冻结的本章首读，直接交付正式模板。按顺序入库，不用一份总 pass 代替逐章检查，也不把五章复核称为五个独立读者。
-5. 明确的数字字面笔误可由有能力标记的独立审稿者定点修正，并在同一回执完整核验合成稿；见 [局部修订](repairs.md)。其他 fix 交回执笔者，保留正文和失败次数。局部 fix 暂存后文候选稿与事件，返修后程序比较真实结算并连续复算；前态未变且后文成立时直接派新的独立审稿批次，不重写后文、不沿用 pass。结算改变、复算失败、整章 fix 或约定/计划/人物/设计版本改变时，后文候选事件失效，执笔者核对承接并重提事件，可用补丁或 reuse_original 保留仍成立的正文。两轮返修及一次重设计的上限不重置。
+1. 新执笔者写当前一章，提交正文（返修按补丁）、summary 和具体 self_check，成功后结束；不预报 candidate_events，不取下一任务。
+2. 主控派新的独立综合审稿者。先只读本章正文，冻结四项首读体验；同一审稿 task 解锁资料后由同一审稿者完成 facts 和 reader 全部检查，一次提交后结束。两类检查属于同一独立审稿者。
+3. 全部 pass 后入库，再派下一章。fix 保留本章和尝试次数，派新返修者；改稿后派新审稿者重新首读。两轮返修、一次重设计后仍失败则暂停，不用新会话重置预算。篇幅发展走原有有界阶梯。
+4. 滚动计划仍可覆盖未来 5～6 章；十章、卷末、修订与全书复核仍执行，独立 review_session 的分块可连续处理，不缩减覆盖范围。材料准备单独按需运行；试章仍需作者 approve。
 
-已明确终止章号时，主控启动用 `advance --through N`，引擎将新写批次截到 N，已写范围的到期十章/卷末复审与候选修订复审、合并仍须完成，再返回 `target_reached`；抵达终章时须通过全书验收才能返回 `completed`。不会把“当前五章”当作完本目标。恢复沿用原范围，新授权用相同入口更新，`--through 0` 清除章范围。不得在 pending 中改变范围，也不能把已有候选批次截成未处理的残稿。
+`host-dispatch.json` 描述新会话要求，宿主负责实际启动与历史隔离。可报告真实 session 身份以拒绝已知复用；未报告时仍标记未验证。首读解锁不创建第二个审稿者。中断先核实旧 Worker 已结束，恢复原 pending；已绑定审稿者无法恢复时取消原任务后重新首读，不能把别人的体验当作自己的。
 
-长材料可能需额外 Worker：整批首读尚未冻结时，审稿资料准备由单独材料者处理，完成后再派新的独立审稿者；不能让未来审稿者先提炼设定再声称盲首读。首读已冻结后，审稿者可按返回任务继续本批疑点准备。正常资料齐备时，五章仅需主控两次派工；模型仍逐章创作与核验，真实耗时和费用以宿主为准。
+## 旧项目自动升级
 
-中断恢复须先核实旧 Worker 已结束，再 advance 取得唯一 pending；已保存候选前章不重写。新执笔者读完整必要资料与候选前态，新审稿者保留实际已冻结首读并补读正文，不伪造新的首读体验。记录会话与章号仍用 `checkpoint --writer-session ID --handled-chapter N`，不猜测宿主会话是否存活。
+第一次打开旧 v2 项目，在同一个写事务的保护下用 SQLite backup 保存完整旧账本到 PROJECT/work/migrations，再记录版本、单章策略和升级日志。备份失败时不推进版本；后续打开不重复备份。更高版本项目拒绝降级。
+
+有 pending 时状态为 draining：保持原输入、哈希、首读及有效依赖，当前任务按原协议完成；旧连续提交选项只兼容该任务回执，提交后返回 finished 交回主控，不派下个批内任务。原任务失效或被取消也在安全边界完成升级。没有 pending 后，旧批次归档、候选正文和尝试次数保留，从最早未验收章开始新的独立首读与综合审稿。旧临时事实不直接变成正式事实。
+
+升级清理跨章会话标记，保留作者目标、授权终止范围、规划、修订链和全部正式稿。doctor 返回 execution_upgrade 的状态、旧参数记录和 backup_path；读取恢复快照后用 advance 接续。旧批次参数不再是模式选择；固定值仅供查询，不能回切。升级不自动批准试章、合并或完本。
 
 ## 主控交接与单会话降级
 

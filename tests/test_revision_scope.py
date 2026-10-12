@@ -13,7 +13,7 @@ class FastCommitTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.path=Path(self.temp.name)
         c=contract();c['style']={'traits':['动作呈现选择'],'sample':'周行核对每一项证据。'}
-        initialize(self.path,c);self.db=connect(self.path)
+        legacy_initialize(self.path,c);self.db=connect(self.path)
     def tearDown(self): self.db.close();self.temp.cleanup()
     def task(self): return engine.next_task(self.db,self.path)
 

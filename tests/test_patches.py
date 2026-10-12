@@ -113,9 +113,12 @@ class PatchPipelineTests(unittest.TestCase):
         self.assertEqual(t['stage'],'draft');self.assertEqual(w['payload']['base_hash'],digest(self.text))
         outcome=engine.submit(self.db,result(t,{'base_hash':digest(self.text),'reuse_original':True}))
         # Reuse requires unchanged upstream prose and valid parent reviews.
-        self.assertTrue(outcome['fast_committed'])
+        self.assertNotIn('fast_committed',outcome)
         self.assertNotIn(self.text,(outcome.get('receipt') or ''))
         self.assertEqual(head(self.db,'main'),1)
+        self.assertEqual(head(self.db,revision['branch']),0)
+        review_task=self.task();self.assertEqual(review_task['stage'],'chapter_review')
+        respond(self.db,self.path,review_task)
         self.assertEqual(head(self.db,revision['branch']),1)
     def test_candidate_revision_accepts_patch_with_original_branch_untouched(self):
         respond(self.db,self.path,self.task());respond(self.db,self.path,self.task(),prose=self.text)

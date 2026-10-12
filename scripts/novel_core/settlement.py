@@ -84,19 +84,6 @@ def evaluate(db, branch, chapter, prose, events, candidate=False, initial_state=
     engine.validate_hook_deadlines(state, chapter)
     row = db.execute('SELECT data FROM plans WHERE branch=? AND number=?', (branch, chapter)).fetchone()
     plan = json.loads(row[0]) if row else {}
-    if 'day_span' in plan:
-        lo = plan['day_span'][0]
-        hi = plan['day_span'][1] + 1
-        # Anchored at the chapter's actual start clock, not the batch-signature
-        # clock: multi-chapter batches stamped one anchor at plan time squeeze
-        # later chapters to zero margin as earlier chapters advance the day
-        # count (session 0077: ch7 day_span [5,5] vs clock already 6).
-        require(lo <= state['clock'] - before['clock'] <= hi, 'time_schedule', '章末时钟不在计划日程内；核对正文时间与本章计划',
-                {'chapter': chapter, 'current': state['clock'], 'before': before['clock'],
-                 'day_advance': state['clock'] - before['clock'], 'expected_advance': [lo, hi],
-                 'day_span': plan['day_span'],
-                 'recover': f'本章计划允许推进 {lo}~{hi} 天，正文实际推进 {state["clock"] - before["clock"]} 天。'
-                            '正文时间合理的出路按角色选一：审稿者（pass 回执被本闸门拒绝）可改判 fix 并把本冲突列为 finding（goal=重排本章日程或修正计划），同任务直接补交，不必重派新审稿；'
-                            '执笔/返修者修正或补登记 clock 事件使推进落入区间；'
-                            '计划本身有误（日程锚过期）时，本章无草稿走 replan，已有草稿走审稿 fix→返修路线，不得硬改 clock 凑数'})
+    from .schedule import check as check_schedule
+    check_schedule(plan,before['clock'],state['clock'],chapter)
     return state, report(before, state, steps)

@@ -8,7 +8,7 @@ import re
 import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from novel_core import engine
+from novel_core import engine, execution
 from novel_core.store import initialize,connect,get,dump,digest,write_json
 
 ROOT=Path(__file__).resolve().parent
@@ -214,6 +214,16 @@ def fact_review(n,text):
         if key=='world_rules':row['reason']='解决问题使用运输、文书与人物选择，没有新设无代价能力；旧防潮阵只消耗灯油。'
         if key=='resources' and n not in (2,3,4,7,8,10,11,12):
             row.update(evidence=[],not_applicable='本章没有明确数量收支；已有余额未改变。')
+        if key=='time':
+            # The scrutiny contract asks the receipt to attack its own conclusion
+            # and state the elapsed days the settled clock shows. This sample's
+            # event ledger carries no clock statements, so the clock does not
+            # advance and the declared span is zero by settlement, not by prose.
+            row.update(elapsed_days=0,
+                       challenge={'risk':'若正文存在无解释的日期倒退或未声明的时间跳跃，时序结论即被推翻。',
+                                  'disposition':'satisfied',
+                                  'reason':'逐段核对时间语句，行动在同日连续，无倒退；事件结算时钟未推进。',
+                                  'evidence':refs[0]})
         checks.append(row)
     return {'verdict':'pass','checks':checks,'findings':[],'events':es,'summary':PLANS[n-1][2]+'；'+FACT_NOTES[n]}
 
@@ -235,6 +245,14 @@ def reader_result(n,review,text=None,checks=None):
             out.update(result='pass',not_applicable=row['reason'])
         if row.get('quote'):out['evidence']=[evidence(n,row['quote'],text)]
         else:out.update(evidence=[],not_applicable=row.get('not_applicable',row['reason']))
+        if key=='language':
+            # Same scrutiny adaptation as the facts time check: the archived
+            # judgment predates the challenge field, so the receipt answers the
+            # disconfirmation duty from the judgment it already recorded.
+            out['challenge']={'risk':'若删改是以形容词替代动作与事实，或技术名词被当作文风证据，结论即被推翻。',
+                              'disposition':'violated' if out['result']=='fix' else 'satisfied',
+                              'reason':'核对该引句本身：信息由动作、事实或对白承担，修饰未替代表达。',
+                              'evidence':out['evidence'][0] if out.get('evidence') else evidence(n,None,text)}
         data['checks'].append(out)
     for row in r['findings']:
         data['findings'].append({k:row[k] for k in ('severity','impact','goal')}|{'evidence':evidence(n,row['quote'],text)})
@@ -348,7 +366,13 @@ def main():
                 if n==4:
                     text=(STORY/'initial/04.md').read_text(encoding='utf-8').rstrip()
                 data={'prose':text}
-                if work.get('chapter_session',{}).get('role')=='writer':
+                if execution.controller_owned(work):
+                    # Single-chapter execution: the writer reports a summary and
+                    # a concrete self-check; candidate events stay with the
+                    # independent combined review, which verifies them on prose.
+                    data.update(summary='本章沿既定场景推进，未改账本。',
+                                self_check='核过场景选择、阻力、后果与重复表达；本章未改账本。')
+                elif work.get('chapter_session',{}).get('role')=='writer':
                     # A batch writer also hands over its candidate ledger and a
                     # concrete self-check. The engine treats neither as a
                     # substitute for the independent review.
@@ -358,7 +382,10 @@ def main():
                                 self_check='核过场景选择、阻力、后果与重复表达；本章未改账本。')
             elif stage in ('repair','redesign'):
                 data={'prose':PROSE[n],'repair_note':'按独立读者发现改正水位与桥洞净空关系，保持水尺只是线索。','design_change':'调查基于运输路径，刀痕不再被当作未经核实的暗号。'}
-                if work.get('chapter_session',{}).get('role')=='writer':
+                if execution.controller_owned(work):
+                    data.update(summary='按发现修正水位与净空关系。',
+                                self_check='核过修正后的因果与重复表达；本章未改账本。')
+                elif work.get('chapter_session',{}).get('role')=='writer':
                     data.update(candidate_events=[], evidence_catalog={},
                                 summary='按发现修正水位与净空关系。',
                                 self_check='核过修正后的因果与重复表达；本章未改账本。')

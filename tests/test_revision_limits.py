@@ -177,7 +177,7 @@ class RevisionChainLimits(unittest.TestCase):
             self.assertTrue(task.get('task_id'), task)
             payload = envelope(task)['payload']
             if stage == 'draft' and not draft_seen:
-                self.assertIn('先对账再动笔', payload['instruction'])
+                self.assertIn('impact', payload['instruction'])
                 self.assertIn('耦合章', payload['instruction'])
                 draft_seen = True
             # Chunk reviews share the stage name; the alignment clause rides the

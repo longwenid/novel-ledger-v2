@@ -37,6 +37,10 @@ class SealedReviewTests(unittest.TestCase):
             r['data'][category]['verdict']='pass'
             for row in r['data'][category]['checks']:
                 row.update(result='pass',reason='合成工程夹具，用于验证回执结构与事务。',evidence=[copy.deepcopy(e)])
+                if 'challenge' in row:
+                    row['challenge']={'risk':'工程夹具的可疑交收顺序。','disposition':'satisfied',
+                                      'reason':'仅验证结构，不代表文学判断。','evidence':copy.deepcopy(e)}
+                if 'elapsed_days' in row:row['elapsed_days']=0
             for row in r['data'][category].get('obligations',[]):
                 row.update(result='pass',reason='合成正文没有引入与此约定矛盾的记录。',evidence=[copy.deepcopy(e)],
                            challenge={'disposition':'satisfied','reason':'合成工程夹具的约束判断。','evidence':copy.deepcopy(e)})
@@ -138,7 +142,8 @@ class SealedReviewTests(unittest.TestCase):
         self.seal();r=self.receipt();reader=r['data']['reader'];reader['verdict']='fix'
         row=reader['obligations'][0];row['result']='fix';row['challenge']['disposition']='violated'
         self.assert_error('review_obligations',lambda:engine.submit(self.db,r))
-        next(c for c in reader['checks'] if c['id']=='language')['result']='fix'
+        check=next(c for c in reader['checks'] if c['id']=='language')
+        check['result']='fix';check['challenge']['disposition']='violated'
         self.assert_error('review_obligations',lambda:engine.submit(self.db,r))
         reader['findings']=[{'obligation_id':'language','severity':'quality','impact':'工程测试的明确违约路径',
                             'goal':'修改所指语段','evidence':ev(self.prose)}]
@@ -149,7 +154,7 @@ class SealedReviewTests(unittest.TestCase):
         self.assertEqual(head(self.db,'main'),0);self.assertEqual(engine.next_task(self.db,self.path)['stage'],'repair')
 
     def test_compact_submit_updates_controller_without_heavy_status(self):
-        self.seal();taskio.checkpoint(self.db,self.path,goal='只写首章',writer_session='writer-a',handled=[1])
+        self.seal();taskio.checkpoint(self.db,self.path,goal='只写首章')
         r=self.receipt();self.path_for('output_path').write_text(dump(r), encoding='utf-8')
         with patch('novel_core.budget.overview',side_effect=AssertionError('heavy status')):
             out=self.cli('submit','--result',str(self.path_for('output_path')),'--brief')
@@ -162,11 +167,9 @@ class SealedReviewTests(unittest.TestCase):
     def test_checkpoint_does_not_infer_authorization_and_resets_writer(self):
         point=taskio.checkpoint(self.db,self.path);self.assertFalse(point['authorization_recorded'])
         self.assertEqual(point['task']['input_hash'],self.task['input_hash'])
-        taskio.checkpoint(self.db,self.path,goal='写十章',writer_session='a',handled=[1])
-        point=taskio.checkpoint(self.db,self.path,writer_session='b');self.assertNotIn('handled_chapters',point)
-        point=taskio.checkpoint(self.db,self.path,handled=[1]);self.assertEqual(point['writer_branch'],'main')
-        p=json.loads(self.db.execute('SELECT data FROM plans').fetchone()[0]);p['volume']='v2'
-        self.db.execute('UPDATE plans SET data=?',(dump(p),))
+        taskio.checkpoint(self.db,self.path,goal='写十章')
+        with self.assertRaises(Error):taskio.checkpoint(self.db,self.path,writer_session='a',handled=[1])
+        put(self.db,'controller_intent',{'authorized_goal':'写十章','writer_session_id':'old-writer','handled_chapters':[1]})
         point=taskio.checkpoint(self.db,self.path);self.assertNotIn('writer_session_id',point)
         self.assertEqual(point['authorized_goal'],'写十章')
 

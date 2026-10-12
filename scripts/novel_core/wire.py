@@ -1,7 +1,14 @@
 """Lossless evidence references and small, recoverable transport views."""
 import copy
 from pathlib import Path
-from .store import require
+from .store import require, Batch, Error
+
+EVIDENCE_INPUT='quote_optional_start/1'
+EVIDENCE_RULE='证据填 chapter/quote；start 可选，程序批量定位唯一原文。歧义或排错才用 evidence，不逐条计算坐标。'
+
+
+def evidence_contract(chapter=1, quote='原文'):
+    return {'protocol':EVIDENCE_INPUT,'example':{'chapter':chapter,'quote':quote},'rule':EVIDENCE_RULE}
 
 
 def expand_receipt(db,task,work,data):
@@ -33,38 +40,78 @@ def expand_evidence(data,stage):
     require(isinstance(catalog,dict),'evidence_catalog','evidence_catalog 须为编号到完整原文证据的对象')
     for name,proof in catalog.items():
         require(isinstance(name,str) and name.strip() and isinstance(proof,dict)
-                and set(proof)=={'chapter','start','quote'} and type(proof['chapter']) is int
-                and type(proof['start']) is int and proof['start']>=0
+                and {'chapter','quote'} <= set(proof) <= {'chapter','start','quote'} and type(proof['chapter']) is int
+                and ('start' not in proof or (type(proof['start']) is int and proof['start']>=0))
                 and isinstance(proof['quote'],str) and proof['quote'].strip(),
-                'evidence_catalog','每个证据编号须定义完整 chapter/start/quote，不嵌套引用',{'ref':name})
+                'evidence_catalog','证据编号须定义 chapter/quote，可选非负整数 start，不嵌套引用',{'ref':name})
     out=copy.deepcopy(data);out.pop('evidence_catalog')
-    def proof(value):
-        if isinstance(value,dict) and 'ref' in value:
-            require(set(value)=={'ref'} and isinstance(value['ref'],str) and value['ref'] in catalog,
-                    'evidence_catalog','证据引用须为 {ref:已定义编号}，不能混入坐标或覆盖原文',{'ref':value.get('ref')})
-            return copy.deepcopy(catalog[value['ref']])
-        if isinstance(value,list):return [proof(item) for item in value]
-        return value
-    def receipt(value):
-        if not isinstance(value,dict):return
-        for field in ('checks','findings','obligations'):
-            for row in value.get(field,[]) if isinstance(value.get(field,[]),list) else []:
-                if not isinstance(row,dict):continue
-                if 'evidence' in row:row['evidence']=proof(row['evidence'])
-                challenge=row.get('challenge')
-                if isinstance(challenge,dict) and 'evidence' in challenge:challenge['evidence']=proof(challenge['evidence'])
-        memory=value.get('memory')
-        if isinstance(memory,dict) and 'sources' in memory:memory['sources']=proof(memory['sources'])
-    receipt(out)
-    for category in ('facts','reader'):receipt(out.get(category))
-    lists=[out.get('candidate_events',[])]
-    if isinstance(out.get('facts'),dict):lists.append(out['facts'].get('events',[]))
-    for events in lists:
-        for event in events if isinstance(events,list) else []:
-            if not isinstance(event,dict):continue
-            for field in ('evidence','cause_evidence','change_evidence'):
-                if field in event:event[field]=proof(event[field])
+    for path, value in proof_slots(out):
+        if 'ref' not in value:continue
+        require(set(value)=={'ref'} and isinstance(value['ref'],str) and value['ref'] in catalog,
+                'evidence_catalog','证据引用须为 {ref:已定义编号}，不能混入坐标或覆盖原文',
+                {'ref':value.get('ref'),'field':path})
+        expanded=copy.deepcopy(catalog[value['ref']]);value.clear();value.update(expanded)
     return out
+
+
+def proof_slots(data):
+    """Registered proof slots only; narrative values are never traversed."""
+    def refs(value, path):
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                yield from refs(item, path + '/' + str(index))
+        elif isinstance(value, dict):
+            yield path, value
+    def receipt(value, path):
+        if not isinstance(value, dict):return
+        for field in ('checks', 'findings', 'obligations'):
+            rows=value.get(field, [])
+            for index, row in enumerate(rows if isinstance(rows, list) else []):
+                if not isinstance(row, dict):continue
+                prefix=f'{path}/{field}/{index}'
+                if 'evidence' in row:yield from refs(row['evidence'], prefix+'/evidence')
+                challenge=row.get('challenge')
+                if isinstance(challenge, dict) and 'evidence' in challenge:
+                    yield from refs(challenge['evidence'], prefix+'/challenge/evidence')
+        memory=value.get('memory')
+        if isinstance(memory, dict):yield from refs(memory.get('sources', []), path+'/memory/sources')
+    yield from receipt(data, 'data')
+    for category in ('facts', 'reader'):yield from receipt(data.get(category), 'data/'+category)
+    for path, events in (('data/candidate_events', data.get('candidate_events', [])),
+                         ('data/events', data.get('events', [])),
+                         ('data/facts/events', (data.get('facts') or {}).get('events', []) if isinstance(data.get('facts'), dict) else [])):
+        for index, event in enumerate(events if isinstance(events, list) else []):
+            if not isinstance(event, dict):continue
+            for field in ('evidence', 'cause_evidence', 'change_evidence'):
+                if field in event:yield from refs(event[field], f'{path}/{index}/{field}')
+
+
+def anchor_proofs(data, sources, skip_obligations=False):
+    """Anchor a receipt against its exact composed/frozen source versions.
+
+    A per-receipt cache avoids scanning the same quote for every check. Explicit
+    valid coordinates retain their meaning, including repeated occurrences.
+    Domain validators still execute independently after normalization.
+    """
+    from .ledger import evidence
+    batch=Batch(); cache={}
+    for path, ref in proof_slots(data):
+        # reviewflow owns obligation shape/coverage and aggregates their proof
+        # defects together with structural errors, in the established order.
+        if skip_obligations and '/obligations/' in path:continue
+        chapter=ref.get('chapter')
+        try:
+            require(type(chapter) is int and chapter in sources, 'evidence', '证据章号不在本任务冻结来源内')
+            require(isinstance(ref.get('quote'), str), 'evidence', '缺少正文证据原文')
+            # Avoid unhashable malformed start values before touching the cache.
+            key=(chapter, ref['quote'], repr(ref.get('start')))
+            if key not in cache:
+                probe=dict(ref); evidence(sources[chapter], probe, chapter); cache[key]=probe
+            ref.update(cache[key])
+        except Error as error:
+            batch.capture(error, field=path)
+    batch.raise_if_any()
+    return data
 
 
 def compact_response(project,value):
@@ -80,7 +127,7 @@ def compact_response(project,value):
     task=out.get('task')
     if isinstance(task,dict) and 'input_path' in task:
         fields=('schema','task_id','stage','chapter','branch','input_hash','project','input_path','output_path',
-                'task_path','delivery_phase','state','chapter_session','review_session','preparation_session')
+                'task_path','host_dispatch_path','delivery_phase','state','chapter_session','review_session','preparation_session','execution_policy')
         short={k:task[k] for k in fields if k in task}
         path=task.get('task_path') or str(Path(task['input_path']).with_name('task.json'))
         short['task_path']=path

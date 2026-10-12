@@ -3,8 +3,36 @@ import json
 import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from novel_core.store import initialize,connect,get,put,transaction,dump
+from novel_core.store import initialize,connect as _connect,get,put,transaction,dump
 from novel_core import engine
+
+# Retired runtime replay is confined to explicitly registered engineering
+# fixtures. Production connect always upgrades; these fixtures build actual
+# old frozen tasks to exercise migration and backward receipt validators.
+_legacy_projects=set()
+
+
+def connect(project):
+    return _connect(project,upgrade=str(Path(project).resolve()) not in _legacy_projects)
+
+
+def legacy_initialize(project,c):
+    initialize(project,c)
+    db=_connect(project,upgrade=False)
+    try:
+        put(db,'execution_mode','chapter_batch');put(db,'version','1.53.0')
+        for key,value in {'chapter_batch_size':3,'writer_batch':10,'writer_session_policy':'batch'}.items():
+            put(db,key,c.get(key,value))
+    finally:db.close()
+    _legacy_projects.add(str(Path(project).resolve()))
+
+
+def enable_upgrade(project):
+    _legacy_projects.discard(str(Path(project).resolve()))
+
+
+import novel
+novel.connect=connect
 
 
 def fixture_first_read():
@@ -102,13 +130,17 @@ def read_material(project, material):
     return json.loads((Path(project)/material['path']).read_text(encoding='utf-8'))
 
 
-def result(task,data,**extra):
+def result(task,data,fixture_writer_defaults=True,**extra):
     data=copy.deepcopy(data)
+    if fixture_writer_defaults and task.get('execution_policy',{}).get('mode')=='single_chapter' and task.get('stage') in ('draft','repair','redesign') and isinstance(data,dict) and any(k in data for k in ('prose','patches','reuse_original')):
+        data.setdefault('summary','工程夹具的交收场景摘要。')
+        data.setdefault('self_check','工程夹具核对交收顺序，不代表文学质量判断。')
     if task.get('stage')=='chapter_review' and isinstance(data,dict):
         work=json.loads(rpath(task).read_text(encoding='utf-8'));prose=pack_prose(task['project'],work)
         for category in ('facts','reader'):
             if isinstance(data.get(category),dict):
                 data[category].setdefault('obligations',fixture_obligations(work,category,prose,task['chapter']))
+        fixture_scrutiny(work,data,prose,task['chapter'])
     return {'schema':'novel-ledger-v2.result/1','task_id':task['task_id'],'input_hash':task['input_hash'],'data':data,**extra}
 
 
@@ -125,7 +157,24 @@ def combined_review(work,prose,n=1,events=None,summary='周行交付收据，宋
     facts.update(events=events or [],summary=summary,**extra)
     reader=review(work['payload']['reader_checks'],prose,n)
     reader['first_read']=fixture_first_read()
-    return {'facts':facts,'reader':reader}
+    data={'facts':facts,'reader':reader}
+    fixture_scrutiny(work,data,prose,n)
+    return data
+
+
+def fixture_scrutiny(work,data,prose,n):
+    """Engineering declarations only, never a generated literary pass."""
+    from novel_core import reviewflow
+    if work.get('capabilities',{}).get('review_scrutiny')!=reviewflow.SCRUTINY_PROTOCOL:return
+    elapsed=sum(e['after']-e['before'] for e in data.get('facts',{}).get('events',[])
+                if e.get('op')=='clock' and not e.get('thread'))
+    for category,ids in reviewflow.SCRUTINY_CHECKS.items():
+        for row in data.get(category,{}).get('checks',[]):
+            if row['id'] not in ids:continue
+            row.setdefault('challenge',{'risk':'合成交收场景的工程边界，不代表文学判断。',
+                'disposition':'violated' if row['result']=='fix' else 'satisfied',
+                'reason':'工程夹具验证协议和结算一致性，不证明文风或时间语义。','evidence':ev(prose,n)})
+            if row['id']=='time' and row['result']=='pass':row.setdefault('elapsed_days',elapsed)
 
 
 def submit_review(db,task,data):

@@ -1,0 +1,28 @@
+{
+  "scope": "Three identical synthetic engineering chapters, generated submission commands and independent sealed review; no model invocation.",
+  "batch": {
+    "writer_session_policy": "batch",
+    "writer_dispatches": 1,
+    "reviewer_dispatches": 1,
+    "chapter_tasks": 6,
+    "reading_file_reads": 6,
+    "reading_bytes": 65311,
+    "canonical_prose_hash": "6b43840d4d0e7a2d7b69837b416b87b441f350938c9caf0ebaa45ad5dd1f3e7e",
+    "canonical_state_hash": "e7000bf9f0ef229851a124494a7da774da2bba5eb4ae03f044be191348a47c8b",
+    "audit_ok": true
+  },
+  "chapter": {
+    "writer_session_policy": "chapter",
+    "writer_dispatches": 3,
+    "reviewer_dispatches": 1,
+    "chapter_tasks": 6,
+    "reading_file_reads": 6,
+    "reading_bytes": 65323,
+    "canonical_prose_hash": "6b43840d4d0e7a2d7b69837b416b87b441f350938c9caf0ebaa45ad5dd1f3e7e",
+    "canonical_state_hash": "e7000bf9f0ef229851a124494a7da774da2bba5eb4ae03f044be191348a47c8b",
+    "audit_ok": true
+  },
+  "canonical_results_equal": true,
+  "actual_tokens": null,
+  "literary_quality": "not measured; requires genuine writing and independent review"
+}

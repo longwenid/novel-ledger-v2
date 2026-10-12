@@ -38,6 +38,10 @@ class RuntimeHandoffTests(unittest.TestCase):
             data=receipt['data'][category];data['verdict']='pass'
             for row in data['checks']:
                 row.update(result='pass',reason='工程夹具验证提交与交接，不评价文学质量。',evidence=[copy.deepcopy(evidence)])
+                if 'challenge' in row:
+                    row['challenge']={'risk':'工程夹具核验顺序。','disposition':'satisfied',
+                                      'reason':'只核验协议一致性。','evidence':copy.deepcopy(evidence)}
+                if 'elapsed_days' in row:row['elapsed_days']=0
             for row in data['obligations']:
                 row.update(result='pass',reason='工程夹具验证约定完整覆盖。',evidence=[copy.deepcopy(evidence)],
                            challenge={'disposition':'satisfied','reason':'工程夹具的结构判断。','evidence':copy.deepcopy(evidence)})
@@ -100,7 +104,8 @@ class RuntimeHandoffTests(unittest.TestCase):
         task=self.start_review();formal,receipt=self.formal_review(task)
         reader=receipt['data']['reader'];reader['verdict']='fix'
         obligation=reader['obligations'][0];obligation['result']='fix';obligation['challenge']['disposition']='violated'
-        next(row for row in reader['checks'] if row['id']=='language')['result']='fix'
+        check=next(row for row in reader['checks'] if row['id']=='language')
+        check['result']='fix';check['challenge']['disposition']='violated'
         reader['findings']=[{'obligation_id':'language','severity':'quality','impact':'明确的工程违约路径',
                             'goal':'修改证据所指语段','evidence':copy.deepcopy(obligation['evidence'][0])}]
         self.submit_file(formal,receipt)

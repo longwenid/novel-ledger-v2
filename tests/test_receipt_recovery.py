@@ -117,6 +117,7 @@ class TimeScheduleEscapeTests(unittest.TestCase):
             engine.approve(self.db)
         planned = plan(2)
         planned['scenes'] = [{'label': '货栈', 'present': ['hero'], 'time_hint': 'D+2 黄昏，先清点再碰头'}]
+        planned['timeline']={'basis':'chapter_start','end_offset_range':[2,3]}
         engine.submit(self.db, result(self.task(), {'chapters': [planned]}))
         respond(self.db, self.path, self.task(), prose='两天后，周行走进货栈清点货物。')
         task = self.task()
@@ -235,6 +236,7 @@ class ChapterStartAnchorTests(unittest.TestCase):
         # 一批三章都在 clock=0 签发计划，每章 D+1；逐章消耗后末章仍有余量。
         planned = [dict(plan(n), scenes=[{'label': '货栈', 'present': ['hero'], 'time_hint': 'D+1 白昼'}])
                    for n in (1, 2, 3)]
+        for p in planned:p['timeline']={'basis':'chapter_start','end_offset_range':[1,2]}
         engine.submit(self.db, result(self.task(), {'chapters': planned}))
         self._chapter(1, lambda p, n: [{'op': 'clock', 'before': n - 1, 'after': n, 'evidence': ev(p, n)}])
         if self.task().get('stage') == 'await_author':
@@ -362,4 +364,3 @@ class RobustnessTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

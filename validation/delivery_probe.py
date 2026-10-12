@@ -40,7 +40,7 @@ def contract():
         'volumes': [{'id': 'v1', 'purpose': '追索并兑现'}, {'id': 'v2', 'purpose': '结清旧账'}],
         'word_range': [100000, 3000000], 'chapter_target_han': 3000,
         'planning_mode': 'layered', 'character_mode': 'profiled',
-        'character_views': 'scoped', 'context_mode': 'bounded', 'chapter_batch_size': 3,
+        'character_views': 'scoped', 'context_mode': 'bounded', 'execution_mode':'single_chapter',
         'entities': entities,
         'initial_resources': [{'holder': 'hero', 'asset': 'cash', 'unit': '文', 'quantity': '100'}],
     }
@@ -185,15 +185,33 @@ def measure_envelope(project, task):
             else:
                 optional += size
     shared_bytes = required + optional
-    return {'files': files, 'input_bytes': index_bytes,
+    reading=task.get('reading_view')
+    reading_metrics={}
+    if reading:
+        manifest=json.loads((base/reading['manifest_path']).read_text(encoding='utf-8'))
+        reading_metrics={'json_required_read':reading['source_read_bytes'],
+                         'reading_required_read':reading['required_read_bytes'],
+                         'json_file_reads':len(manifest['sources']),
+                         'reading_file_reads':len(manifest['pages'])}
+    all_paths={input_path} if input_path.is_file() else set()
+    all_paths.update(base/row['path'] for row in slices.values())
+    all_paths.update(base/part['path'] for entry in work.get('shared_materials',{}).values()
+                     for part in entry.get('parts') or [entry])
+    all_paths.update(base/row['path'] for key in ('must_read','on_demand')
+                     for row in work.get(key,[]) if row.get('path'))
+    if reading:all_paths.update(base/row['path'] for row in manifest['sources'])
+    unique_total=sum(path.stat().st_size for path in all_paths)
+    return {**reading_metrics, 'files': files, 'input_bytes': index_bytes,
             'index_bytes': index_bytes,
             'slice_bytes': sum(row['bytes'] for row in slices.values()),
             'required_shard_bytes': required,
             'optional_shard_bytes': optional,
             'shared_bytes': shared_bytes,
             'slices': {field: row['bytes'] for field, row in slices.items()},
-            'required_read': index_bytes + required,
-            'total_if_read_all': index_bytes + sum(row['bytes'] for row in slices.values()) + shared_bytes}
+            'legacy_required_read':index_bytes + required,
+            'required_read':reading['required_read_bytes'] if reading else index_bytes + required,
+            'total_if_read_all':unique_total,
+            'legacy_total_if_read_all':index_bytes + sum(row['bytes'] for row in slices.values()) + shared_bytes}
 
 
 
@@ -281,6 +299,8 @@ def make_receipt(db, project, task, visit=1):
     elif stage in ('draft', 'repair', 'redesign'):
         text = chapter_prose(n, max(1, visit) if stage != 'draft' else 0)
         data = {'prose': text, 'summary': f'第{n}章：周行交付收据，宋禾确认。'}
+        if work.get('execution_policy',{}).get('mode')=='single_chapter':
+            data['self_check']='工程夹具核过交接、选择与后果；不代表文学质量判断。'
         if work.get('chapter_session', {}).get('role') == 'writer' or payload.get('candidate_events_snapshot') is not None:
             data.update(evidence_catalog={}, self_check='核过选择、阻力、后果与重复表达；本章无账本变化。')
             if payload.get('candidate_events_snapshot') is not None:

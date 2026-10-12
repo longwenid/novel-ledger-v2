@@ -23,10 +23,10 @@ from support import contract, envelope
 
 # 架构契约第四节的分层。编号越小越底层；模块级 import 只能指向 <= 自己的层。
 LAYERS = {
-    0: ('store', 'transitions'),
+    0: ('store', 'transitions', 'execution'),
     1: ('access', 'atoms', 'wire', 'ledger', 'patches', 'budget', 'spatial',
         'sources', 'projections', 'dependencies', 'recovery', 'reviewflow',
-        'characters', 'design', 'contextflow', 'taskio'),
+        'characters', 'design', 'contextflow', 'taskio', 'taskview', 'schedule', 'hostflow', 'observability'),
     2: ('batchflow', 'settlement', 'memory', 'reviewrun'),
     3: ('bookpage', 'carriage', 'numeric', 'engine'),
 }
@@ -66,6 +66,15 @@ WIRE_PROTOCOLS = (
     'review-run/1',
     'same-bundle/1',
     'numeric-patch/1',
+    'quote_optional_start/1',
+    'task-reading/1',
+    'chapter-timeline/1',
+    'host-dispatch/1',
+    'host-observation/1',
+    'chapter-execution/1',
+    'explicit-time-input/1',
+    'review-scrutiny/1',
+    'task-reading-bundle/1',
 )
 
 

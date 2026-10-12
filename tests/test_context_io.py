@@ -111,11 +111,12 @@ class ContextIOTests(unittest.TestCase):
         argv=shlex.split(full['commands']['submit'])
         if os.name=='nt':argv[0]=sys.executable  # generated envelopes say python3; Windows hosts lack it
         proc=subprocess.run(argv,capture_output=True,text=True,encoding='utf-8',check=True)
-        out=json.loads(proc.stdout);self.assertEqual(out['action'],'continue_chapter_batch')
-        self.assertEqual(out['response_view'],'compact/1');self.assertNotIn('commands',out['task'])
-        following=json.loads((self.path/out['task']['task_path']).read_text(encoding='utf-8'))
-        self.assertEqual(following['task_id'],out['task']['task_id']);self.assertIn('--compact',following['commands']['submit'])
-        final=self.f.writer_batch(following);self.assertEqual(final['action'],'chapter_batch_done')
+        out=json.loads(proc.stdout);self.assertEqual(out['action'],'chapter_written')
+        self.assertEqual(out['response_view'],'compact/1');self.assertNotIn('task',out)
+        following=self.f.cli('advance','--after',out['task_id'])['task']
+        full_next=json.loads((self.path/following['task_path']).read_text(encoding='utf-8'))
+        self.assertEqual(full_next['stage'],'chapter_review');self.assertNotIn('chapter_session',full_next)
+        self.assertIn('--compact',full_next['commands']['submit'])
         self.assertEqual(head(self.db,'main'),1)
 
     def test_compact_settlement_preserves_all_balances_without_repeated_steps(self):

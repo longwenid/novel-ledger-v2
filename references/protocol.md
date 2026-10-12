@@ -11,11 +11,17 @@ input.json 是多行缩进的交付视图（真源在库，逐行读取即可）
 
 `context_delivery.mode=exact-records/1` 表示所列字段逐字保留冻结来源，`sources` 只是版本目录。完整记录仍在对应字段，需实际阅读核对；与模型准备结论及质量通过无关。路径选择与中断恢复见 [上下文协议](context-runtime.md)。
 
+新任务 capabilities 中的 quote_optional_start/1 支持批量定位，task-reading/1 为完整记录阅读视图。reading_view.pages 与 JSON 索引及必读分片二选一，正文保留原文文件。reading.manifest.json 记录全文哈希、来源和覆盖关系；它不证明模型已读。task-view 只重建当前有效 pending 的派生视图，登记为 SEALED，首读冻结前拒绝。派生视图失败显式返回 reading_view_error，沿用原 JSON 入口。
+
 ## 结果格式与提交
+
+`commands.read`（`task-view --task ID --read`）以 `task-reading-bundle/1` 一次交付全部必读记录和完整按需地址。返回 task_id/input_hash/record_count/records，逐项保留 field/value，较大记录与 pages 一样附 value_hash；全部 origin/pointer/hash 保留在 manifest。`complete=true` 证明引擎已核对 manifest、页和来源哈希，不证明宿主输出未截断或模型通读。与 pages 或 JSON 入口三选一；输出不完整时沿 pages 完整读取，不按字符裁剪资料。首读冻结前仍拒绝；无视图的旧任务沿用原入口。
+
+新 chapter_review 的 `capabilities.review_scrutiny=review-scrutiny/1` 要求 facts 的 time 和 reader 的 language 检查含 `challenge={risk,disposition,reason,evidence}`。risk 指最可能推翻判断的具体疑点，evidence 引可疑语段，reason 说明核验与必要性；disposition=satisfied|violated 须对应 pass|fix。time 判 pass 还需非负整数 elapsed_days，说明实际经过天数；它须与正式主线事件结算的 after-before 一致，不把支线推进加进主线。程序不证明推算和文风的语义正确，也不因有 risk 或引文自动生成 pass。发现冲突须有 quality/blocker finding 并走现有返修；旧任务未冻结此能力则不追补字段。
 
 审稿及候选事件的重复原文可用 `data.evidence_catalog` 无损去重：例如 `{"e1":{"chapter":12,"start":34,"quote":"完整原文语境"}}`，相应证据项写 `{"ref":"e1"}`。直接填写完整证据仍兼容；一个编号只代表本回执的一条原文，不能自动为所有检查选证据。
 
-引用只在既有证据位置展开：顶层或 facts/reader 的 checks/findings/obligations 中 evidence、challenge.evidence、memory.sources，以及 facts.events/candidate_events 中 evidence/cause_evidence/change_evidence。事件 before/after 等事实值不展开。引用只能含 ref，目录条目只能含 chapter/start/quote；未知编号、混入字段或嵌套引用拒绝。展开后照常核对正文版本、原文坐标、章节、具体理由、全部检查与约定义务，不补填判断或 pass。库中同时保留原始 wire 回执和展开后的审计回执；幂等重提须使用原始提交内容，不能拿展开的审计副本替换原文件重提。
+引用只在既有证据位置展开：顶层或 facts/reader 的 checks/findings/obligations 中 evidence、challenge.evidence、memory.sources，以及 facts.events/candidate_events 中 evidence/cause_evidence/change_evidence。事件 before/after 等事实值不展开。引用只能含 ref，目录条目须含 chapter/quote，可选非负整数 start；未知编号、混入字段或嵌套引用拒绝。展开后照常核对正文版本、原文坐标、章节、具体理由、全部检查与约定义务，不补填判断或 pass。库中同时保留原始 wire 回执和展开后的审计回执；幂等重提须使用原始提交内容，不能拿展开的审计副本替换原文件重提。
 
 结果写入 output_path（建议多行缩进书写，便于主控与作者复查；submit 只程序化解析，格式不影响提交）：
 
@@ -46,9 +52,9 @@ submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果�
 
 ## 连续会话
 
-### 章节批次 chapter_session
+### 升级中旧冻结任务 chapter_session
 
-`chapter_session={protocol:"chapter-batch/1",batch:ID,role:writer|reviewer,first:N,last:M}` 绑定最多五章与单一角色。生成的 submit 命令带 `--continue-chapter-batch`；与其他连续处理选项互斥，只允许标记任务。响应 `schema=novel-ledger-v2.chapter-batch/1`，含刚提交 task_id/session；`continue_chapter_batch` 含同批同角色下一 task，`chapter_batch_done` 交回主控，其他 action 依暂停/过时回调边界处理。重复提交恢复同一 pending，不跨批次、角色或作者边界。主控 after 使用最后提交的 ID。
+仅升级前已冻结任务保留此字段，新任务不创建章节批次。旧版 `chapter_session={protocol:"chapter-batch/1",batch:ID,role:writer|reviewer,first:N,last:M}` 绑定最多五章与单一角色。旧生成命令带 `--continue-chapter-batch`，升级后接受当前冻结任务并返回 worker_boundary=finished，不再续派。以下为旧回执形状说明：与其他连续处理选项互斥，只允许标记任务。响应 `schema=novel-ledger-v2.chapter-batch/1`，含刚提交 task_id/session；`continue_chapter_batch` 含同批同角色下一 task，`chapter_batch_done` 交回主控，其他 action 依暂停/过时回调边界处理。重复提交恢复同一 pending，不跨批次、角色或作者边界。主控 after 使用最后提交的 ID。
 
 批内写作/返修的 data 在原契约外必含 `summary`、`candidate_events` 数组和非空具体 `self_check`。临时事件按正式事件的坐标与前态校验，但仅保存 drafts；input 的 state/continuity 已叠加前章候选变化，`candidate_ledger` 标明未审前缀与来源。带当前 `--task` 的 recall --state / --chapter 可读候选前态与前章原文，不带 task 时始终读正式账本；普通事件检索仍查正式事件，候选事件完整列在 candidate_ledger。审稿者不读取执笔自评或候选事件提案，独立登记正式事件。
 返修冻结输入有 `payload.candidate_events_snapshot` 时，可选择 `reuse_candidate_events:true` 代替 candidate_events。程序仅续算全部本章证据的完整句语境未变的事件，并重定位、重验前态；其他情况完整重报，不同时使用两种字段。
@@ -90,9 +96,9 @@ submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果�
 
 未带该协议的已有 pending 沿用冻结格式。同版本正文不重复加载。input.payload.facts_checks 与 reader_checks 分别列出两类必查项，事实输入同时提供账本、人物、连续性及前序事件。
 
-批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；后续章任务直接绑定同一批次已冻结的对应首读，仍校验当前 input/prose 版本、作者约定、证据与前态。
+仅旧冻结任务的批次首读模板额外含 `first_reads:[{chapter,prose_hash,first_read:{desire,obstacle,change,read_on_reason}}]`，须覆盖 first_read_files 全部章节；顶层 first_read 对应当前章。只读整批正文后执行一次 first-read；旧协议原先将后续章绑定整批首读；升级后不再续派，下一章使用新的单章独立首读。
 
-某章审稿通过入库后，引擎把后章候选链重排（rebind）到新正式账本。因此审稿者 facts.events 从正文独立重报即可，无需也无法对齐执笔者表述：`state`/`relation`/`knowledge` 的自由文本前件按正式措辞自动对齐（候选稿标记 `candidate_rebound`，日志记 `chapter_batch_rebound`），数值余额、时钟、实体等硬前件保持严格。只有硬前件矛盾（如正式结算余额与后章候选假设不符）才作废后章、重开新批次重新首读；审稿者改写措辞、合并或重组认知话题不再触发重开。后章自身的密封审稿仍是唯一入库闸门，重排不替后章签审。前章返修须重核承接时，同样按硬前件边界作废。
+当前旧冻结审稿提交仍可能把后章候选链重排（rebind）到新正式账本。因此审稿者 facts.events 从正文独立重报即可，无需也无法对齐执笔者表述：`state`/`relation`/`knowledge` 的自由文本前件按正式措辞自动对齐（候选稿标记 `candidate_rebound`，日志记 `chapter_batch_rebound`），数值余额、时钟、实体等硬前件保持严格。只有硬前件矛盾（如正式结算余额与后章候选假设不符）才作废后章、重开新批次重新首读；审稿者改写措辞、合并或重组认知话题不再触发重开。后章自身的密封审稿仍是唯一入库闸门，重排不替后章签审。前章返修须重核承接时，同样按硬前件边界作废。
 
 结果 data={facts:{verdict,checks,findings,events,summary,...},reader:{verdict,checks,findings,first_read,...}}，两类子回执格式见下面审稿字段。
 
@@ -198,7 +204,7 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 
 ## 事件
 
-每项必须有 `op` 与 `evidence: {chapter,start,quote}`，start 是 Python 字符位置，包含标题和换行，不是 UTF-8 字节位置。程序精确匹配原文；生产证据时用信封 `commands.evidence` 或 `evidence --task TASK --quote "精确原文"` 定位；多章/文档可加 --chapter/--document，重复引文需补足语境，不能任取第一次。start 漂移（如补丁使后文整体位移）时，若 quote 在本章正文中**唯一**出现，submit 会自动重定位并写回正确 start；引文不存在或出现多次仍报 `evidence` 错误，不能靠模糊匹配过关。被拒时 details 会给出可复制的修正材料：`closest`（最接近的原文片段及其 start，用于替换引文）或 `matches`（多处命中的位置，用于加长语境）；优先复制这些原文而不是重新猜写。若写辅助脚本组装回执，脚本读写任何文件必须显式 `encoding="utf-8"`——Windows 控制台默认编码会损坏中文引文。
+每项必须有 `op` 与 `evidence: {chapter,quote,start?}`，start 是 Python 字符位置，包含标题和换行，不是 UTF-8 字节位置。程序精确匹配原文；正常提交 chapter/quote 由程序批量补 start，只有歧义或排错才用信封 `commands.evidence` 或 `evidence --task TASK --quote "精确原文"` 定位；多章/文档可加 --chapter/--document，重复引文需补足语境，不能任取第一次。start 漂移（如补丁使后文整体位移）时，若 quote 在本章正文中**唯一**出现，submit 会自动重定位并写回正确 start；引文不存在或出现多次仍报 `evidence` 错误，不能靠模糊匹配过关。被拒时 details 会给出可复制的修正材料：`closest`（最接近的原文片段及其 start，用于替换引文）或 `matches`（多处命中的位置，用于加长语境）；优先复制这些原文而不是重新猜写。若写辅助脚本组装回执，脚本读写任何文件必须显式 `encoding="utf-8"`——Windows 控制台默认编码会损坏中文引文。
 
 | op | 必填业务字段 | 含义 |
 |---|---|---|
@@ -217,6 +223,12 @@ fix 时可附 `repair_scope: "local"`，只对可定位、无需全章重排的�
 
 clock 可用 thread 维护独立支线日历；主线时间不因支线事件自动变化。场景 time_hint 的 D+N 相对本章首时钟（结算前值）计；有 day_span 的章结算要求本章推进量落在 `[N_min,N_max+1]`，与批次签发时的时钟无关，避免多章批次末章日程被挤死。这些是日程和引用校验，时间词存在不能证明推算语义正确。
 
+新 timeline 使用 chapter-timeline/1，显式声明 basis。batch_anchor 的 end_offset_range 相对引擎填写的 anchor_clock，chapter_start 的 end_offset_range 相对本章实际前态，absolute_clock 使用 end_clock_range。区间必须有序、非负，不隐式增加一天。scenes[].time 可写 {basis:batch_anchor,offset_days:1} 或 {basis:absolute_clock,clock:8}；同章坐标不能混用或倒退。规划期校验已知不可能的时间顺序，签发时交 time_constraint 的真实前态与章末范围。旧 D+N 兼容章首推进，不将 day_anchor 当第二种放行条件；有草稿的冲突按审稿 fix 与现有修订流程处理，不自动改 clock。
+
+新规划冻结 `capabilities.timeline_input=explicit-time-input/1`：含 D+N 或 day_span/day_anchor 的硬日程必须同时声明 time/timeline，否则规划提交即报 time_basis，各章缺口一次列出，不签发草稿。普通叙事 time_hint 可保留，不要求给每个模糊时刻编造数字。整批倒计时应用 batch_anchor，不能把“第三日”转成每章经过两天；模板和信封 time_contract 由 schedule 同源生成。旧 pending 及已有计划不重写、不猜原意。
+
+time_schedule 的 details.recovery 给出当前审稿者的 review_fix 路线与 finding 的影响/目标提示，证据仍由审稿者填写。允许的 clock 区间仅是拒绝依据，不授权按区间改账；time_review 拒绝正文天数声明与结算不一致。preflight 仍只计算和校验，不能代替语义审稿。
+
 ## 按需扩展
 
 空间事件 `anchor/anchor_assert/anchor_change/place/place_change/link/link_change/placement/move/perceive`、address_responses 和地图查询见 [空间协议](spatial-continuity.md)。人物小传、character_development、对白意图见 [人物协议](characters.md)。event_spine、sequence_refs、设计失效与重规划见 [分层设计](design-and-brief.md)。chapter_review 按 payload.facts_checks/reader_checks 返回检查项，跨章复审按 payload.checks，不写死列表。
@@ -228,6 +240,10 @@ dependencies 原文只注入执笔，其他阶段给摘要/哈希和 recall 指�
 contract.style 可设 voice/traits/sample/sample_close；无锚点时 approve 从试章取开头/结尾。config 可更新 style_anchor；reader 增 voice_match，整体查 repetition。traits 与 language 遵守 [声线规则](voices.md)，不改写样本引文。
 
 status/doctor.usage 返回 task_input_chars、accepted_receipt_chars、attempted_receipt_chars、preparation_input_chars、supplemental_read_chars、tasks。accepted 只计已接受结果，attempted 包括可识别任务的失败提交；不含系统提示、聊天或协议外读写。billed_tokens/session_handoffs 无宿主证据为 null，字符不换算费用。doctor 不验证宿主隔离或窗口，见 [runtime](runtime.md)。
+
+独立 scripts/observe.py 的 host-observation/1 记录 provider/session_id/request_id、角色、阶段、task_ids 和三项 token。Antigravity 以原导出的非缓存 input_tokens 加 cache_read_tokens 加 output_tokens 统计，按调用身份去重；同一调用的不同数值拒绝累加，缺失用量为 null。--tree 只跟随根会话创建记录，缺失子日志时整体 gross_tokens 为 null。stage_source 标注阶段来自记录、委派背景或未知。观测流独立于小说数据库，不推进任务、不授予通过，费用按宿主实际规则另外核算。
+
+host-dispatch/1 是宿主中立派工规格，不调用宿主 API；新任务要求单章新会话，旧冻结任务的字段只供升级兼容。
 
 ## 修订影响查询
 
@@ -269,3 +285,13 @@ CLI stdout 为单行紧凑 JSON：宿主按输出总量截断、不按行，紧�
 | `novel-ledger-v2.review-run/1` | 连续复审会话 | 跨章复审 |
 | `novel-ledger-v2.same-bundle/1` | 材料快照 | 同一批次材料 |
 | `novel-ledger-v2.numeric-patch/1` | 数字快修 | 定点数字修正 |
+
+## 单章执行协议（chapter-execution/1）
+
+新任务冻结 execution_policy，包含 mode、role、scope（task_id/branch/chapter）、worker_lifetime、continuation_allowed、new_worker_required、handoff_owner、review_order 和 host_history_verified。单章主任务只由主控交接；首读与正式审稿共享同一 task_id 与审稿者，不能将首读解锁当作第二次派工。
+
+execution_mode=single_chapter 的有效配置统一为 chapter_batch_size=1、writer_batch=1、writer_session_policy=chapter；不生成候选章批次。执笔回执需 summary/self_check，不提交 candidate_events/reuse_candidate_events。审稿根据正文独立重建事件，两类全部 pass 后正式入库。提交返回 worker_boundary=finished，action 为 chapter_written/chapter_reviewed/repair_required/paused，不返回下一任务；连续提交选项拒绝。返修仍使用原有阶梯，不重置尝试次数。
+
+可选顶层 session 填真实宿主会话 ID（兼容 {id,origin} 对象，origin 声明不证明隔离）；已知身份不能跨单章任务复用，首读和综合审稿的已知身份须一致。未提供身份时不宣称历史隔离已验证。若已绑定的审稿会话无法恢复，取消原任务后重新派独立审稿者首读，不冒用他人体验。checkpoint 在单章模式将 writer_session_id/handled_chapters 绑定 writer_task_id；任务或角色变化清理旧会话标记，保留作者目标。
+
+新建项目不论旧约定是否含批次参数，均采用 single_chapter。旧 v2 项目首次 connect 自动备份和升级，execution_upgrade 记录 version/state/previous/backup_path。pending 保持冻结协议至当前任务完成，draining 时不允许启动下一旧批次任务；随后归档全部旧批次，保留候选正文、首次阅读事实与返修次数，后续逐章重新独立审稿。执行模式不能回切，滚动规划和跨章复核不受单章粒度影响。

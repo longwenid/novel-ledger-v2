@@ -31,10 +31,11 @@ class FastWritingConfigTests(unittest.TestCase):
         return novel.dispatch(novel.parser().parse_args(args))
 
     def test_defaults_are_visible_and_configurable(self):
-        self.assertEqual(self.config()['writer_batch'], 10)
+        self.assertEqual(self.config()['writer_batch'], 1)
         self.assertEqual(self.config('review_chunk'), {'review_chunk': 3})
         self.assertEqual(engine.status(self.db)['review_mode'], 'combined')
-        self.assertEqual(self.config('writer_batch', 5), {'writer_batch': 5})
+        with self.assertRaises(Error):self.config('writer_batch',5)
+        self.assertEqual(self.config('writer_batch', 1), {'writer_batch': 1})
         respond(self.db, self.path, engine.next_task(self.db, self.path))
         respond(self.db, self.path, engine.next_task(self.db, self.path))
         self.assertEqual(engine.next_task(self.db, self.path)['stage'], 'chapter_review')
@@ -44,7 +45,7 @@ class FastWritingConfigTests(unittest.TestCase):
             with self.assertRaises(Error):
                 self.config(key, value)
         task = engine.next_task(self.db, self.path)
-        for key, value in [('writer_batch', 5)]:
+        for key, value in [('writer_batch', 1)]:
             with self.assertRaises(Error) as exc:
                 self.config(key, value)
             self.assertEqual(exc.exception.code, 'pending')

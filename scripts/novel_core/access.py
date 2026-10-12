@@ -35,6 +35,7 @@ COMMAND_LEVEL = {
     'recall': SEALED, 'map': SEALED, 'design': SEALED, 'character': SEALED,
     'candidate': SEALED, 'material': SEALED, 'impact': SEALED, 'patch': SEALED,
     'audit': SEALED, 'html': SEALED, 'export': SEALED,
+    'task-view': SEALED,
     # Reading configuration exposes the contract, the style anchor and the
     # publication boundary; writing it is a governance act by author/controller.
     'config': lambda args: SEALED if getattr(args, 'value', None) is None else PUBLIC,

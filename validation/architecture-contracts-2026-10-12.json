@@ -1,0 +1,26 @@
+{
+  "version": "1.55.0",
+  "date": "2026-10-12",
+  "scope": "Skill architecture and task contracts; no direct novel ledger edits.",
+  "tests": {
+    "passed": 663,
+    "subtests_passed": 110,
+    "seconds": 70.73,
+    "command": "python3 -m pytest tests/ -q --tb=short"
+  },
+  "skill_validation": "passed",
+  "diff_whitespace_validation": "passed",
+  "protocol_owners": {
+    "explicit-time-input/1": "schedule",
+    "quote_optional_start/1": "wire",
+    "review-scrutiny/1": "reviewflow",
+    "task-reading-bundle/1": "taskview"
+  },
+  "compatibility": "New validation requirements are selected by frozen task capabilities. Existing pending input hashes and older receipt requirements remain unchanged.",
+  "delivery_benchmark": "architecture-delivery-2026-10-12.json",
+  "limits": [
+    "The consistency checks do not prove semantic correctness of time or literary quality.",
+    "Delivery calls and bytes are measured; actual model tokens and monetary savings are not measured.",
+    "Previously committed chapter 39-40 time inconsistencies are not repaired by this source change."
+  ]
+}

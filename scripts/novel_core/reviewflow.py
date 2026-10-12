@@ -8,9 +8,54 @@ import json
 import time
 from .store import Error, Batch, get, put, digest, require, transaction, log
 from .ledger import evidence
+from . import execution
 
 PROTOCOL = 'sealed-review/1'
+SCRUTINY_PROTOCOL = 'review-scrutiny/1'
+SCRUTINY_CHECKS = {'facts':('time',),'reader':('language',)}
 FIRST_FIELDS = ('desire', 'obstacle', 'change', 'read_on_reason')
+
+
+def scrutiny_contract():
+    return {'protocol':SCRUTINY_PROTOCOL,'checks':copy.deepcopy(SCRUTINY_CHECKS),
+            'rule':'time 与 language 检查须 challenge={risk,disposition,reason,evidence}。'
+                   '选最可能推翻结论的正文语段，解释疑点和核验结果，不用有利例句证明全章无问题。'
+                   'time 判 pass 还须 elapsed_days（非负整数），说明真实经过天数与倒计时，和事件结算一致。'
+                   '发现冲突判 fix 并给可执行 finding；程序只校验声明、证据和结算一致，不证明语义真伪。'}
+
+
+def validate_scrutiny(work, facts, reader, prose, chapter):
+    if work.get('capabilities',{}).get('review_scrutiny')!=SCRUTINY_PROTOCOL:return
+    batch=Batch()
+    for category,receipt in (('facts',facts),('reader',reader)):
+        checks=receipt.get('checks',[])
+        checks=checks if isinstance(checks,list) else []
+        for check_id in SCRUTINY_CHECKS[category]:
+            row=next((r for r in checks if isinstance(r,dict) and r.get('id')==check_id),{})
+            challenge=row.get('challenge');where={'category':category,'check_id':check_id}
+            if not batch.require(isinstance(challenge,dict),'review_scrutiny','关键检查须核对反证风险',**where):continue
+            batch.require(all(isinstance(challenge.get(k),str) and challenge[k].strip() for k in ('risk','reason')),
+                          'review_scrutiny','challenge 的 risk 和 reason 须说明具体疑点及核验',**where)
+            batch.require(challenge.get('disposition') in ('satisfied','violated')
+                          and (row.get('result')=='fix')==(challenge.get('disposition')=='violated'),
+                          'review_scrutiny','反证核验与检查结论须一致',**where)
+            try:evidence(prose,challenge.get('evidence'),chapter)
+            except Error as error:batch.capture(error,**where,field='challenge.evidence')
+            if check_id=='time' and row.get('result')=='pass':
+                batch.require(type(row.get('elapsed_days')) is int and row['elapsed_days']>=0,
+                              'time_review','time pass 须声明正文推算的 elapsed_days',**where,
+                              recover='根据前后章正文推算经过天数；无法确定或与计划冲突须 fix，不按计划范围选数。')
+    batch.raise_if_any()
+
+
+def reconcile_clock(work, facts, settlement):
+    """Check a declared reading against computed events, not its semantic truth."""
+    if work.get('capabilities',{}).get('review_scrutiny')!=SCRUTINY_PROTOCOL:return
+    row=next(r for r in facts['checks'] if r['id']=='time')
+    clock=settlement['clock'];actual=clock['after']-clock['before']
+    require(row['elapsed_days']==actual,'time_review','正文推算的经过天数与事件结算不一致',
+            {'declared_elapsed_days':row['elapsed_days'],'settled_elapsed_days':actual,'clock':clock,
+             'recover':'重新核对正文、前态及时间基准；据正文纠正事件，存在计划冲突则改判 fix。不要同时改声明和 clock 凑数。'})
 
 
 def enabled(work):
@@ -77,6 +122,7 @@ def seal(db, project, task_id, receipt):
                 and receipt.get('input_hash') == task['input_hash']
                 and receipt.get('prose_hash') == work['payload']['prose_hash'],
                 'first_read_version', '首读须绑定本次 task_id/input_hash/prose_hash')
+        execution.bind_session(db,work,receipt.get('session'))
         session=work.get('chapter_session',{})
         previous_batch=get(db,batch_key(session['batch'])) if session.get('role')=='reviewer' else None
         if previous_batch and 'first_reads' in receipt:
@@ -197,3 +243,4 @@ def validate(db, task, work, facts, reader, prose, first_read_prose=None):
         batch.require(not any(isinstance(r,dict) and r.get('result') == 'fix' for r in rows) or receipt.get('verdict') == 'fix',
                 'review_obligations', '约定违约必须返修，不能总评通过', {'category': category})
     batch.raise_if_any()
+    validate_scrutiny(work,facts,reader,prose,task['chapter'])

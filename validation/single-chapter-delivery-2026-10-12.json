@@ -1,0 +1,1409 @@
+{
+  "project": "/Users/longwen/AndroidStudioProjects/skills/novel-ledger-v2/.probe-tmp/delivery-probe/book",
+  "scale": {
+    "persons": 26,
+    "places": 8
+  },
+  "stages": [
+    {
+      "stage": "batch_review",
+      "chapter": 20,
+      "delivery_phase": "task",
+      "input_bytes": 10969,
+      "top_fields": [
+        {
+          "field": "plans",
+          "bytes": 3504
+        },
+        {
+          "field": "payload",
+          "bytes": 611
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 476
+        },
+        {
+          "field": "shared_read_rule",
+          "bytes": 424
+        },
+        {
+          "field": "shared_materials",
+          "bytes": 311
+        },
+        {
+          "field": "review_session",
+          "bytes": 155
+        },
+        {
+          "field": "capabilities",
+          "bytes": 112
+        },
+        {
+          "field": "retrieval",
+          "bytes": 69
+        }
+      ],
+      "payload_fields": [
+        [
+          444,
+          "prose_files"
+        ],
+        [
+          86,
+          "checks"
+        ],
+        [
+          13,
+          "scope"
+        ],
+        [
+          2,
+          "through"
+        ],
+        [
+          2,
+          "first"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 17501,
+        "reading_required_read": 16380,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 10969
+          }
+        ],
+        "input_bytes": 10969,
+        "index_bytes": 10969,
+        "slice_bytes": 0,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 6532,
+        "shared_bytes": 6532,
+        "slices": {},
+        "legacy_required_read": 10969,
+        "required_read": 16380,
+        "total_if_read_all": 17501,
+        "legacy_total_if_read_all": 17501
+      },
+      "visit": 1
+    },
+    {
+      "stage": "batch_review",
+      "chapter": 20,
+      "delivery_phase": "task",
+      "input_bytes": 10969,
+      "top_fields": [
+        {
+          "field": "plans",
+          "bytes": 3504
+        },
+        {
+          "field": "payload",
+          "bytes": 611
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 476
+        },
+        {
+          "field": "shared_read_rule",
+          "bytes": 424
+        },
+        {
+          "field": "shared_materials",
+          "bytes": 311
+        },
+        {
+          "field": "review_session",
+          "bytes": 155
+        },
+        {
+          "field": "capabilities",
+          "bytes": 112
+        },
+        {
+          "field": "retrieval",
+          "bytes": 69
+        }
+      ],
+      "payload_fields": [
+        [
+          444,
+          "prose_files"
+        ],
+        [
+          86,
+          "checks"
+        ],
+        [
+          13,
+          "scope"
+        ],
+        [
+          2,
+          "through"
+        ],
+        [
+          2,
+          "first"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 17501,
+        "reading_required_read": 16380,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 10969
+          }
+        ],
+        "input_bytes": 10969,
+        "index_bytes": 10969,
+        "slice_bytes": 0,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 6532,
+        "shared_bytes": 6532,
+        "slices": {},
+        "legacy_required_read": 10969,
+        "required_read": 16380,
+        "total_if_read_all": 17501,
+        "legacy_total_if_read_all": 17501
+      },
+      "visit": 2
+    },
+    {
+      "stage": "batch_review",
+      "chapter": 20,
+      "delivery_phase": "task",
+      "input_bytes": 10969,
+      "top_fields": [
+        {
+          "field": "plans",
+          "bytes": 3504
+        },
+        {
+          "field": "payload",
+          "bytes": 611
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 476
+        },
+        {
+          "field": "shared_read_rule",
+          "bytes": 424
+        },
+        {
+          "field": "shared_materials",
+          "bytes": 311
+        },
+        {
+          "field": "review_session",
+          "bytes": 155
+        },
+        {
+          "field": "capabilities",
+          "bytes": 112
+        },
+        {
+          "field": "retrieval",
+          "bytes": 69
+        }
+      ],
+      "payload_fields": [
+        [
+          444,
+          "prose_files"
+        ],
+        [
+          86,
+          "checks"
+        ],
+        [
+          13,
+          "scope"
+        ],
+        [
+          2,
+          "through"
+        ],
+        [
+          2,
+          "first"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 17501,
+        "reading_required_read": 16380,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 10969
+          }
+        ],
+        "input_bytes": 10969,
+        "index_bytes": 10969,
+        "slice_bytes": 0,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 6532,
+        "shared_bytes": 6532,
+        "slices": {},
+        "legacy_required_read": 10969,
+        "required_read": 16380,
+        "total_if_read_all": 17501,
+        "legacy_total_if_read_all": 17501
+      },
+      "visit": 3
+    },
+    {
+      "stage": "batch_review",
+      "chapter": 20,
+      "delivery_phase": "task",
+      "input_bytes": 5633,
+      "top_fields": [
+        {
+          "field": "plans",
+          "bytes": 1168
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 476
+        },
+        {
+          "field": "shared_read_rule",
+          "bytes": 424
+        },
+        {
+          "field": "payload",
+          "bytes": 315
+        },
+        {
+          "field": "shared_materials",
+          "bytes": 311
+        },
+        {
+          "field": "review_session",
+          "bytes": 155
+        },
+        {
+          "field": "capabilities",
+          "bytes": 112
+        },
+        {
+          "field": "retrieval",
+          "bytes": 69
+        }
+      ],
+      "payload_fields": [
+        [
+          148,
+          "prose_files"
+        ],
+        [
+          86,
+          "checks"
+        ],
+        [
+          13,
+          "scope"
+        ],
+        [
+          2,
+          "through"
+        ],
+        [
+          2,
+          "first"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 12165,
+        "reading_required_read": 11366,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 5633
+          }
+        ],
+        "input_bytes": 5633,
+        "index_bytes": 5633,
+        "slice_bytes": 0,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 6532,
+        "shared_bytes": 6532,
+        "slices": {},
+        "legacy_required_read": 5633,
+        "required_read": 11366,
+        "total_if_read_all": 12165,
+        "legacy_total_if_read_all": 12165
+      },
+      "visit": 4
+    },
+    {
+      "stage": "batch_review",
+      "chapter": 20,
+      "delivery_phase": "task",
+      "input_bytes": 5412,
+      "top_fields": [
+        {
+          "field": "payload",
+          "bytes": 878
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 476
+        },
+        {
+          "field": "shared_read_rule",
+          "bytes": 424
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        },
+        {
+          "field": "shared_materials",
+          "bytes": 311
+        },
+        {
+          "field": "review_session",
+          "bytes": 155
+        },
+        {
+          "field": "input_files",
+          "bytes": 140
+        },
+        {
+          "field": "capabilities",
+          "bytes": 112
+        }
+      ],
+      "payload_fields": [
+        [
+          540,
+          "instruction"
+        ],
+        [
+          140,
+          "coverage_receipts"
+        ],
+        [
+          100,
+          "checks"
+        ],
+        [
+          7,
+          "scope"
+        ],
+        [
+          2,
+          "through"
+        ],
+        [
+          2,
+          "first"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 21755,
+        "reading_required_read": 20298,
+        "json_file_reads": 5,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 5412
+          }
+        ],
+        "input_bytes": 5412,
+        "index_bytes": 5412,
+        "slice_bytes": 9811,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 6532,
+        "shared_bytes": 6532,
+        "slices": {
+          "synthesis_materials": 9811
+        },
+        "legacy_required_read": 5412,
+        "required_read": 20298,
+        "total_if_read_all": 21755,
+        "legacy_total_if_read_all": 21755
+      },
+      "visit": 5
+    },
+    {
+      "stage": "plan",
+      "chapter": 21,
+      "delivery_phase": "task",
+      "input_bytes": 3782,
+      "top_fields": [
+        {
+          "field": "execution_policy",
+          "bytes": 459
+        },
+        {
+          "field": "input_files",
+          "bytes": 446
+        },
+        {
+          "field": "continuity",
+          "bytes": 374
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        },
+        {
+          "field": "payload",
+          "bytes": 192
+        },
+        {
+          "field": "on_demand",
+          "bytes": 184
+        },
+        {
+          "field": "capabilities",
+          "bytes": 112
+        },
+        {
+          "field": "state",
+          "bytes": 88
+        }
+      ],
+      "payload_fields": [
+        [
+          127,
+          "instruction"
+        ],
+        [
+          8,
+          "window"
+        ],
+        [
+          4,
+          "chapter_target_han"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 13168,
+        "reading_required_read": 12318,
+        "json_file_reads": 3,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 3782
+          }
+        ],
+        "input_bytes": 3782,
+        "index_bytes": 3782,
+        "slice_bytes": 14851,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 5465,
+        "shared_bytes": 5465,
+        "slices": {
+          "contract": 3692,
+          "guide": 1773,
+          "design_context": 5074,
+          "selected": 4312
+        },
+        "legacy_required_read": 3782,
+        "required_read": 12318,
+        "total_if_read_all": 18633,
+        "legacy_total_if_read_all": 24098
+      },
+      "visit": 1,
+      "characters": {
+        "stage": "plan",
+        "chapter": 21,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [],
+        "irrelevant": [],
+        "missing_for_participants": []
+      }
+    },
+    {
+      "stage": "draft",
+      "chapter": 21,
+      "delivery_phase": "task",
+      "input_bytes": 9181,
+      "top_fields": [
+        {
+          "field": "writer_brief",
+          "bytes": 1666
+        },
+        {
+          "field": "continuity",
+          "bytes": 669
+        },
+        {
+          "field": "input_files",
+          "bytes": 579
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 444
+        },
+        {
+          "field": "must_read",
+          "bytes": 380
+        },
+        {
+          "field": "on_demand",
+          "bytes": 327
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        },
+        {
+          "field": "state",
+          "bytes": 311
+        }
+      ],
+      "payload_fields": [
+        [
+          216,
+          "chapter_length"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 23829,
+        "reading_required_read": 22078,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 9181
+          },
+          {
+            "route": "brief_path",
+            "bytes": 3965
+          }
+        ],
+        "input_bytes": 9181,
+        "index_bytes": 9181,
+        "slice_bytes": 20227,
+        "required_shard_bytes": 10524,
+        "optional_shard_bytes": 5579,
+        "shared_bytes": 16103,
+        "slices": {
+          "contract": 3692,
+          "guide": 1887,
+          "design_context": 5074,
+          "character_context": 5262,
+          "selected": 4312
+        },
+        "legacy_required_read": 19705,
+        "required_read": 22078,
+        "total_if_read_all": 29408,
+        "legacy_total_if_read_all": 45511
+      },
+      "visit": 1,
+      "characters": {
+        "stage": "draft",
+        "chapter": 21,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p20"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p20"
+        ]
+      }
+    },
+    {
+      "stage": "chapter_review",
+      "chapter": 21,
+      "delivery_phase": "first_read",
+      "input_bytes": 0,
+      "top_fields": [],
+      "payload_fields": [],
+      "envelope": {
+        "files": [
+          {
+            "route": "first_read_template_path",
+            "bytes": 324
+          }
+        ],
+        "input_bytes": 0,
+        "index_bytes": 0,
+        "slice_bytes": 0,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 0,
+        "shared_bytes": 0,
+        "slices": {},
+        "legacy_required_read": 0,
+        "required_read": 0,
+        "total_if_read_all": 0,
+        "legacy_total_if_read_all": 0
+      },
+      "visit": 1,
+      "characters": {
+        "stage": "chapter_review",
+        "chapter": 21,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p20"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p20"
+        ]
+      }
+    },
+    {
+      "stage": "chapter_review",
+      "chapter": 21,
+      "delivery_phase": "review",
+      "input_bytes": 10620,
+      "top_fields": [
+        {
+          "field": "plan",
+          "bytes": 1337
+        },
+        {
+          "field": "payload",
+          "bytes": 1050
+        },
+        {
+          "field": "must_read",
+          "bytes": 743
+        },
+        {
+          "field": "continuity",
+          "bytes": 669
+        },
+        {
+          "field": "selected",
+          "bytes": 585
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 514
+        },
+        {
+          "field": "input_files",
+          "bytes": 372
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        }
+      ],
+      "payload_fields": [
+        [
+          302,
+          "numeric_correction"
+        ],
+        [
+          274,
+          "chapter_length"
+        ],
+        [
+          127,
+          "facts_checks"
+        ],
+        [
+          120,
+          "reader_checks"
+        ],
+        [
+          66,
+          "prose_hash"
+        ],
+        [
+          33,
+          "prose_path"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 25584,
+        "reading_required_read": 23860,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 10620
+          },
+          {
+            "route": "event_contract_path",
+            "bytes": 3101
+          }
+        ],
+        "input_bytes": 10620,
+        "index_bytes": 10620,
+        "slice_bytes": 14964,
+        "required_shard_bytes": 20226,
+        "optional_shard_bytes": 0,
+        "shared_bytes": 20226,
+        "slices": {
+          "contract": 3692,
+          "guide": 6010,
+          "character_context": 5262
+        },
+        "legacy_required_read": 30846,
+        "required_read": 23860,
+        "total_if_read_all": 25584,
+        "legacy_total_if_read_all": 45810
+      },
+      "visit": 2,
+      "characters": {
+        "stage": "chapter_review",
+        "chapter": 21,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p20"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p20"
+        ]
+      }
+    },
+    {
+      "stage": "draft",
+      "chapter": 22,
+      "delivery_phase": "task",
+      "input_bytes": 9181,
+      "top_fields": [
+        {
+          "field": "writer_brief",
+          "bytes": 1666
+        },
+        {
+          "field": "continuity",
+          "bytes": 669
+        },
+        {
+          "field": "input_files",
+          "bytes": 579
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 444
+        },
+        {
+          "field": "must_read",
+          "bytes": 380
+        },
+        {
+          "field": "on_demand",
+          "bytes": 327
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        },
+        {
+          "field": "state",
+          "bytes": 311
+        }
+      ],
+      "payload_fields": [
+        [
+          216,
+          "chapter_length"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 23840,
+        "reading_required_read": 22089,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 9181
+          },
+          {
+            "route": "brief_path",
+            "bytes": 3965
+          }
+        ],
+        "input_bytes": 9181,
+        "index_bytes": 9181,
+        "slice_bytes": 20238,
+        "required_shard_bytes": 10524,
+        "optional_shard_bytes": 5579,
+        "shared_bytes": 16103,
+        "slices": {
+          "contract": 3692,
+          "guide": 1887,
+          "design_context": 5074,
+          "character_context": 5262,
+          "selected": 4323
+        },
+        "legacy_required_read": 19705,
+        "required_read": 22089,
+        "total_if_read_all": 29419,
+        "legacy_total_if_read_all": 45522
+      },
+      "visit": 2,
+      "characters": {
+        "stage": "draft",
+        "chapter": 22,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p21"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p21"
+        ]
+      }
+    },
+    {
+      "stage": "chapter_review",
+      "chapter": 22,
+      "delivery_phase": "first_read",
+      "input_bytes": 0,
+      "top_fields": [],
+      "payload_fields": [],
+      "envelope": {
+        "files": [
+          {
+            "route": "first_read_template_path",
+            "bytes": 324
+          }
+        ],
+        "input_bytes": 0,
+        "index_bytes": 0,
+        "slice_bytes": 0,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 0,
+        "shared_bytes": 0,
+        "slices": {},
+        "legacy_required_read": 0,
+        "required_read": 0,
+        "total_if_read_all": 0,
+        "legacy_total_if_read_all": 0
+      },
+      "visit": 3,
+      "characters": {
+        "stage": "chapter_review",
+        "chapter": 22,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p21"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p21"
+        ]
+      }
+    },
+    {
+      "stage": "chapter_review",
+      "chapter": 22,
+      "delivery_phase": "review",
+      "input_bytes": 10631,
+      "top_fields": [
+        {
+          "field": "plan",
+          "bytes": 1337
+        },
+        {
+          "field": "payload",
+          "bytes": 1050
+        },
+        {
+          "field": "must_read",
+          "bytes": 743
+        },
+        {
+          "field": "continuity",
+          "bytes": 669
+        },
+        {
+          "field": "selected",
+          "bytes": 590
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 514
+        },
+        {
+          "field": "input_files",
+          "bytes": 372
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        }
+      ],
+      "payload_fields": [
+        [
+          302,
+          "numeric_correction"
+        ],
+        [
+          274,
+          "chapter_length"
+        ],
+        [
+          127,
+          "facts_checks"
+        ],
+        [
+          120,
+          "reader_checks"
+        ],
+        [
+          66,
+          "prose_hash"
+        ],
+        [
+          33,
+          "prose_path"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 25595,
+        "reading_required_read": 23871,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 10631
+          },
+          {
+            "route": "event_contract_path",
+            "bytes": 3101
+          }
+        ],
+        "input_bytes": 10631,
+        "index_bytes": 10631,
+        "slice_bytes": 14964,
+        "required_shard_bytes": 20226,
+        "optional_shard_bytes": 0,
+        "shared_bytes": 20226,
+        "slices": {
+          "contract": 3692,
+          "guide": 6010,
+          "character_context": 5262
+        },
+        "legacy_required_read": 30857,
+        "required_read": 23871,
+        "total_if_read_all": 25595,
+        "legacy_total_if_read_all": 45821
+      },
+      "visit": 4,
+      "characters": {
+        "stage": "chapter_review",
+        "chapter": 22,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p21"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p21"
+        ]
+      }
+    },
+    {
+      "stage": "draft",
+      "chapter": 23,
+      "delivery_phase": "task",
+      "input_bytes": 9181,
+      "top_fields": [
+        {
+          "field": "writer_brief",
+          "bytes": 1666
+        },
+        {
+          "field": "continuity",
+          "bytes": 669
+        },
+        {
+          "field": "input_files",
+          "bytes": 579
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 444
+        },
+        {
+          "field": "must_read",
+          "bytes": 380
+        },
+        {
+          "field": "on_demand",
+          "bytes": 327
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        },
+        {
+          "field": "state",
+          "bytes": 311
+        }
+      ],
+      "payload_fields": [
+        [
+          216,
+          "chapter_length"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 23851,
+        "reading_required_read": 22100,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 9181
+          },
+          {
+            "route": "brief_path",
+            "bytes": 3965
+          }
+        ],
+        "input_bytes": 9181,
+        "index_bytes": 9181,
+        "slice_bytes": 20249,
+        "required_shard_bytes": 10524,
+        "optional_shard_bytes": 5579,
+        "shared_bytes": 16103,
+        "slices": {
+          "contract": 3692,
+          "guide": 1887,
+          "design_context": 5074,
+          "character_context": 5262,
+          "selected": 4334
+        },
+        "legacy_required_read": 19705,
+        "required_read": 22100,
+        "total_if_read_all": 29430,
+        "legacy_total_if_read_all": 45533
+      },
+      "visit": 3,
+      "characters": {
+        "stage": "draft",
+        "chapter": 23,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p22"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p22"
+        ]
+      }
+    },
+    {
+      "stage": "chapter_review",
+      "chapter": 23,
+      "delivery_phase": "first_read",
+      "input_bytes": 0,
+      "top_fields": [],
+      "payload_fields": [],
+      "envelope": {
+        "files": [
+          {
+            "route": "first_read_template_path",
+            "bytes": 324
+          }
+        ],
+        "input_bytes": 0,
+        "index_bytes": 0,
+        "slice_bytes": 0,
+        "required_shard_bytes": 0,
+        "optional_shard_bytes": 0,
+        "shared_bytes": 0,
+        "slices": {},
+        "legacy_required_read": 0,
+        "required_read": 0,
+        "total_if_read_all": 0,
+        "legacy_total_if_read_all": 0
+      },
+      "visit": 5,
+      "characters": {
+        "stage": "chapter_review",
+        "chapter": 23,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p22"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p22"
+        ]
+      }
+    },
+    {
+      "stage": "chapter_review",
+      "chapter": 23,
+      "delivery_phase": "review",
+      "input_bytes": 10642,
+      "top_fields": [
+        {
+          "field": "plan",
+          "bytes": 1337
+        },
+        {
+          "field": "payload",
+          "bytes": 1050
+        },
+        {
+          "field": "must_read",
+          "bytes": 743
+        },
+        {
+          "field": "continuity",
+          "bytes": 669
+        },
+        {
+          "field": "selected",
+          "bytes": 595
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 514
+        },
+        {
+          "field": "input_files",
+          "bytes": 372
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        }
+      ],
+      "payload_fields": [
+        [
+          302,
+          "numeric_correction"
+        ],
+        [
+          274,
+          "chapter_length"
+        ],
+        [
+          127,
+          "facts_checks"
+        ],
+        [
+          120,
+          "reader_checks"
+        ],
+        [
+          66,
+          "prose_hash"
+        ],
+        [
+          33,
+          "prose_path"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 25606,
+        "reading_required_read": 23882,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 10642
+          },
+          {
+            "route": "event_contract_path",
+            "bytes": 3101
+          }
+        ],
+        "input_bytes": 10642,
+        "index_bytes": 10642,
+        "slice_bytes": 14964,
+        "required_shard_bytes": 20226,
+        "optional_shard_bytes": 0,
+        "shared_bytes": 20226,
+        "slices": {
+          "contract": 3692,
+          "guide": 6010,
+          "character_context": 5262
+        },
+        "legacy_required_read": 30868,
+        "required_read": 23882,
+        "total_if_read_all": 25606,
+        "legacy_total_if_read_all": 45832
+      },
+      "visit": 6,
+      "characters": {
+        "stage": "chapter_review",
+        "chapter": 23,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p22"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p22"
+        ]
+      }
+    },
+    {
+      "stage": "draft",
+      "chapter": 24,
+      "delivery_phase": "task",
+      "input_bytes": 9181,
+      "top_fields": [
+        {
+          "field": "writer_brief",
+          "bytes": 1666
+        },
+        {
+          "field": "continuity",
+          "bytes": 669
+        },
+        {
+          "field": "input_files",
+          "bytes": 579
+        },
+        {
+          "field": "execution_policy",
+          "bytes": 444
+        },
+        {
+          "field": "must_read",
+          "bytes": 380
+        },
+        {
+          "field": "on_demand",
+          "bytes": 327
+        },
+        {
+          "field": "input_read_rule",
+          "bytes": 318
+        },
+        {
+          "field": "state",
+          "bytes": 311
+        }
+      ],
+      "payload_fields": [
+        [
+          216,
+          "chapter_length"
+        ]
+      ],
+      "envelope": {
+        "json_required_read": 23862,
+        "reading_required_read": 22111,
+        "json_file_reads": 4,
+        "reading_file_reads": 1,
+        "files": [
+          {
+            "route": "input_path",
+            "bytes": 9181
+          },
+          {
+            "route": "brief_path",
+            "bytes": 3965
+          }
+        ],
+        "input_bytes": 9181,
+        "index_bytes": 9181,
+        "slice_bytes": 20260,
+        "required_shard_bytes": 10524,
+        "optional_shard_bytes": 5579,
+        "shared_bytes": 16103,
+        "slices": {
+          "contract": 3692,
+          "guide": 1887,
+          "design_context": 5074,
+          "character_context": 5262,
+          "selected": 4345
+        },
+        "legacy_required_read": 19705,
+        "required_read": 22111,
+        "total_if_read_all": 29441,
+        "legacy_total_if_read_all": 45544
+      },
+      "visit": 4,
+      "characters": {
+        "stage": "draft",
+        "chapter": 24,
+        "delivered_profiles": [],
+        "delivered_count": 0,
+        "participants": [
+          "hero",
+          "p23"
+        ],
+        "irrelevant": [],
+        "missing_for_participants": [
+          "hero",
+          "p23"
+        ]
+      }
+    }
+  ],
+  "notes": [
+    {
+      "stop": "repeat",
+      "stage": "chapter_review",
+      "task_id": "9f1b9029b23e495bbd480a4350ef5ab2",
+      "visits": {
+        "batch_review": 5,
+        "plan": 1,
+        "draft": 4,
+        "chapter_review": 7
+      },
+      "seen": [
+        "batch_review",
+        "chapter_review",
+        "draft",
+        "plan"
+      ]
+    }
+  ],
+  "book": {
+    "committed": 20
+  },
+  "character_coverage_gaps": [],
+  "profiles_never_in_a_plan": []
+}

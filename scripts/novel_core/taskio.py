@@ -6,6 +6,9 @@ import shlex
 from pathlib import Path
 from .store import require, get, put, write_json, digest, transaction
 from . import reviewflow
+from . import execution
+from .schedule import contract as time_contract, INPUT_PROTOCOL as TIME_INPUT_PROTOCOL
+from .wire import EVIDENCE_INPUT, evidence_contract
 
 # Field names, not executable examples or invented events. The source of before
 # values is the task's state or a tracked recall, never a historical receipt.
@@ -450,7 +453,7 @@ def template(task, work, saved=None, db=None):
                 pass
         scene = {'label': '<新场所短名；已登记场所改用 place 字段写场所ID>', 'present': ['<在场实体ID>'],
                  'intent': '<场景意图>', 'conflict': '<场景阻力>', 'turn': '<场景转折>',
-                 'time_hint': '<时序提示；跨日推进写 D+1 形式，单日可省略本字段>'}
+                 'time_hint': '<可选叙事提示；硬时间约束使用 time/timeline 明确 basis；旧 D+N 表示本章推进>'}
         if profiled:
             scene['speakers'] = ['<拟发言人物ID，静默场景改为空数组>']
             scene['dialogue_intents'] = [{'entity': '<人物ID>', 'seeks': '', 'withholds': '', 'pressure': '', 'tactic': ''}]
@@ -459,6 +462,10 @@ def template(task, work, saved=None, db=None):
                    'execution': {'target_han': contract.get('chapter_target_han', 3000), 'expansion_units': [
                        {'id': 'u1', 'scene': 1, 'focus': '<展开什么>', 'development': '<怎样展开>',
                         'expected_change': '<落地变化>', 'weight': 1}]}}
+        if work.get('capabilities',{}).get('timeline_input')==TIME_INPUT_PROTOCOL:
+            timing=time_contract()
+            scene.update(copy.deepcopy(timing['scene_example']))
+            chapter['timeline']=copy.deepcopy(timing['timeline_example'])
         if layered:
             chapter.update(reader_experience='<本章读者体验>', ending_shape='<收束类别>:<具体说明>',
                            character_choices=[{'entity': '<实体ID>', 'desire': '<想要什么>', 'pressure': '<承受什么>',
@@ -504,9 +511,16 @@ def template(task, work, saved=None, db=None):
         data['evidence_catalog']={}
         for category in ('facts', 'reader'):
             data[category] = {'verdict': '', 'checks': check_rows(work['payload'][category+'_checks']), 'findings': []}
+            if work.get('capabilities',{}).get('review_scrutiny')==reviewflow.SCRUTINY_PROTOCOL:
+                for row in data[category]['checks']:
+                    if row['id'] in reviewflow.SCRUTINY_CHECKS[category]:
+                        row['challenge']={'risk':'','disposition':'satisfied|violated','reason':'',
+                                          'evidence':evidence_contract(task['chapter'],'<最可能推翻结论的本章原文>')['example']}
+                        if row['id']=='time':row['elapsed_days']=None
             if reviewflow.enabled(work):
                 hint = {'chapter': task['chapter'], 'start': 0,
                         'quote': '<替换为本章原文引句；约定对象本章未出现也须引任一触及句并判 pass>'}
+                if work.get('capabilities',{}).get('evidence_input')==EVIDENCE_INPUT:hint.pop('start')
                 data[category]['obligations'] = [
                     {'id': row['id'], 'result': 'pass|fix', 'reason': '', 'evidence': [dict(hint)],
                      'challenge': {'disposition': 'satisfied|violated', 'reason': '', 'evidence': dict(hint)}}
@@ -532,6 +546,8 @@ def template(task, work, saved=None, db=None):
         data.update(evidence_catalog={},candidate_events=[],summary='',self_check='')
         if 'candidate_events_snapshot' in work['payload']:
             data.pop('candidate_events');data['reuse_candidate_events']=True
+    if execution.controller_owned(work) and task['stage'] in execution.WRITER_STAGES:
+        data.update(summary='',self_check='')
     return {'schema': 'novel-ledger-v2.result/1', 'task_id': task['id'], 'input_hash': task['input_hash'], 'data': data}
 
 
@@ -552,6 +568,14 @@ def delivery(db, project, task, work, envelope):
     streaming=work.get('preparation_session',{}).get('protocol')=='same-bundle/1'
     commands = {'submit': command('submit', '--result', base/envelope['output_path'], '--brief','--compact'),
                 'evidence': command('evidence', '--task', task['id'], '--quote', '替换为精确原文')}
+    if work.get('execution_policy'):
+        envelope['execution_policy']=copy.deepcopy(work['execution_policy'])
+    if execution.controller_owned(work):
+        envelope['worker_prompt']+='本章单任务会话：提交后立即结束，由主控等待真实结束后派下一任务的新 Worker。不得跨章或跨执笔/审稿角色复用历史。'
+        if task['stage'] in execution.WRITER_STAGES:
+            envelope['worker_prompt']+='保留 summary 与具体 self_check；事实事件由独立审稿重建，自查不替入账审核。'
+        else:
+            envelope['worker_prompt']+='同一个独立审稿者先冻结首读，再完成 facts 与 reader 两类全部检查并一次提交；首读解锁继续同一 task_id，不重新派工、不改冻结体验。'
     if streaming:
         commands['submit']+=' --continue-preparation'
         envelope['preparation_session']=copy.deepcopy(work['preparation_session'])
@@ -565,6 +589,8 @@ def delivery(db, project, task, work, envelope):
         envelope['chapter_session']=copy.deepcopy(work['chapter_session'])
         commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact','--continue-chapter-batch')
         role=work['chapter_session']['role']
+        if role=='writer' and work.get('writer_session_policy')=='chapter':
+            commands['submit']=command('submit','--result',base/envelope['output_path'],'--brief','--compact')
         envelope['worker_prompt']=('本信封与 task.json 自含执行所需：宿主强制加载 skill 时不冲突，以本信封为准，不通读 references。'
             '只完成 chapter_session 绑定的当前批次与 '+role+' 角色，读取 '+str(root/'task.json')
             +'。PROJECT='+str(base)+'。逐章读取最新输入和模板，按 commands.submit 提交；action=continue_chapter_batch 时直接处理响应 task。'
@@ -586,7 +612,7 @@ def delivery(db, project, task, work, envelope):
         commands['measure'] = command('measure', '--result', base/envelope['output_path'])
         if work.get('chapter_session'):
             envelope['event_contract_path']=str((root/'events.json').relative_to(base))
-            write_json(root/'events.json',{'operations':EVENT_FIELDS,'before_source':'本任务 state（含前章候选事件）；候选提案须正文举证，不替正式审稿。证据定位优先用 commands.evidence；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。'})
+            write_json(root/'events.json',{'operations':EVENT_FIELDS,'before_source':'本任务 state（含前章候选事件）；候选提案须正文举证，不替正式审稿。证据填 chapter/quote 即可，唯一原文由程序补 start；歧义或排错才用 commands.evidence；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。'})
             commands['state']=command('recall','--task',task['id'],'--state','--entity','替换为实体ID')
     if gated:
         envelope.update(delivery_phase='first_read', first_read_result_path=str(root.relative_to(base)/'first_read.json'))
@@ -618,8 +644,8 @@ def delivery(db, project, task, work, envelope):
             envelope['worker_prompt'] += '核对信封 revision_context 的全部未完成父子修订目标，后加文风目标不撤销父级结构目标。'
         envelope['template_path'] = str((root/'result.template.json').relative_to(base))
         write_json(root/'result.template.json', template(task, work, saved, db=db))
-        envelope['worker_prompt'] += ('读取 input_path，以 guide 执行；写 output_path 后直接执行 commands.submit。'
-            'input_files 非空时 input_path 只是索引：字段被外置到同名字段文件，'
+        envelope['worker_prompt'] += ('有 reading_view 时顺序读 pages，否则读取 input_path；以 guide 执行，写 output_path 后执行 commands.submit。'
+            '使用 JSON 入口时 input_files 非空意味着 input_path 只是索引，字段在同名文件，'
             'must_read（needed=true）是本任务必读，on_demand 用任务内命令按需补读。'
             '响应 task 有 task_path 时读该文件取得完整信封。'
             'brief_path 是同一任务书的可读替代视图（内容全部来自 input.json），读其中一个即可——'
@@ -628,8 +654,8 @@ def delivery(db, project, task, work, envelope):
             envelope['worker_prompt'] += '程序校验合成全文及篇幅；需在提交前查看计数时可用 commands.measure。'
         if task['stage'] == 'chapter_review':
             envelope['event_contract_path'] = str((root/'events.json').relative_to(base))
-            write_json(root/'events.json', {'evidence': {'chapter': task['chapter'], 'start': 'evidence 命令定位', 'quote': '完整原文'},
-                'operations': EVENT_FIELDS, 'before_source': '包内 state；缺项用 recall --state --entity ID --topic TOPIC。准备结论与旧回执不作前态。证据定位优先用 commands.evidence（返回精确 chapter/start/quote）；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。',
+            write_json(root/'events.json', {'evidence': {'chapter': task['chapter'], 'quote': '完整原文'},
+                'operations': EVENT_FIELDS, 'before_source': '包内 state；缺项用 recall --state --entity ID --topic TOPIC。准备结论与旧回执不作前态。证据填 chapter/quote 即可，唯一原文由提交程序补 start；歧义或排错才用 commands.evidence；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。',
                 'references': [str(Path(cli).parents[1]/'references'/name) for name in ('protocol.md','spatial-continuity.md','characters.md')]})
             commands['state'] = command('recall', '--task', task['id'], '--state', '--entity', '替换为实体ID')
         if saved:
@@ -640,6 +666,28 @@ def delivery(db, project, task, work, envelope):
         if work['payload'].get('numeric_correction'):
             envelope['numeric_correction']=copy.deepcopy(work['payload']['numeric_correction'])
             envelope['worker_prompt']+='明确数值笔误可按 numeric_correction 修正，针对合成稿完成两类全部检查后同次提交；账本效果改变或其他缺陷仍判 fix。'
+    if not gated and envelope.get('reading_view'):
+        envelope['worker_prompt'] += ('当前首选阅读入口是 reading_view.pages，顺序读取完整必读记录；'
+            '无需再读 input_path 与已覆盖分片。JSON 留作按需定位和排错，正文按 prose 文件原文阅读。'
+            '同一 Worker 可跳过自己已读且 value_hash 未变的记录，新 Worker 重新读。')
+        commands['task_view']=command('task-view','--task',task['id'])
+        commands['read']=command('task-view','--task',task['id'],'--read')
+        envelope['worker_prompt'] += ('可用 commands.read 一次获取全部必读记录及按需资料地址，'
+            '与 reading_view.pages 二选一；宿主输出不完整时沿 pages 完整读取，不据缺失内容判断不存在。')
+    if not gated and work.get('capabilities'):
+        envelope['capabilities']=copy.deepcopy(work['capabilities'])
+        envelope['worker_prompt'] += (evidence_contract()['rule']+
+            '缺失或歧义一次报告。'
+            '运行期不修改 ROOT 源码、不直连 SQLite、不复制旧回执补判断；'
+            '字段问题查当前模板、event_contract_path、task_view 或任务内补读命令。')
+        if work.get('chapter_session',{}).get('role')=='writer' and work.get('writer_session_policy')=='chapter':
+            envelope['worker_prompt']+='本任务采用 chapter 执笔会话策略：本章提交成功立即返回，不取后章。逻辑批次和整批独立审稿保持。'
+        if task['stage']=='plan':
+            envelope['time_contract']=time_contract(explicit=work['capabilities'].get('timeline_input')==TIME_INPUT_PROTOCOL)
+        envelope['evidence_contract']=evidence_contract(task['chapter'])
+        if work['capabilities'].get('review_scrutiny')==reviewflow.SCRUTINY_PROTOCOL:
+            envelope['review_contract']=reviewflow.scrutiny_contract()
+            envelope['worker_prompt']+=envelope['review_contract']['rule']
     envelope['commands'] = commands
     return envelope
 
@@ -697,8 +745,16 @@ def _handoff_boundary(db, branch):
     instead of continuing in a context that was already warm.
     """
     from .batchflow import active as active_batch
+    pending=db.execute("SELECT input FROM tasks WHERE state='pending'").fetchone()
+    work=json.loads(pending['input']) if pending else {}
+    if execution.controller_owned(work):
+        return '单章写审：主控等待旧 Worker 真实结束，再为当前 task_id 派新 Worker；同一审稿任务的首读解锁由原审稿者继续。'
     batch = active_batch(db, branch)
     if batch:
+        if work.get('chapter_session',{}).get('role')=='reviewer':
+            return '当前批次进入独立审稿，主控等待执笔者结束后派新的审稿者；同一审稿角色的后续章节按绑定会话接续。'
+        if work.get('writer_session_policy')=='chapter':
+            return '本章执笔者提交后结束；主控核实结束后为当前章节派新 Worker，逻辑批次保持。'
         return ('本响应属于进行中的写作批次 %s：下一任务交给仍在运行的同一执笔者继续，'
                 '不要新建 Worker。新建会重建全部上下文，把同一批材料再付一遍；'
                 '由返回的 task 决定角色与阶段。' % batch['id'][:8])
@@ -752,13 +808,22 @@ def checkpoint(db, project, goal=None, writer_session=None, handled=None):
             require(isinstance(goal, str) and goal.strip(), 'checkpoint', '目标须是作者已授权的范围')
             prior['authorized_goal'] = goal
         branch = get(db, 'work_branch')
-        pending = db.execute("SELECT chapter FROM tasks WHERE state='pending'").fetchone()
+        pending = db.execute("SELECT id,stage,chapter,input FROM tasks WHERE state='pending'").fetchone()
+        work=json.loads(pending['input']) if pending else {}
+        single=execution.controller_owned(work) or (not work.get('chapter_session') and execution.settings(db)['execution_mode']==execution.SINGLE)
+        if single and (not pending or pending['stage'] not in execution.WRITER_STAGES or prior.get('writer_task_id')!=pending['id']):
+            for key in ('writer_session_id','handled_chapters','writer_branch','writer_volume','writer_task_id'):
+                prior.pop(key,None)
         plan = db.execute('SELECT data FROM plans WHERE branch=? AND number=?', (branch,pending['chapter'])).fetchone() if pending else None
         volume = json.loads(plan['data']).get('volume') if plan else None
         if prior.get('writer_branch') != branch or (volume and prior.get('writer_volume') and prior['writer_volume'] != volume):
             for k in ('writer_session_id','handled_chapters','writer_branch','writer_volume'): prior.pop(k, None)
         if writer_session is not None:
             require(writer_session.strip(), 'checkpoint', '执笔会话 ID 不能为空')
+            if single:
+                require(pending and pending['stage'] in execution.WRITER_STAGES,'checkpoint','单章模式只能为当前执笔任务记录会话')
+                execution.bind_session(db,work,writer_session)
+                prior['writer_task_id']=pending['id']
             if prior.get('writer_session_id') != writer_session:prior.pop('handled_chapters',None)
             prior['writer_session_id'] = writer_session
             prior['writer_branch'] = branch
@@ -766,6 +831,7 @@ def checkpoint(db, project, goal=None, writer_session=None, handled=None):
         if handled is not None:
             require(all(type(n) is int and n > 0 for n in handled), 'checkpoint', '章号须为正整数')
             require(prior.get('writer_session_id'), 'checkpoint', '章号集合须绑定已记录的执笔会话')
+            if single:require(all(n==pending['chapter'] for n in handled),'checkpoint','单章会话不能携带其他章节的已处理标记')
             prior['handled_chapters'] = sorted(set(handled))
         put(db, 'controller_intent', prior)
         snapshot = status(db, brief=True)

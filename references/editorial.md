@@ -19,6 +19,8 @@ facts 与 reader 是同一回执中的两类检查，不单独调度。跨章复
 
 ## facts 子回执：事实检查
 
+信封含 review-scrutiny/1 时，time 与 language 的 check.challenge 要选最可能推翻结论的语段，写 risk、具体核验 reason 与证据。不能用一条扎实动作句断言全章没有冗余修饰；修饰有必要时说明其辨识、事实或阅读作用，重复和标签无作用时判 fix。time pass 的 elapsed_days 来自前后正文推算，须解释经过时间、日期基准与倒计时，再与事件结算核对；引句含“昨日”“时辰”不等于支持任意天数。无法确定就补读或 fix，不按错误返回的允许区间反填 clock。
+
 通读当前正文，读取相关原文和当前账本；既检查计划结果，也发现计划之外的人物、承诺和资源变化。
 
 基础检查项为 `coverage / continuity / resources / knowledge / time / world_rules`；登记稳定事实或空间信息后增加 `stable_facts / spatial`，以本次 `payload.facts_checks` 为准，每项给结论、理由和正文证据。`coverage` 特别核对“有没有已发生但漏登记的变化”；不相关项目明确给 `not_applicable` 理由，不能用一句套话覆盖所有项目。

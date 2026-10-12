@@ -1,0 +1,605 @@
+{
+  "requested_session": "2d9cd2ce-7a99-4f6e-b47b-ea82f91680d0",
+  "runtime_sessions": [
+    {
+      "id": "a132d46a-931e-461d-9ff9-fb05bd61cc21",
+      "group": "controller",
+      "records": 308,
+      "rounds": 154,
+      "gross": 20000345,
+      "input_tokens": 3538956,
+      "cache_read_tokens": 16386326,
+      "output_tokens": 75063,
+      "evidence_rounds": 0,
+      "evidence_round_gross": 0,
+      "python_c": 14,
+      "read_calls": 40,
+      "peak_input": 229054,
+      "first": "2026-10-12T00:58:34Z",
+      "last": "2026-10-12T03:43:19Z"
+    },
+    {
+      "id": "0d7981cc-cd1a-4def-a09d-ec3db14ad6d6",
+      "group": "reviewer",
+      "records": 124,
+      "rounds": 62,
+      "gross": 4783272,
+      "input_tokens": 234186,
+      "cache_read_tokens": 4501391,
+      "output_tokens": 47695,
+      "evidence_rounds": 1,
+      "evidence_round_gross": 39753,
+      "python_c": 19,
+      "read_calls": 19,
+      "peak_input": 114337,
+      "first": "2026-10-12T00:59:35Z",
+      "last": "2026-10-12T01:06:52Z"
+    },
+    {
+      "id": "14550c75-0029-4ee5-9ad6-b184f3f1ee58",
+      "group": "writer",
+      "records": 188,
+      "rounds": 94,
+      "gross": 7790403,
+      "input_tokens": 309128,
+      "cache_read_tokens": 7431957,
+      "output_tokens": 49318,
+      "evidence_rounds": 6,
+      "evidence_round_gross": 351146,
+      "python_c": 29,
+      "read_calls": 36,
+      "peak_input": 150767,
+      "first": "2026-10-12T01:07:09Z",
+      "last": "2026-10-12T01:16:56Z"
+    },
+    {
+      "id": "0b21cd2f-d465-4bc6-803a-326d00b21981",
+      "group": "writer",
+      "records": 76,
+      "rounds": 38,
+      "gross": 1965876,
+      "input_tokens": 138375,
+      "cache_read_tokens": 1807461,
+      "output_tokens": 20040,
+      "evidence_rounds": 0,
+      "evidence_round_gross": 0,
+      "python_c": 10,
+      "read_calls": 18,
+      "peak_input": 75604,
+      "first": "2026-10-12T01:22:11Z",
+      "last": "2026-10-12T01:27:00Z"
+    },
+    {
+      "id": "416db61c-2015-4ce3-be99-ac8834fc5fbe",
+      "group": "reviewer",
+      "records": 60,
+      "rounds": 30,
+      "gross": 1577428,
+      "input_tokens": 189613,
+      "cache_read_tokens": 1363068,
+      "output_tokens": 24747,
+      "evidence_rounds": 12,
+      "evidence_round_gross": 711264,
+      "python_c": 0,
+      "read_calls": 10,
+      "peak_input": 76805,
+      "first": "2026-10-12T01:27:24Z",
+      "last": "2026-10-12T01:31:21Z"
+    },
+    {
+      "id": "9d1e9c6c-5c4c-4fdd-a17d-94de44157d56",
+      "group": "writer",
+      "records": 102,
+      "rounds": 51,
+      "gross": 2591979,
+      "input_tokens": 176254,
+      "cache_read_tokens": 2390146,
+      "output_tokens": 25579,
+      "evidence_rounds": 2,
+      "evidence_round_gross": 142565,
+      "python_c": 15,
+      "read_calls": 20,
+      "peak_input": 78946,
+      "first": "2026-10-12T01:31:51Z",
+      "last": "2026-10-12T01:35:55Z"
+    },
+    {
+      "id": "a6d1c8ea-061e-48d2-aad4-5305a77611fb",
+      "group": "reviewer",
+      "records": 82,
+      "rounds": 41,
+      "gross": 3168233,
+      "input_tokens": 177099,
+      "cache_read_tokens": 2950307,
+      "output_tokens": 40827,
+      "evidence_rounds": 1,
+      "evidence_round_gross": 52332,
+      "python_c": 14,
+      "read_calls": 13,
+      "peak_input": 116408,
+      "first": "2026-10-12T01:36:15Z",
+      "last": "2026-10-12T01:41:48Z"
+    },
+    {
+      "id": "8adae2c4-0126-4d75-85f3-f4d228f8217c",
+      "group": "writer",
+      "records": 98,
+      "rounds": 49,
+      "gross": 2437360,
+      "input_tokens": 171569,
+      "cache_read_tokens": 2242252,
+      "output_tokens": 23539,
+      "evidence_rounds": 2,
+      "evidence_round_gross": 133537,
+      "python_c": 27,
+      "read_calls": 7,
+      "peak_input": 72137,
+      "first": "2026-10-12T01:42:22Z",
+      "last": "2026-10-12T01:47:11Z"
+    },
+    {
+      "id": "233327c1-60d3-4416-a0c3-209d79b71808",
+      "group": "reviewer",
+      "records": 120,
+      "rounds": 60,
+      "gross": 4301509,
+      "input_tokens": 217004,
+      "cache_read_tokens": 4055119,
+      "output_tokens": 29386,
+      "evidence_rounds": 20,
+      "evidence_round_gross": 1771659,
+      "python_c": 0,
+      "read_calls": 24,
+      "peak_input": 107322,
+      "first": "2026-10-12T01:47:32Z",
+      "last": "2026-10-12T01:53:22Z"
+    },
+    {
+      "id": "85b45666-f5d0-424c-bfe8-a45e43f23800",
+      "group": "reviewer",
+      "records": 140,
+      "rounds": 70,
+      "gross": 7036948,
+      "input_tokens": 393163,
+      "cache_read_tokens": 6597469,
+      "output_tokens": 46316,
+      "evidence_rounds": 31,
+      "evidence_round_gross": 3079238,
+      "python_c": 0,
+      "read_calls": 25,
+      "peak_input": 177310,
+      "first": "2026-10-12T01:53:43Z",
+      "last": "2026-10-12T02:03:18Z"
+    },
+    {
+      "id": "0844c844-57ee-4d92-90dd-5edd5f5ed6bc",
+      "group": "writer",
+      "records": 118,
+      "rounds": 59,
+      "gross": 3296786,
+      "input_tokens": 249114,
+      "cache_read_tokens": 3007114,
+      "output_tokens": 40558,
+      "evidence_rounds": 0,
+      "evidence_round_gross": 0,
+      "python_c": 16,
+      "read_calls": 15,
+      "peak_input": 102509,
+      "first": "2026-10-12T02:04:06Z",
+      "last": "2026-10-12T02:15:37Z"
+    },
+    {
+      "id": "da16967f-e7b3-46ca-a227-85cd821a1ada",
+      "group": "reviewer",
+      "records": 114,
+      "rounds": 57,
+      "gross": 4954041,
+      "input_tokens": 221447,
+      "cache_read_tokens": 4672735,
+      "output_tokens": 59859,
+      "evidence_rounds": 4,
+      "evidence_round_gross": 227652,
+      "python_c": 13,
+      "read_calls": 27,
+      "peak_input": 146499,
+      "first": "2026-10-12T02:16:07Z",
+      "last": "2026-10-12T02:24:55Z"
+    },
+    {
+      "id": "5baf7e84-98d3-4b43-9448-5d8b777e4df2",
+      "group": "writer",
+      "records": 98,
+      "rounds": 49,
+      "gross": 1873087,
+      "input_tokens": 296238,
+      "cache_read_tokens": 1546530,
+      "output_tokens": 30319,
+      "evidence_rounds": 1,
+      "evidence_round_gross": 53996,
+      "python_c": 21,
+      "read_calls": 4,
+      "peak_input": 64620,
+      "first": "2026-10-12T02:25:38Z",
+      "last": "2026-10-12T02:32:35Z"
+    },
+    {
+      "id": "33a65225-74e5-4f43-8d08-b8ff3da4bb3a",
+      "group": "reviewer",
+      "records": 88,
+      "rounds": 44,
+      "gross": 2438839,
+      "input_tokens": 199971,
+      "cache_read_tokens": 2214284,
+      "output_tokens": 24584,
+      "evidence_rounds": 23,
+      "evidence_round_gross": 1362560,
+      "python_c": 0,
+      "read_calls": 13,
+      "peak_input": 87017,
+      "first": "2026-10-12T02:33:10Z",
+      "last": "2026-10-12T02:39:30Z"
+    },
+    {
+      "id": "f118f99d-95fb-4f7f-ac11-32d13f85099c",
+      "group": "planner",
+      "records": 60,
+      "rounds": 30,
+      "gross": 1210025,
+      "input_tokens": 165730,
+      "cache_read_tokens": 1028239,
+      "output_tokens": 16056,
+      "evidence_rounds": 0,
+      "evidence_round_gross": 0,
+      "python_c": 11,
+      "read_calls": 9,
+      "peak_input": 61937,
+      "first": "2026-10-12T02:40:00Z",
+      "last": "2026-10-12T02:44:02Z"
+    },
+    {
+      "id": "e55309a3-c0b7-450f-b316-ef6d0927d50d",
+      "group": "writer",
+      "records": 88,
+      "rounds": 44,
+      "gross": 2398110,
+      "input_tokens": 244295,
+      "cache_read_tokens": 2124055,
+      "output_tokens": 29760,
+      "evidence_rounds": 1,
+      "evidence_round_gross": 47480,
+      "python_c": 14,
+      "read_calls": 13,
+      "peak_input": 80646,
+      "first": "2026-10-12T02:44:29Z",
+      "last": "2026-10-12T02:52:31Z"
+    },
+    {
+      "id": "b1cc9858-4c8a-44ce-b1ab-930a77122f42",
+      "group": "planner",
+      "records": 64,
+      "rounds": 32,
+      "gross": 1463045,
+      "input_tokens": 144415,
+      "cache_read_tokens": 1305520,
+      "output_tokens": 13110,
+      "evidence_rounds": 0,
+      "evidence_round_gross": 0,
+      "python_c": 5,
+      "read_calls": 10,
+      "peak_input": 67195,
+      "first": "2026-10-12T02:53:37Z",
+      "last": "2026-10-12T02:57:15Z"
+    },
+    {
+      "id": "4643e254-d025-4a0c-af70-54901bf905a6",
+      "group": "writer",
+      "records": 62,
+      "rounds": 31,
+      "gross": 1466416,
+      "input_tokens": 147280,
+      "cache_read_tokens": 1291426,
+      "output_tokens": 27710,
+      "evidence_rounds": 0,
+      "evidence_round_gross": 0,
+      "python_c": 5,
+      "read_calls": 7,
+      "peak_input": 70763,
+      "first": "2026-10-12T02:58:18Z",
+      "last": "2026-10-12T03:04:27Z"
+    },
+    {
+      "id": "866b9932-5e19-4e1d-9b5b-b2ac6902de1a",
+      "group": "reviewer",
+      "records": 186,
+      "rounds": 93,
+      "gross": 9079520,
+      "input_tokens": 603760,
+      "cache_read_tokens": 8425114,
+      "output_tokens": 50646,
+      "evidence_rounds": 61,
+      "evidence_round_gross": 6511423,
+      "python_c": 0,
+      "read_calls": 20,
+      "peak_input": 150468,
+      "first": "2026-10-12T03:04:51Z",
+      "last": "2026-10-12T03:15:42Z"
+    },
+    {
+      "id": "8b4005e6-0320-44f3-b426-b44bfb7931a6",
+      "group": "writer",
+      "records": 172,
+      "rounds": 86,
+      "gross": 4748312,
+      "input_tokens": 266191,
+      "cache_read_tokens": 4449091,
+      "output_tokens": 33030,
+      "evidence_rounds": 1,
+      "evidence_round_gross": 58561,
+      "python_c": 44,
+      "read_calls": 9,
+      "peak_input": 99987,
+      "first": "2026-10-12T03:16:14Z",
+      "last": "2026-10-12T03:27:05Z"
+    },
+    {
+      "id": "542101e9-0778-46c7-8fbc-b978a349ec63",
+      "group": "reviewer",
+      "records": 206,
+      "rounds": 103,
+      "gross": 10527577,
+      "input_tokens": 353891,
+      "cache_read_tokens": 10120370,
+      "output_tokens": 53316,
+      "evidence_rounds": 65,
+      "evidence_round_gross": 7285073,
+      "python_c": 0,
+      "read_calls": 21,
+      "peak_input": 158603,
+      "first": "2026-10-12T03:27:42Z",
+      "last": "2026-10-12T03:42:31Z"
+    }
+  ],
+  "grand": {
+    "input_tokens": 8437679,
+    "cache_read_tokens": 89909974,
+    "output_tokens": 761458
+  },
+  "groups": {
+    "controller": {
+      "input_tokens": 3538956,
+      "cache_read_tokens": 16386326,
+      "output_tokens": 75063,
+      "rounds": 154,
+      "sessions": 1
+    },
+    "reviewer": {
+      "input_tokens": 2590134,
+      "cache_read_tokens": 44899857,
+      "output_tokens": 377376,
+      "rounds": 560,
+      "sessions": 9
+    },
+    "writer": {
+      "input_tokens": 1998444,
+      "cache_read_tokens": 26290032,
+      "output_tokens": 279853,
+      "rounds": 501,
+      "sessions": 9
+    },
+    "planner": {
+      "input_tokens": 310145,
+      "cache_read_tokens": 2333759,
+      "output_tokens": 29166,
+      "rounds": 62,
+      "sessions": 2
+    }
+  },
+  "analysis_session": {
+    "records": 99,
+    "usage_rounds": 49,
+    "tool_calls": 47,
+    "usage": {
+      "input_tokens": 371443,
+      "cache_read_tokens": 2436994,
+      "output_tokens": 44025
+    },
+    "max_prompt_tokens": 99019,
+    "protobuf_export_crosscheck": "49/49 planner response metadata match exported input/cache/output values",
+    "stages": {
+      "diagnosis": {
+        "rounds": 42,
+        "usage": {
+          "input_tokens": 169601,
+          "cache_read_tokens": 1975687,
+          "output_tokens": 35381
+        }
+      },
+      "architecture": {
+        "rounds": 7,
+        "usage": {
+          "input_tokens": 201842,
+          "cache_read_tokens": 461307,
+          "output_tokens": 8644
+        }
+      }
+    },
+    "gross_tokens": 2852462
+  },
+  "runtime_gross_tokens": 99109111,
+  "method": {
+    "source": "transcript_full.jsonl only; no concatenation with transcript.jsonl or chunk copies",
+    "coverage": "runtime controller plus 20 unique child IDs from controller creation results",
+    "units": "sum of Antigravity exported noncached input_tokens + cache_read_tokens + output_tokens; no monetary billing claim",
+    "evidence_attribution": "whole model rounds whose tool calls contain evidence command; not causal net savings",
+    "steps_vs_rounds": "records count tool results and planner steps; usage_rounds count only records with token usage",
+    "snapshot": "local logs read 2026-10-12, final runtime timestamps through 11:43:19 Asia/Shanghai"
+  },
+  "corrections": [
+    {
+      "claim": "96,203,110 runtime gross tokens",
+      "finding": "current completed transcript sum is 99,109,111; old report used incomplete counts"
+    },
+    {
+      "claim": "50+ evidence calls imply 90% net savings",
+      "finding": "two final reviewers had 61 and 65 evidence rounds; causal savings require fresh comparable execution"
+    },
+    {
+      "claim": "40-50 python -c calls are all JSON exploration",
+      "finding": "44 in final writer include SQL guessing, source reads and receipt assembly"
+    },
+    {
+      "claim": "two install paths drifted",
+      "finding": "installed path is symlink to repository since Oct 8; both resolve to identical files"
+    },
+    {
+      "claim": "chapter24 single batch is workflow failure",
+      "finding": "controller log shows plans existed only through 24; batchflow intentionally stops at absent plan"
+    },
+    {
+      "claim": "new auto-anchoring implementation is required",
+      "finding": "ledger.evidence already anchors unique quotes with omitted/invalid start; wire.evidence_catalog rejects omitted start"
+    },
+    {
+      "claim": "D+8 always invalid",
+      "finding": "coordinate intent and declared duration are needed; regex alone cannot distinguish absolute time from valid +8 interval"
+    },
+    {
+      "claim": "clock adjustment 1-2 days is harmless",
+      "finding": "clock affects event replay and deadlines; must use explicit plan revision and dependency validation"
+    }
+  ],
+  "source_files": [
+    {
+      "session_id": "2d9cd2ce-7a99-4f6e-b47b-ea82f91680d0",
+      "path": "/Users/longwen/.gemini/antigravity/brain/2d9cd2ce-7a99-4f6e-b47b-ea82f91680d0/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 223497,
+      "sha256": "7406b6b2bedfc5f1d7d59ef57eabd732671c46d3152e0bdddd755679180e203f"
+    },
+    {
+      "session_id": "a132d46a-931e-461d-9ff9-fb05bd61cc21",
+      "path": "/Users/longwen/.gemini/antigravity/brain/a132d46a-931e-461d-9ff9-fb05bd61cc21/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 563659,
+      "sha256": "f41a21cef7c30153628b4a32a1f099ed98fb1a6f3e25c2d337443d3fdc83bb27"
+    },
+    {
+      "session_id": "0d7981cc-cd1a-4def-a09d-ec3db14ad6d6",
+      "path": "/Users/longwen/.gemini/antigravity/brain/0d7981cc-cd1a-4def-a09d-ec3db14ad6d6/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 265292,
+      "sha256": "0e9266b17148a042f0a472fb64f20157d379fbd3c19c3820e6c0b20be30df613"
+    },
+    {
+      "session_id": "14550c75-0029-4ee5-9ad6-b184f3f1ee58",
+      "path": "/Users/longwen/.gemini/antigravity/brain/14550c75-0029-4ee5-9ad6-b184f3f1ee58/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 366716,
+      "sha256": "e7dc9973b180fbf507fb971b26d1fc98015854d4abc97800536fb51b15ccce7a"
+    },
+    {
+      "session_id": "0b21cd2f-d465-4bc6-803a-326d00b21981",
+      "path": "/Users/longwen/.gemini/antigravity/brain/0b21cd2f-d465-4bc6-803a-326d00b21981/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 158121,
+      "sha256": "8bdd3724eaa2079276e0b9291976b575a04c0af30249d41c1b7568df4080f38a"
+    },
+    {
+      "session_id": "416db61c-2015-4ce3-be99-ac8834fc5fbe",
+      "path": "/Users/longwen/.gemini/antigravity/brain/416db61c-2015-4ce3-be99-ac8834fc5fbe/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 160851,
+      "sha256": "595159e50bd61678c2c276295fe494ef59bc525adbdead0b8e7318e52f1eec6b"
+    },
+    {
+      "session_id": "9d1e9c6c-5c4c-4fdd-a17d-94de44157d56",
+      "path": "/Users/longwen/.gemini/antigravity/brain/9d1e9c6c-5c4c-4fdd-a17d-94de44157d56/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 167296,
+      "sha256": "7732950c3e29b31fbc17aace4b1899d75a0d1c6317227a1b22928d8a8cfcbeb5"
+    },
+    {
+      "session_id": "a6d1c8ea-061e-48d2-aad4-5305a77611fb",
+      "path": "/Users/longwen/.gemini/antigravity/brain/a6d1c8ea-061e-48d2-aad4-5305a77611fb/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 275866,
+      "sha256": "5a4fc9a9623de662357979f85a691baa45119735bc9ae830e75504565c3d25e4"
+    },
+    {
+      "session_id": "8adae2c4-0126-4d75-85f3-f4d228f8217c",
+      "path": "/Users/longwen/.gemini/antigravity/brain/8adae2c4-0126-4d75-85f3-f4d228f8217c/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 154384,
+      "sha256": "4adaa5ab2de762e7139b2f730f92eab918760d8de300f8720e6a7aeca9e724cf"
+    },
+    {
+      "session_id": "233327c1-60d3-4416-a0c3-209d79b71808",
+      "path": "/Users/longwen/.gemini/antigravity/brain/233327c1-60d3-4416-a0c3-209d79b71808/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 246873,
+      "sha256": "25628faa6d6286c2537fedeffa0f3d2c41ee5561940cd0e11d7cb1e6c65129d4"
+    },
+    {
+      "session_id": "85b45666-f5d0-424c-bfe8-a45e43f23800",
+      "path": "/Users/longwen/.gemini/antigravity/brain/85b45666-f5d0-424c-bfe8-a45e43f23800/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 435441,
+      "sha256": "50dc36ca8ae68ebaff763ea568138890cc733588653ce523b6be89e44598c0e6"
+    },
+    {
+      "session_id": "0844c844-57ee-4d92-90dd-5edd5f5ed6bc",
+      "path": "/Users/longwen/.gemini/antigravity/brain/0844c844-57ee-4d92-90dd-5edd5f5ed6bc/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 263608,
+      "sha256": "46800c6871a9c1aac30b02d77190d892e0549534975bc3c526f8049ba93f4edc"
+    },
+    {
+      "session_id": "da16967f-e7b3-46ca-a227-85cd821a1ada",
+      "path": "/Users/longwen/.gemini/antigravity/brain/da16967f-e7b3-46ca-a227-85cd821a1ada/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 390423,
+      "sha256": "692cc8d6f5f9aa78c19aec1ce0523f82bb4ef863635500aacf53312e10643e6b"
+    },
+    {
+      "session_id": "5baf7e84-98d3-4b43-9448-5d8b777e4df2",
+      "path": "/Users/longwen/.gemini/antigravity/brain/5baf7e84-98d3-4b43-9448-5d8b777e4df2/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 141558,
+      "sha256": "6cf0f495b66e104aa30a9961f555ee3fbae3e83e2bf4f20850685ec0f63b4735"
+    },
+    {
+      "session_id": "33a65225-74e5-4f43-8d08-b8ff3da4bb3a",
+      "path": "/Users/longwen/.gemini/antigravity/brain/33a65225-74e5-4f43-8d08-b8ff3da4bb3a/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 192388,
+      "sha256": "280bc3cfec3307d131447ba290539d6b30461b869c5f0be237c06c016e75df3b"
+    },
+    {
+      "session_id": "f118f99d-95fb-4f7f-ac11-32d13f85099c",
+      "path": "/Users/longwen/.gemini/antigravity/brain/f118f99d-95fb-4f7f-ac11-32d13f85099c/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 154903,
+      "sha256": "f9d722cf492a57038ee5ccf41fa142b5eb1b20e0d592f1ffe8ab29b44835bb5a"
+    },
+    {
+      "session_id": "e55309a3-c0b7-450f-b316-ef6d0927d50d",
+      "path": "/Users/longwen/.gemini/antigravity/brain/e55309a3-c0b7-450f-b316-ef6d0927d50d/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 177927,
+      "sha256": "c71029e2144da54517c9eb558a989362ee3a90c3672edaf36535db795de523ac"
+    },
+    {
+      "session_id": "b1cc9858-4c8a-44ce-b1ab-930a77122f42",
+      "path": "/Users/longwen/.gemini/antigravity/brain/b1cc9858-4c8a-44ce-b1ab-930a77122f42/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 145429,
+      "sha256": "3521144450bc4c9e0e040d86c16ef39faea7b5adeb5fb1e4c128e6c0cc1318e8"
+    },
+    {
+      "session_id": "4643e254-d025-4a0c-af70-54901bf905a6",
+      "path": "/Users/longwen/.gemini/antigravity/brain/4643e254-d025-4a0c-af70-54901bf905a6/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 162903,
+      "sha256": "59097f8fa1554e5ca3cb8ba9211116bd040e4d26e258fc85bd302a80245b92e6"
+    },
+    {
+      "session_id": "866b9932-5e19-4e1d-9b5b-b2ac6902de1a",
+      "path": "/Users/longwen/.gemini/antigravity/brain/866b9932-5e19-4e1d-9b5b-b2ac6902de1a/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 384146,
+      "sha256": "77742d07e11eb34d34608300a65591518ffbb81b7671e0848b33c027b1e8be2a"
+    },
+    {
+      "session_id": "8b4005e6-0320-44f3-b426-b44bfb7931a6",
+      "path": "/Users/longwen/.gemini/antigravity/brain/8b4005e6-0320-44f3-b426-b44bfb7931a6/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 281808,
+      "sha256": "a5e1415235406fc2f8c410d4a7010227fb8116effe18676bb7af71052631c6d1"
+    },
+    {
+      "session_id": "542101e9-0778-46c7-8fbc-b978a349ec63",
+      "path": "/Users/longwen/.gemini/antigravity/brain/542101e9-0778-46c7-8fbc-b978a349ec63/.system_generated/logs/transcript_full.jsonl",
+      "bytes": 400545,
+      "sha256": "984412e2c6904bf3007b52a48f9d5a83a21c0bc55f4f6c8a3d6c65b15682fff2"
+    }
+  ]
+}

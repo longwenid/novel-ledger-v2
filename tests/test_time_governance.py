@@ -48,7 +48,7 @@ class TimeGovernanceTests(unittest.TestCase):
             apply(s,{'op':'clock','thread':'b线','before':1,'after':2,'evidence':ev(text)},text,1)
         self.assertEqual(exc.exception.code,'time_conflict')
 
-    def test_day_schedule_checked_against_plan_hints(self):
+    def test_day_schedule_checked_against_explicit_coordinates(self):
         respond(self.db,self.path,self.task())
         t=self.task();respond(self.db,self.path,t,prose='次日清晨，周行在档案室核对记录。')
         t=self.task()
@@ -58,10 +58,11 @@ class TimeGovernanceTests(unittest.TestCase):
         submit_review(self.db,t,data)
         if self.task().get('stage')=='await_author':engine.approve(self.db)
         p=plan(2);p['scenes']=[{'label':'货栈','present':['hero'],'time_hint':'D+2 黄昏，先清点再碰头'}]
+        p['timeline']={'basis':'chapter_start','end_offset_range':[2,3]}
         self.assertEqual(self.task()['stage'],'plan')
         engine.submit(self.db,result(self.task(),{'chapters':[p]})) if False else engine.submit(self.db,result(engine.next_task(self.db,self.path),{'chapters':[p]}))
         prow=json.loads(self.db.execute("SELECT data FROM plans WHERE branch='main' AND number=2").fetchone()[0])
-        self.assertEqual(prow['day_anchor'],1);self.assertEqual(prow['day_span'],[2,2])
+        self.assertEqual(prow['timeline']['basis'],'chapter_start');self.assertEqual(prow['timeline']['end_offset_range'],[2,3])
         t=self.task();respond(self.db,self.path,t,prose='两天后，周行走进货栈清点货物。')
         t=self.task()
         work=envelope(t);prose=pack_prose(self.path, work)

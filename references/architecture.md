@@ -23,7 +23,7 @@
 
 每个可变状态只有一个地方决定它的值。谁都可以读，只有权威能写。
 
-- **权威归属**：`draft` → `engine`（作者/审稿流程）；`batch` → `batchflow`；`branch` → `engine.begin_revision` / `promote` / `discard`；`task` → `engine`（除节流的 lease/state 字段）；`plans` → `validate_plan` / `design.save` / `replan`。
+- **权威归属**：`execution` 与运行版本升级 → `execution`；`draft` → `engine`（作者/审稿流程）；`batch` → `batchflow`；`branch` → `engine.begin_revision` / `promote` / `discard`；`task` → `engine`（除节流的 lease/state 字段）；`plans` → `validate_plan` / `design.save` / `replan`。
 - **反例**：`draft['stage']` 曾被 `engine.repair`（语义阶梯）与 `engine.develop_short_draft`（篇幅阶梯）各自写一次，后写者覆盖前者 —— 已升级到 `redesign` 的章被短稿降级回 `repair`，返修上限被突破。
 - **判据**：如果两处代码都能让同一字段取不同值，必须合并为一个转换函数。
 
@@ -129,6 +129,11 @@ Worker 的成本 ≈ **读入量 × 轮数**，而每一轮都要重发全部历
 | INV-13 | 每个已落地章节的拟出场人物都有可用档案；缺口由 `audit` 报出并在派发下一章前补齐 | `characters.coverage` / `engine.audit` / `engine.next_task` |
 | INV-14 | 信封字段按类型分片；分片标记只决定必读与本任务分工，不得减少交付内容 | `taskio.envelope` / `taskio.typed_delivery` |
 
+| INV-15 | 单章模式的执笔与综合审稿按冻结任务隔离；未验收不派下章，首读和综合核验属同一审稿任务 | `execution.settings/freeze/bind_session`；`engine.choose`；CLI 提交与配置边界守卫 |
+| INV-16 | 新规划的硬日程必须声明坐标基准；旧任务不追补新能力或改变输入哈希 | `schedule.normalize`；`engine.validate_plan` 的冻结能力参数 |
+| INV-17 | 新审稿的时间和文风须核对反证；主线经过天数声明与事件结算一致 | `reviewflow.validate_scrutiny/reconcile_clock`；不证明语义真伪 |
+| INV-18 | 一次读取和分页面读取保留相同完整记录、来源和任务身份，首读前均不可取资料 | `taskview.read_bundle/verify`；`access.guard` |
+
 ## 四、分层与依赖方向
 
 ```
@@ -138,7 +143,8 @@ L3  engine                   编辑状态机：choose / submit / commit / revisi
 L2  batchflow settlement memory reviewrun
 L1  access atoms wire ledger patches budget spatial sources projections
     dependencies recovery reviewflow characters design contextflow taskio
-L0  store transitions
+    taskview schedule hostflow observability
+L0  store transitions execution
 ```
 
 规则：**模块级 import 只能同层或向下**。层号与登记表由 `tests/test_architecture_layers.py` 锁定：新增引擎模块必须登记层号，否则测试失败。
@@ -172,7 +178,7 @@ pending ──submit──▶ done
 
 ```
 draft ──审稿 fix──▶ repair ──审稿 fix──▶ repair ──审稿 fix──▶ redesign ──再 fix──▶ 暂停
-                        ▲                                    
+                        ▲
                         └──── 篇幅不足（length 阶梯，与上面取更严者）
 ```
 阶梯合成规则：**语义阶梯与篇幅阶梯各自计数，结果取更严的一侧**，禁止向宽的方向覆盖。
@@ -192,7 +198,7 @@ active ──revise──▶ candidate ──promote──▶ active（旧的转
 | 级别 | 含义 | 命令 |
 |---|---|---|
 | `public` | 不接触正文、账本内容或他人产物 | `init` `status` `next` `advance` `submit` `preflight` `measure` `pause` `resume` `complete` `replan` `doctor` `tidy` `checkpoint` `approve` `pilot` `first-read` |
-| `sealed` | 接触正文/账本/设计/他人产物；**存在未冻结首读的待审稿任务时禁止** | `recall` `map` `design` `character` `candidate` `material` `impact` `patch` `evidence` `dependencies` `config`(读) `audit` `html` `export` `revise` |
+| `sealed` | 接触正文/账本/设计/他人产物；**存在未冻结首读的待审稿任务时禁止** | `recall` `map` `design` `character` `candidate` `material` `impact` `patch` `evidence` `dependencies` `config`(读) `audit` `html` `export` `revise` `task-view` |
 
 `sealed` 的判定理由：隔离的目的是保证审稿者的**首读体验**不受约定与账本污染。任何能读到这些内容的命令都属该级，不论它叫 recall 还是 html。
 
@@ -207,3 +213,9 @@ active ──revise──▶ candidate ──promote──▶ active（旧的转
 5. 我写进文档的数字/清单，代码里是不是也有一份？会不会漂移？（P5）
 6. 新增的模块级 import 是否只向下？函数内 import 是否需要在第四节登记？
 7. 违反哪条不变量？测试里断言了吗？
+
+## 交互架构边界
+
+v1.55 的协议权威仍在领域模块：时间输入和示例由 schedule 定义，证据输入和示例由 wire 定义，反证核验由 reviewflow 定义；taskio 只渲染这些契约，memory 引用其规则，engine 按冻结 capabilities 选择验证器。新要求必须在签发时进入 input_hash，不通过当前安装版本向旧 pending 注入要求。时间词检查只证明引句类型；elapsed_days 一致只证明声明与事件不矛盾；两者都不证明正文真的经过那些天。宿主历史累积与缓存费用由宿主控制，不能把一次材料读取称为自动清空上下文。
+
+新模块 taskview、schedule、hostflow、observability 均为 L1。taskview 只渲染冻结完整记录；schedule 规范化明确坐标，旧日程仅按章首推进；hostflow 生成宿主规格而不启动模型；observability 的独立流不改变故事账本或任务。具体协议、兼容和验收见 [交互架构](interaction-architecture-design.md)。
