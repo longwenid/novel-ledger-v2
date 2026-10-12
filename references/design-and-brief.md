@@ -34,10 +34,10 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 - `volume`：卷 ID，与任务一致。
 - `purpose`：本卷用途（必填非空）。
 - `carries_in` / `climax` / `handoff`：承接上卷债务、本卷高潮走向与下卷交接说明。
-- `sequence`：因果推进节拍数组。
+- `sequence`：因果推进节拍数组。字符串为主线节拍；支线/时间线节拍用 `{"line":"sp:触点ID","text":"节拍"}` 声明服务线，夹在主线节拍之间交织排布——支线在对应主线触点前后切入并合流，不是平铺在卷尾的后缀。
 - `choice_log`：方向与关键节拍裁决。按 [创意工具箱](hatch-ideas.md) 给至少 2 个候选，含至少一个 wild:true；每项 direction/payoff/cost/risk，记录 chosen/reason。
 
-卷纲说明冲突、选择和后果如何承载预算。sequence/sequence_refs 是导航，编号用完不等于展开充分。volume_end 前结合正文和 volume_budget 核对过程、代价与余波；偏离时说明原因及后卷承载，不机械移预算或补字。
+卷纲说明冲突、选择和后果如何承载预算。sequence/sequence_refs 是导航，编号用完不等于展开充分。多线卷把 subplot/tension 触点织进 sequence：支线节拍穿插在主线节拍之间，合流点与主线互证，避免整卷单线推土；章以 sequence_refs 指向支线节拍即声明本章服务该线。volume_end 前结合正文和 volume_budget 核对过程、代价与余波；偏离时说明原因及后卷承载，不机械移预算或补字。
 
 ## 场景任务书（writer_brief）
 
@@ -45,7 +45,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 
 ```text
 创作任务：reader_experience（情感期待）、goal、conflict、change
-节拍推进：sequence_refs（对应的卷纲节拍序号）
+节拍推进：sequence_refs（对应的卷纲节拍序号；指向支线节拍即声明本章服务该支线）
 收束形态：ending_shape（类别:说明；闭环/交接/爆发/静收/反转/余波，可因剧情连续使用；章尾不加悬念钩子，收束落在行动、抉择或后果的自然完成上）
 人物选择：character_choices（entity/desire/pressure/choice/cost）
 场景提案：scenes（地点、拟在场者、intent/conflict/turn、动作与感知限制）
@@ -64,7 +64,7 @@ execution.expansion_units 每项含 id/scene/focus/development/expected_change�
 
 `rhythm` 含：
 
-- `chapter_role`：本章对当前段落的作用，具体到蓄势、推进、兑现或处理后果；不强制采用固定角色列表。
+- `chapter_role`：本章对当前段落的作用，具体到蓄势、推进、兑现或处理后果；不强制采用固定角色列表。支线章、关系章、呼吸章是合法角色——连续多章主线推进后用它们制造起伏与运动感，支线合流回主线时兑现其积累。
 - `pressure_curve`：按场景顺序的 `{scene,movement,cause}`，说明压力如何因人物行动、信息或选择而变化；同场景可多次变化。
 - `breathing_points`：`{scene,placement,function}`，说明在哪里让读者消化，以及人物、关系或后果得到什么承接。持续高潮章可为空。
 - `carries_in / handoff`：接住前章什么压力，交给后章什么未决选择；不必每章加新悬念。

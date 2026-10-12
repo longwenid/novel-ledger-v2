@@ -177,7 +177,20 @@ def save(db,branch,scope,chapter,data,task_id):
         # the signed part of the volume proposal, checked before any chapter of it is planned.
         require(text(data.get('carries_in')) and text(data.get('climax')) and text(data.get('handoff')),'design',
                 '卷纲需要 carries_in（承接上卷）、climax（卷高潮/结尾方向）、handoff（下卷交接；末卷写如何收束到终局）')
-        require(strings(data.get('sequence'),True) and strings(data.get('action_constraints')) and strings(data.get('ending_setup')),'design','本卷需要因果顺序、行动约束及终局铺设数组')
+        require(strings(data.get('action_constraints')) and strings(data.get('ending_setup')),'design','本卷需要因果顺序、行动约束及终局铺设数组')
+        # A plain string is a main-line beat (legacy shape); {line,text} weaves a
+        # subplot/timeline touchpoint into the causal order. Chapters inherit the
+        # line via sequence_refs, so chapter plans need no new field.
+        sequence=data.get('sequence')
+        require(isinstance(sequence,list) and bool(sequence),'design','本卷需要因果顺序、行动约束及终局铺设数组')
+        spine=spine_ids(db,branch)
+        for beat in sequence:
+            if isinstance(beat,str):
+                require(text(beat),'design','本卷需要因果顺序、行动约束及终局铺设数组')
+            else:
+                require(isinstance(beat,dict) and set(beat)=={'line','text'} and text(beat.get('text')),'design',
+                        '节拍为字符串主线节拍，或 {line,text} 支线节拍（line 引用脊柱触点，text 写节拍内容）')
+                require(spine is not None and beat['line'] in spine,'design',f'节拍引用了不存在的脊柱触点：{beat.get("line")}')
         choices(data.get('choice_log'))
         world=current(db,branch,'world');world_hash=world['hash']
         known={i['id'] for i in world['data']['core_locations']}

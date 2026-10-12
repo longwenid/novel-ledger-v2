@@ -53,6 +53,25 @@ class SpineTests(unittest.TestCase):
         with self.assertRaises(Error) as exc:self.submit(self.task(),bad)
         self.assertEqual(exc.exception.code,'design')
 
+    def test_sequence_beat_shapes_and_spine_line_refs(self):
+        self.submit(self.task(),EXAMPLE['world_plan'])
+        def volume(sequence):
+            v=copy.deepcopy(EXAMPLE['volume_plan']);v['sequence']=sequence;return v
+        # Weave beats must be exact {line,text} objects whose line is a known
+        # spine touchpoint; strings stay main-line beats for every legacy volume.
+        for bad in ([{'text':'缺 line'}],[{'line':'sp:sub-01'}],
+                    [{'line':'sp:sub-01','text':'支线节拍','extra':1}],
+                    [{'line':'sp:missing-9','text':'未知触点'}],
+                    [5]):
+            with self.assertRaises(Error) as exc:self.submit(self.task(),volume(bad))
+            self.assertEqual(exc.exception.code,'design')
+        self.submit(self.task(),volume(['主线节拍',{'line':'sp:sub-01','text':'支线节拍先于合流切入'},'再回主线']))
+
+    def test_chapter_declares_subplot_beat_via_sequence_refs(self):
+        self.prepare()  # example volume now carries a sp:sub-01 beat at index 2
+        p=self.plan(1);p['sequence_refs']=[2]
+        self.submit(self.task(),{'chapters':[p]})
+
     def finish_chapter(self,n=1):
         respond(self.db,self.path,self.task())                        # draft
         t=self.task();w=envelope(t);text=pack_prose(self.path, w)
@@ -78,7 +97,9 @@ class SpineTests(unittest.TestCase):
         old=design.current(self.db,'main','world')
         old['data'].pop('event_spine')
         with transaction(self.db):put(self.db,design.key('main','world'),old)
-        self.submit(self.task(),EXAMPLE['volume_plan'])
+        legacy=copy.deepcopy(EXAMPLE['volume_plan'])
+        legacy['sequence']=[b for b in legacy['sequence'] if isinstance(b,str)]  # 无脊柱世界只有主线节拍
+        self.submit(self.task(),legacy)
         self.submit(self.task(),{'chapters':[self.plan(1,major=True)]})   # no refs required
 
     def test_spine_survives_into_revision_copy(self):

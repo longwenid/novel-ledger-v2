@@ -1,5 +1,5 @@
 # 任务与结果协议 v1
-何时读：需要任务信封、结果回执、事件 op、连续会话或错误码的精确定义时。
+何时读：按节取用，不整册通读——写回执前后查「任务信封与输入交付」「结果格式与提交」；派工与恢复查「主控交接（advance）」与「连续会话」；查本阶段字段看「各阶段 data」小节（综合审稿/卷预算/设计与人物/plan/执笔返修/审稿回执）；events 的 op 与字段看「事件」；调优看「按需扩展」与「配置与用量观测」；修订起点看「修订影响查询」；被拒先看「错误与修正」；对码与宿主接入看「协议串清单」与「单章执行协议」。
 
 ## 任务信封与输入交付
 
@@ -136,7 +136,7 @@ character_views=scoped 的新档案先派 character_index，data={"indexes":[...
 
 卷 ID 来自约定，不倒序，不在未标卷末处跨卷。
 
-分层模式一批不能跨卷；另需 reader_experience、character_choices 和含 intent/conflict/turn 的 scenes，可选 expression_space。章计划还须 `sequence_refs`（推进本卷 sequence 的节拍序号数组，序号合法）与 `ending_shape`（“类别:说明”的收束形态，类别受控，可连续使用）。设计版本由控制器绑定，不能用提案覆盖已知事实。
+分层模式一批不能跨卷；另需 reader_experience、character_choices 和含 intent/conflict/turn 的 scenes，可选 expression_space。章计划还须 `sequence_refs`（推进本卷 sequence 的节拍序号数组，序号合法；卷纲节拍可为字符串主线节拍或 `{line,text}` 支线节拍，指向支线节拍即声明本章服务该支线，节拍形状见 [分层设计协议](design-and-brief.md)）与 `ending_shape`（“类别:说明”的收束形态，类别受控，可连续使用）。设计版本由控制器绑定，不能用提案覆盖已知事实。
 
 开新卷的 volume_plan 工作包含前卷设计交接面（prior_volume：climax/handoff/ending_setup）——设计是意图，carries_in 须按账本实际写成的前卷对齐。profiled 模式 scenes 可选 speakers（省略为 present 中人物），需要各发言者 dialogue_intents，静默场景明确空数组。
 

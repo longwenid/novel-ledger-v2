@@ -29,7 +29,7 @@ DISCIPLINE = {
     'hooks': '钩子只为正文已写明的重大承诺登记(约定定调或读者可指认的明确伏笔),不为章末效果硬造,无钩可留就不留;延期上限 2 次且每次须 reason;closed 不可重开;due 为最迟章号,到期章必须兑现/关闭/再延',
     'clock': '时间引句须解释实际经过时间与倒计时；有时间词只证明引句类型，不证明天数。新 time/timeline 按声明 basis 核对，旧冻结 D+N 才相对本章首时钟。time_schedule 冲突须据正文改判 fix，不能照允许范围改 clock 凑数。',
     'patches': 'start 为完整基稿的字符位置,old 必须与该处原文精确一致',
-    'plan': '分层计划:每章需 ending_shape(收束形态"类别:说明",类别: 闭环/交接/爆发/静收/反转/余波;章尾不加悬念钩子,收束落在行动、抉择或后果的自然完成上);卷纲有 sequence 时 sequence_refs 为 1 起的节拍序号数组。近期章纲用 execution 说明场景展开依据及已约定篇幅，用 rhythm 说明本章作用、压力变化原因、呼吸落点与承接；不固定事件数、松紧曲线或章末类别轮换。未设通常篇幅时按场景估计本章 target_han 并解释依据，不由全书总量机械均分。',
+    'plan': '分层计划:每章需 ending_shape(收束形态"类别:说明",类别: 闭环/交接/爆发/静收/反转/余波;章尾不加悬念钩子,收束落在行动、抉择或后果的自然完成上);卷纲有 sequence 时 sequence_refs 为 1 起的节拍序号数组。近期章纲用 execution 说明场景展开依据及已约定篇幅，用 rhythm 说明本章作用、压力变化原因、呼吸落点与承接；不固定事件数、松紧曲线或章末类别轮换。连续多章主线推进后安排支线或呼吸章，支线章以 sequence_refs 对齐卷纲支线节拍。未设通常篇幅时按场景估计本章 target_han 并解释依据，不由全书总量机械均分。',
 }
 
 # Per-stage discipline routing: a stage only carries the rules governing what
@@ -71,11 +71,11 @@ STAGE_PRIMERS = {
              '执笔不替自己签发审稿,不提交 events 或 findings。短章目标见包内 chapter_length,目标不能擅改。',
     'repair': '局部返修交 data={base_hash,patches:[{start,old,new}],repair_note};old 须与基稿该处精确一致且 start 按完整基稿定位。整章重写才交 prose+repair_note,必须实际改文。reuse_original 仅限历史修订 draft，不用于 repair/redesign。新增依赖可附 reads。',
     'redesign': 'data 同 draft 的 prose/summary（可带 reads），另必交 design_change 说明设计改变，须产生实际变化的正文;可附 plan_update 仅调当章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm,不可改卷序、终局标记或篇幅目标。',
-    'facts': '另必交 events:[{op,evidence:{chapter,quote},...}] 和非空 summary（覆盖选择/后果/未决压力）。'+EVIDENCE_RULE+'事件类型和字段按 references/protocol.md，返修去向按 prior_events_note；前态照抄 state，不重报 auto_carry 续算事件。',
+    'facts': '另必交 events:[{op,evidence:{chapter,quote},...}] 和非空 summary（覆盖选择/后果/未决压力）。'+EVIDENCE_RULE+'事件字段见信封 event_contract_path（events.json），返修去向按 prior_events_note；前态照抄 state，不重报 auto_carry 续算事件。',
     'reader': '另必交 first_read={desire,obstacle,change,read_on_reason}（四项均非空），保留读取 input 前记录的首读体验；档案不能替正文辩护。',
     'world_plan': 'data 只含引擎允许字段(报错会列出收到键与允许键);不能提交正文事件或覆盖作者约定;event_spine 四层 main/subplot/timeline/tension,触点 id 用 sp: 前缀。',
-    'volume_plan': 'data 必含 volume/purpose/carries_in/climax/handoff/sequence/action_constraints/ending_setup/choice_log;choice_log 每条 kind=direction|beat、mode、candidates≥2 且含 wild:true、chosen、reason。',
-    'plan': 'data={chapters:[...]} 每批 1~10 章,章号连续;每章必含 number/goal/conflict/change/volume/entities/ending_shape(类别:说明,类别见 guide 纪律),sequence_refs 对齐卷纲节拍,历史依赖只能引用已提交章。',
+    'volume_plan': 'data 必含 volume/purpose/carries_in/climax/handoff/sequence/action_constraints/ending_setup/choice_log;choice_log 每条 kind=direction|beat、mode、candidates≥2 且含 wild:true、chosen、reason;sequence 支线节拍用 {line:"sp:触点ID",text} 与主线节拍交织。',
+    'plan': 'data={chapters:[...]} 每批 1~10 章,章号连续;每章必含 number/goal/conflict/change/volume/entities/ending_shape(类别:说明,类别见 guide 纪律),sequence_refs 对齐卷纲节拍,服务支线的章指向支线节拍,历史依赖只能引用已提交章。',
     'character_plan': 'data={profiles:[{entity,tier,biography:{public_role,desire,experiences:[{text,status:design|established}]},voice:{register,tactics:[非空字符串],relationship_modes:[{audience,approach}],avoid:[字符串]}}]}。tier=major|supporting|walk_on；major 还需 biography.fear/values（非空数组）/boundary/contradiction、voice.rhythm/stress_shift、arc={direction,not_yet_earned:[字符串]}；已确立经历须 evidence={chapter,start,quote}，设计经历不附 evidence；更新须 change_reason，引擎自管字段不要提交。',
     'character_index': '按 instruction 对每条档案建立适用范围与因果依赖索引;relevance 只是提案,穷尽且可解释才写 scoped,不确定写 unknown;sources 原章用 recall --chapter 完整补读。',
 }
