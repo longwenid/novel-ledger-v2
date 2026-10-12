@@ -56,7 +56,7 @@ submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果�
 
 仅升级前已冻结任务保留此字段，新任务不创建章节批次。旧版 `chapter_session={protocol:"chapter-batch/1",batch:ID,role:writer|reviewer,first:N,last:M}` 绑定最多五章与单一角色。旧生成命令带 `--continue-chapter-batch`，升级后接受当前冻结任务并返回 worker_boundary=finished，不再续派。以下为旧回执形状说明：与其他连续处理选项互斥，只允许标记任务。响应 `schema=novel-ledger-v2.chapter-batch/1`，含刚提交 task_id/session；`continue_chapter_batch` 含同批同角色下一 task，`chapter_batch_done` 交回主控，其他 action 依暂停/过时回调边界处理。重复提交恢复同一 pending，不跨批次、角色或作者边界。主控 after 使用最后提交的 ID。
 
-批内写作/返修的 data 在原契约外必含 `summary`、`candidate_events` 数组和非空具体 `self_check`。临时事件按正式事件的坐标与前态校验，但仅保存 drafts；input 的 state/continuity 已叠加前章候选变化，`candidate_ledger` 标明未审前缀与来源。带当前 `--task` 的 recall --state / --chapter 可读候选前态与前章原文，不带 task 时始终读正式账本；普通事件检索仍查正式事件，候选事件完整列在 candidate_ledger。审稿者不读取执笔自评或候选事件提案，独立登记正式事件。
+旧冻结形状：批内写作/返修的 data 在原契约外必含 `summary`、`candidate_events` 数组和非空具体 `self_check`。临时事件按正式事件的坐标与前态校验，但仅保存 drafts；input 的 state/continuity 已叠加前章候选变化，`candidate_ledger` 标明未审前缀与来源。带当前 `--task` 的 recall --state / --chapter 可读候选前态与前章原文，不带 task 时始终读正式账本；普通事件检索仍查正式事件，候选事件完整列在 candidate_ledger。审稿者不读取执笔自评或候选事件提案，独立登记正式事件。
 返修冻结输入有 `payload.candidate_events_snapshot` 时，可选择 `reuse_candidate_events:true` 代替 candidate_events。程序仅续算全部本章证据的完整句语境未变的事件，并重定位、重验前态；其他情况完整重报，不同时使用两种字段。
 
 批内 input.json 为冻结输入的拆分交付视图：`shared_materials` 各字段含 `{path,hash,encoding:"json"}`，完整值在 PROJECT/work/shared/<哈希>.json。哈希按标准 dump 的逻辑值计算，真源仍在任务 input；恢复会重建缺失或损坏文件。guide 也可从该目录取得。首次接手须阅读全部所需来源，同一 Worker 只复用已读且未变的版本；新 Worker 不沿用别人的已读判断。

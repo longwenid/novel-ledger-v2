@@ -1,6 +1,7 @@
 """Task-bound protocol evolution: explicit time, scrutiny and lossless reads."""
 import copy
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,13 +14,17 @@ from novel_core.store import Error, initialize, connect, digest, dump, head
 
 # Windows hosts without admin/developer-mode privilege reject symlink creation
 # (WinError 1314); probe once so the alias test skips there instead of failing.
+# Cleanup is best-effort: a lingering handle on the directory symlink must not
+# abort module import and zero the whole file at collection time.
 def _symlinks_available():
-    with tempfile.TemporaryDirectory() as probe:
-        try:
-            alias=Path(probe)/'alias';alias.symlink_to(Path(probe),target_is_directory=True)
-            return True
-        except OSError:
-            return False
+    probe=tempfile.mkdtemp()
+    try:
+        alias=Path(probe)/'alias';alias.symlink_to(Path(probe),target_is_directory=True)
+        return True
+    except OSError:
+        return False
+    finally:
+        shutil.rmtree(probe,ignore_errors=True)
 
 SYMLINKS=_symlinks_available()
 
@@ -87,7 +92,7 @@ class ContractEvolutionTests(unittest.TestCase):
         schedule.normalize(p,14,explicit_required=True);schedule.check(p,14,22,1)
 
     def test_new_template_exposes_the_enforced_time_contract(self):
-        task=self.cli('advance')['task'];template=json.loads((self.path/task['template_path']).read_text())
+        task=self.cli('advance')['task'];template=json.loads((self.path/task['template_path']).read_text(encoding='utf-8'))
         p=template['data']['chapters'][0]
         self.assertEqual(p['timeline'],task['time_contract']['timeline_example'])
         self.assertEqual(p['scenes'][0]['time'],task['time_contract']['scene_example']['time'])
@@ -120,7 +125,7 @@ class ContractEvolutionTests(unittest.TestCase):
     def test_one_call_read_preserves_all_records_and_first_read_isolation(self):
         task=self.cli('advance')['task'];before=task['input_hash']
         bundle=self.cli('task-view','--task',task['task_id'],'--read')
-        manifest=json.loads((self.path/task['reading_view']['manifest_path']).read_text())
+        manifest=json.loads((self.path/task['reading_view']['manifest_path']).read_text(encoding='utf-8'))
         self.assertEqual([digest(r['value']) for r in bundle['records']],[r['value_hash'] for r in manifest['records']])
         self.assertEqual(bundle['record_count'],len(manifest['records']))
         self.assertTrue(bundle['complete']);self.assertEqual(bundle['input_hash'],before)
@@ -129,7 +134,7 @@ class ContractEvolutionTests(unittest.TestCase):
         self.assertEqual(caught.exception.code,'first_read_required')
 
     def test_bundle_refuses_damaged_pages_and_altered_record_manifest(self):
-        task=self.cli('advance')['task'];manifest=json.loads((self.path/task['reading_view']['manifest_path']).read_text())
+        task=self.cli('advance')['task'];manifest=json.loads((self.path/task['reading_view']['manifest_path']).read_text(encoding='utf-8'))
         tampered=copy.deepcopy(manifest);tampered['records'][0]['value_hash']='0'*64
         with self.assertRaises(Error):taskview.read_bundle(self.path,tampered)
         (self.path/manifest['pages'][0]['path']).write_text('截断',encoding='utf-8')

@@ -77,7 +77,7 @@ python scripts/novel.py <command> --project "$PROJECT"
 
 常用子命令：`init`（开书）、`advance`/`next`/`submit`（派工与提交）、`approve`（首章定调）、`pilot`（文风驳回）、`measure`（篇幅）、`preflight`（完整预检）、`patch`（定点定位）、`recall`（定向检索）、`revise`（修订分支）、`audit`（全书审计）、`export`/`html`（导出与书刊视图）、`doctor`（环境诊断）、`status`/`pause`/`resume`/`complete`（运行管理），以及 `config`/`replan`/`candidate`/`design`/`character`/`map`/`material`/`impact`/`first-read`/`evidence`/`checkpoint`/`dependencies`/`tidy`/`task-view` 等视图与治理命令。
 
-依赖：Python 3.9+，仅标准库，无第三方包。
+依赖：Python 3.9+，仅标准库，无第三方包（开发测量工具的可选 tiktoken 除外）。
 
 ## 仓库结构
 

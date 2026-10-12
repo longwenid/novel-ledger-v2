@@ -216,6 +216,6 @@ active ──revise──▶ candidate ──promote──▶ active（旧的转
 
 ## 交互架构边界
 
-v1.55 的协议权威仍在领域模块：时间输入和示例由 schedule 定义，证据输入和示例由 wire 定义，反证核验由 reviewflow 定义；taskio 只渲染这些契约，memory 引用其规则，engine 按冻结 capabilities 选择验证器。新要求必须在签发时进入 input_hash，不通过当前安装版本向旧 pending 注入要求。时间词检查只证明引句类型；elapsed_days 一致只证明声明与事件不矛盾；两者都不证明正文真的经过那些天。宿主历史累积与缓存费用由宿主控制，不能把一次材料读取称为自动清空上下文。
+当前的协议权威仍在领域模块：时间输入和示例由 schedule 定义，证据输入和示例由 wire 定义，反证核验由 reviewflow 定义；taskio 只渲染这些契约，memory 引用其规则，engine 按冻结 capabilities 选择验证器。新要求必须在签发时进入 input_hash，不通过当前安装版本向旧 pending 注入要求。时间词检查只证明引句类型；elapsed_days 一致只证明声明与事件不矛盾；两者都不证明正文真的经过那些天。宿主历史累积与缓存费用由宿主控制，不能把一次材料读取称为自动清空上下文。
 
 新模块 taskview、schedule、hostflow、observability 均为 L1。taskview 只渲染冻结完整记录；schedule 规范化明确坐标，旧日程仅按章首推进；hostflow 生成宿主规格而不启动模型；observability 的独立流不改变故事账本或任务。具体协议、兼容和验收见 [任务协议](protocol.md) 的单章执行节。

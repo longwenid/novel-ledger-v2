@@ -611,11 +611,11 @@ def delivery(db, project, task, work, envelope):
     if task['stage'] in ('draft', 'repair', 'redesign'):
         commands['measure'] = command('measure', '--result', base/envelope['output_path'])
         if work.get('chapter_session'):
-            envelope['event_contract_path']=str((root/'events.json').relative_to(base))
+            envelope['event_contract_path']=(root/'events.json').relative_to(base).as_posix()
             write_json(root/'events.json',{'operations':EVENT_FIELDS,'before_source':'本任务 state（含前章候选事件）；候选提案须正文举证，不替正式审稿。证据填 chapter/quote 即可，唯一原文由程序补 start；歧义或排错才用 commands.evidence；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。'})
             commands['state']=command('recall','--task',task['id'],'--state','--entity','替换为实体ID')
     if gated:
-        envelope.update(delivery_phase='first_read', first_read_result_path=str(root.relative_to(base)/'first_read.json'))
+        envelope.update(delivery_phase='first_read', first_read_result_path=(root.relative_to(base)/'first_read.json').as_posix())
         first = {'task_id': task['id'], 'input_hash': task['input_hash'],
                  'prose_hash': work['payload']['prose_hash']}
         if envelope.get('first_read_files'):
@@ -626,7 +626,7 @@ def delivery(db, project, task, work, envelope):
         else:
             first['first_read']={k: '' for k in reviewflow.FIRST_FIELDS}
         write_json(root/'first_read.template.json', first)
-        envelope['first_read_template_path'] = str((root/'first_read.template.json').relative_to(base))
+        envelope['first_read_template_path'] = (root/'first_read.template.json').relative_to(base).as_posix()
         commands['first_read'] = command('first-read', '--task', task['id'], '--result', root/'first_read.json','--compact')
         envelope['worker_prompt'] += '先以目标读者的身份真实读完 first_read_files（存在时为整批）或 first_read_path 再记录四项体验——回执是你的阅读事实，不是表格作业；填写 first_read.template.json 到 first_read_result_path，执行 commands.first_read；成功后读响应 task.task_path 取得已解锁完整信封、input_path 与正式模板。'
     else:
@@ -642,7 +642,7 @@ def delivery(db, project, task, work, envelope):
             # identity or leaking author goals through the blind first-read gate.
             envelope['revision_context'] = revision
             envelope['worker_prompt'] += '核对信封 revision_context 的全部未完成父子修订目标，后加文风目标不撤销父级结构目标。'
-        envelope['template_path'] = str((root/'result.template.json').relative_to(base))
+        envelope['template_path'] = (root/'result.template.json').relative_to(base).as_posix()
         write_json(root/'result.template.json', template(task, work, saved, db=db))
         envelope['worker_prompt'] += ('有 reading_view 时顺序读 pages，否则读取 input_path；以 guide 执行，写 output_path 后执行 commands.submit。'
             '使用 JSON 入口时 input_files 非空意味着 input_path 只是索引，字段在同名文件，'
@@ -653,14 +653,14 @@ def delivery(db, project, task, work, envelope):
         if task['stage'] in ('draft', 'repair', 'redesign'):
             envelope['worker_prompt'] += '程序校验合成全文及篇幅；需在提交前查看计数时可用 commands.measure。'
         if task['stage'] == 'chapter_review':
-            envelope['event_contract_path'] = str((root/'events.json').relative_to(base))
+            envelope['event_contract_path'] = (root/'events.json').relative_to(base).as_posix()
             write_json(root/'events.json', {'evidence': {'chapter': task['chapter'], 'quote': '完整原文'},
                 'operations': EVENT_FIELDS, 'before_source': '包内 state；缺项用 recall --state --entity ID --topic TOPIC。准备结论与旧回执不作前态。证据填 chapter/quote 即可，唯一原文由提交程序补 start；歧义或排错才用 commands.evidence；若写辅助脚本组装回执，脚本读写任何文件必须显式 encoding="utf-8"（Windows 控制台默认编码会损坏中文引文）。',
                 'references': [str(Path(cli).parents[1]/'references'/name) for name in ('protocol.md','spatial-continuity.md','characters.md')]})
             commands['state'] = command('recall', '--task', task['id'], '--state', '--entity', '替换为实体ID')
         if saved:
             envelope['first_read_receipt_hash']=saved['hash']
-            envelope['first_read_receipt_path']=str((root/'frozen_first_read.json').relative_to(base))
+            envelope['first_read_receipt_path']=(root/'frozen_first_read.json').relative_to(base).as_posix()
             write_json(root/'frozen_first_read.json',saved['receipt'])
             envelope['worker_prompt']+='若当前上下文未保留自己已读的本章冻结首读，读取 first_read_receipt_path 恢复原体验；不据补读资料改写。'
         if work['payload'].get('numeric_correction'):
