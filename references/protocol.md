@@ -88,7 +88,7 @@ submit 可为顶层阶段字段补齐信封：本任务指定目录内的结果�
 
 ### 运行模式与综合审稿 chapter_review
 
-统一使用 chapter_review，writer_batch 默认 10，review_chunk 默认 3。`config --key writer_batch --value N`（N 为 1～10）只能在没有 pending 时修改。writer_batch 是主控复用执笔会话的章数上限，单次任务仍提交一章。本版本数据库 schema=novel-ledger-v2/2，不兼容旧项目，不提供分阶段审稿模式或迁移。
+统一使用 chapter_review；单章执行下 writer_batch 固定为 1，执笔与审稿会话均每章新派（见文末单章执行协议），跨章复审粒度 review_chunk 默认 3（1～5，约定期设定）。数据库 schema=novel-ledger-v2/2：更早 schema 的旧项目不受支持；同 schema 的旧版本项目（含 chapter_batch 时期）由引擎备份后自动升级归档批次，不丢草稿。
 
 新 chapter_review 冻结 `review_protocol=sealed-review/1`。信封初始 `delivery_phase=first_read`，只有 first_read_path/first_read_hash、首读模板和命令；input_path 尚未生成。审稿者只读当前正文，将 first_read_template_path 填写到 first_read_result_path，执行 commands.first_read。
 
