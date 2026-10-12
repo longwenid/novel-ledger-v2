@@ -218,7 +218,11 @@ def main():
                 report={'kind':'real-authored-prose-with-recorded-model-reviews','review_mode':'combined protocol replay using archived independent reader receipts; no new model review','pilot_approval':'test commissioning, not real author approval','source_hashes':{str(n):digest(s) for n,s in PROSE.items()},'result':task,'tasks':trace,'limitations':['compressed sample, not million-character validation','not cross-provider verification','chapter 4 original draft and actual independent finding exercise repair; other editorial changes preceded replay','long-range review supplied by implementing editor, not a second blind reader']}
                 write_json(Path(args.project)/'execution-report.json',report)
                 return
-            stage,n=task['stage'],task['chapter'];info=json.loads((Path(args.project)/task['input_path']).read_text(encoding='utf-8'))['payload']
+            from envelope import load, seal_first_read, obligations
+            archived=next((row for row in review['chapters'] if row['number']==task['chapter']),None)
+            task=seal_first_read(db,args.project,task,impression=(archived or {}).get('first_read'))
+            work=load(args.project,task);info=work['payload']
+            stage,n=task['stage'],task['chapter']
             if 'prose_path' in info:info['prose']=(Path(args.project)/info['prose_path']).read_text(encoding='utf-8')
             if stage=='plan':data={'chapters':[planned(i) for i in range(n,min(n+5,12)+1)]}
             elif stage=='draft':
@@ -229,7 +233,10 @@ def main():
             elif stage in ('repair','redesign'):data={'prose':PROSE[n],'repair_note':'按独立读者发现改正水位与桥洞净空关系，保持水尺只是线索。','design_change':'调查基于运输路径，刀痕不再被当作未经核实的暗号。'}
             elif stage=='chapter_review':
                 reader=reader_result(n,initial_review,info['prose']) if n==4 and info['prose']!=PROSE[4] else reader_result(n,review)
-                data={'facts':fact_review(n,info['prose']),'reader':reader}
+                facts=fact_review(n,info['prose']);quote=info['prose'][:12]
+                facts['obligations']=obligations(work,'facts',n,quote)
+                reader['obligations']=obligations(work,'reader',n,quote)
+                data={'facts':facts,'reader':reader}
             else:data=long_review(info,review)
             result={'schema':'novel-ledger-v2.result/1','task_id':task['task_id'],'input_hash':task['input_hash'],'data':data}
             write_json(Path(args.project)/task['output_path'],result)

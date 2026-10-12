@@ -82,13 +82,22 @@
 
 ### 交付成本
 
-Worker 的成本 ≈ **读入量 × 轮数**，而每一轮都要重发全部历史。所以同一条信息交付两次，代价不是两倍，而是「两倍 × 剩余轮数」。三条判据：
+Worker 的成本 ≈ **读入量 × 轮数**，而每一轮都要重发全部历史。所以同一条信息交付两次，代价不是两倍，而是「两倍 × 剩余轮数」。四条判据：
 
 1. **同一批信息只交付一次**。派生视图要自报身份：[brief.md](repairs.md) 是 `input.json` 里任务书的渲染版，内容全部来自后者。实测 Worker 两个都读，各 27.3K——同一批信息付两遍，且第二遍在后续每一轮继续重发。
-2. **大块材料按需交付，必读且小的内联**。`design_context`、`character_context` 按内容寻址外置；`contract`、`style_anchor`、`state`、`guide` 留在信封里。判据是「Worker 会不会跳过它」，不是「它大不大」——定点返修会跳过完整世界设计，却不会跳过前态。
-3. **信封要落进宿主单次读取上限**。超过时限，Worker 会把同一个文件读成两三页，每页都留在上下文里被反复重发。实测 412K 字符的重复读入（占全部 read 的 28%），累积上下文放大 10–59 倍。压缩省的不是字节，是「读不完」。
+2. **信封按类型切片，不随全书增长**。`input.json` 是索引：字段超过阈值就落到同任务目录的 `input/<字段>.json`，索引里的 `input_files` 给出地址、`must_read`/`on_demand` 给出必读与按需。实测 27–36K 的整份信封被 Worker 读成 2–3 页（某修订章 27.3K + 26.9K + 27.4K），每页都留在上下文里；切片后索引与每个分片都能一次读完。
+3. **大块材料按需交付，必读且小的内联**。`design_context`、`character_context` 按内容寻址外置且逐条标记 `needed`；`contract`、`guide` 是项目级文档，按字段外置并只在必须核对作者约定的阶段标为必读；`state`、`style_anchor` 留在信封里。判据是「Worker 会不会跳过它」，不是「它大不大」——定点返修会跳过完整世界设计，却不会跳过前态。
+4. **分片标记只收窄必读，从不减少交付**。`needed:false` 的分片仍在账本内、仍有地址与补读命令：程序无法证明某个人物或事实与本章无关，所以缺省是「可读但不强制读」，绝不「不交付」。
 
-这三条由 `tests/test_architecture_layers.py::DeliveryCostTests` 锁定。
+判据 2–4 由 `tests/test_architecture_layers.py::EnvelopeSlicingTests` 锁定，判据 1 与其余由同文件的 `DeliveryCostTests` 锁定。
+
+### 角色表与章节的一致性
+
+调度只检查「即将规划的那一章」，因此被修订重建的后缀、就地改过的章计划、被携带的章都可能带着一个没有可用档案的发言人进入执笔与审稿——实测事故正是「章节写了很多，角色表却没有对应条目」。因此：
+
+- `characters.coverage` 逐**已落地**章节核对参与人是否都有可用档案（未落地章的 replay 状态为空，无法判断有效性）。
+- `audit` 把每个缺口报成 `character_table_gap`，`complete` 因此拒绝完本。
+- `next_task` 在派发下一章之前先修表：只要已落地章存在缺口就派 `character_plan`，不带病继续写。
 
 
 ### P5 机械事实单源（Single Source for Mechanical Facts）
@@ -116,6 +125,8 @@ Worker 的成本 ≈ **读入量 × 轮数**，而每一轮都要重发全部历
 | INV-10 | 模块级 import 只能指向同层或更低层 | 守护测试（分层见第四节） |
 | INV-11 | 修订起点是**修复指令**（`target_chapter` / `repair_route`），不得从举证位置推断；未声明时就地修最新章 | `transitions.revision_start` |
 | INV-12 | 章节可声明自身账本读取集（`reads`）；该声明**只收窄**携带判定，不得放宽 | `engine.validate_reads` / `carriage._declared_reads` |
+| INV-13 | 每个已落地章节的拟出场人物都有可用档案；缺口由 `audit` 报出并在派发下一章前补齐 | `characters.coverage` / `engine.audit` / `engine.next_task` |
+| INV-14 | 信封字段按类型分片；分片标记只决定必读与本任务分工，不得减少交付内容 | `taskio.envelope` / `taskio.typed_delivery` |
 
 ## 四、分层与依赖方向
 

@@ -1,12 +1,12 @@
 # novel-ledger-v2
 
-跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.51.2**。
+跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.52.0**。
 
 ## 核心理念
 
 1. **SQLite 为唯一真源**——正文、任务、恢复点、用量全部入库，只通过 `submit` 更新，不手改数据库或伪造回执；`work/` 目录只是派生视图，崩溃可重建。
 2. **执笔与审稿隔离**——`chapter_review` 由独立于执笔者的审稿 Worker 完成事实与读者两类检查，逐项阅读、举证，通过后才入库；审稿者不读取执笔自评。
-3. **上下文按结构规则控量**——正文与资料按内容寻址平文本文件交付（`work/prose/<hash16>.txt`），包内只留路径与哈希；同一 Worker 只复用已读且哈希未变的资料，新 Worker 重新读取。不给输入设字符上限，靠任务拆分、实体/话题定向检索与版本补丁防爆炸。
+3. **上下文按结构规则控量**——正文与资料按内容寻址平文本文件交付（`work/prose/<hash16>.txt`），包内只留路径与哈希；`input.json` 是索引，字段按类型分片到 `input/<字段>.json`，`must_read` 标出本任务必读、`on_demand` 留给按需补读；同一 Worker 只复用已读且哈希未变的资料，新 Worker 重新读取。不给输入设字符上限，靠任务拆分、实体/话题定向检索与版本补丁防爆炸。
 4. **文风锚点**——`style_anchor` 随执笔/审稿包下发，reader 用 `language` 核验；所有文风删除非必要形容词，用动作、事实、对白和后果表达（"人味写作"正面框架）。
 
 ## 派工模型
@@ -45,19 +45,24 @@ references/           阶段指南与架构契约（creation/runtime/writing/pro
 scripts/novel.py      CLI 入口（含默认拒绝的访问分级守卫）
 scripts/novel_core/   引擎（engine/store/ledger/batchflow/reviewflow/atoms/transitions… ）
 tests/                引擎与行为边界测试（pytest；含架构守护）
-validation/           端到端验证脚本与基准（chapter_batch / review_session / material_efficiency）
+validation/           端到端验证脚本与测量工具（delivery_probe / session_cost /
+                      chapter_batch / review_session / material_efficiency，envelope 为共用读取约定）
 ```
 
 ## 架构
 
-改引擎前先读 [references/architecture.md](references/architecture.md)：五条设计原则（单一权威 / 默认拒绝 / 能力诚实 / 失败分级 / 机械事实单源）、十条不变量、模块分层与延迟绑定登记表、修改检查表。这些契约由 `tests/test_architecture_layers.py` 以测试形式锁定——分层违规、未登记的命令分级、未登记的回环、文档与代码的机械事实漂移，都会在合并前失败。
+改引擎前先读 [references/architecture.md](references/architecture.md)：五条设计原则（单一权威 / 默认拒绝 / 能力诚实 / 失败分级 / 机械事实单源）、十四条不变量、模块分层与延迟绑定登记表、修改检查表。这些契约由 `tests/test_architecture_layers.py` 以测试形式锁定——分层违规、未登记的命令分级、未登记的回环、文档与代码的机械事实漂移，都会在合并前失败。
 
 ## 开发
 
 ```bash
-python validation/run_tests.py            # 全量测试（单行进度条 + 预计剩余时间）
-python -m pytest tests/ -q                # 等价的直接调用
-python validation/run_story.py            # 端到端故事验证
+python validation/run_tests.py                        # 全量测试（单行进度条 + 预计剩余时间）
+python -m pytest tests/ -q                            # 等价的直接调用
+python validation/run_story.py --project <新项目目录>   # 端到端故事验证
+python validation/delivery_probe.py --keep            # 量每个阶段的交付成本（索引/分片/必读）
+python validation/session_cost.py <会话导出目录>        # 量一次真实运行的 token 与读入量
 ```
+
+交付成本改动必须用 `delivery_probe.py` 给出前后数字，并用 `EnvelopeSlicingTests` 锁住判据；只缩小索引而让必读量变大不算降耗。
 
 版本沿用 `scripts/novel_core/store.py` 的 `VERSION`，升级就地生效：旧任务按库内存储输入恢复，账本快照版本不符时走慢路径重放，无需迁移。

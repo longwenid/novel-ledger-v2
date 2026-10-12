@@ -64,8 +64,8 @@ def next_job(db,branch,chapter,plan):
     return ('character_plan',chapter,{'entities':missing,'instruction':'为本章缺少有效档案的人物建立或更新三层人物资料。先核对当前事实和成长证据，按 references/characters.md 返回 profiles。只设计表达与行为依据，不把小传里的提案当已发生事实。'})
 
 
-def coverage(db,branch,through=None):
-    """Every chapter's participants against the character table.
+def coverage(db,branch,through=None,first_gap=False):
+    """Every committed chapter's participants against the character table.
 
     The dispatcher only ever checks the chapter it is about to plan, so a
     chapter that acquired a participant later — a suffix rebuilt by a revision,
@@ -73,21 +73,29 @@ def coverage(db,branch,through=None):
     nobody in the table for the person who speaks in it. Measured against a real
     book, that is exactly the reported symptom: chapters written, character
     table missing entries. This walks the plans that exist and reports each one.
+
+    Only committed chapters are judged: a plan for an unwritten chapter replays
+    to an empty state, which cannot show whether a profile is still usable.
+    Cost is one state replay per committed chapter with a plan, so callers that
+    only need a yes/no pass `first_gap=True` — the steady state has no gaps at
+    all, and a gap stops the walk on the chapter that has it.
     """
     if not enabled(db):return {'enabled':False,'chapters':0,'gaps':[],'instruction':'本书未启用人物档案模式。'}
-    limit=through if through is not None else head(db,branch)
+    limit=min(through,head(db,branch)) if through is not None else head(db,branch)
     gaps=[];checked=0
     for row in db.execute('SELECT number,data FROM plans WHERE branch=? AND number<=? ORDER BY number',(branch,limit)):
         plan=json.loads(row['data'])
         if not plan.get('entities'):continue
         checked+=1
-        state=replay(db,branch,row['number']-1)
+        state=replay(db,branch,row['number'])
         people=participants(plan,state)
         missing=sorted(e for e in people if not usable(db,branch,e,state))
-        if missing:gaps.append({'chapter':row['number'],'entities':missing,
-                                'recover':'next/advance 会先派 character_plan 补齐；已落地的章按 characters.md 更新档案，不改正文'})
+        if missing:
+            gaps.append({'chapter':row['number'],'entities':missing,
+                         'recover':'next/advance 会先派 character_plan 补齐；已落地的章按 characters.md 更新档案，不改正文'})
+            if first_gap:break
     return {'enabled':True,'chapters':checked,'gaps':gaps,'complete':not gaps,
-            'boundary':'本检查证明「每个拟出场人物都有可用档案」，不评价档案质量。'}
+            'boundary':'本检查证明「每个已落地章节的拟出场人物都有可用档案」，不评价档案质量。'}
 
 
 def validate_profile(data,state,source):

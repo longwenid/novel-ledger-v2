@@ -145,6 +145,34 @@ class CharacterTests(unittest.TestCase):
         self.assertEqual(head(self.db,'main'),1)
         task=self.task();self.assertEqual(task['stage'],'character_plan')
         self.assertEqual(envelope(task)['payload']['entities'],['hero'])
+    def test_audit_reports_every_chapter_whose_speaker_has_no_profile(self):
+        """章节写了但角色表缺项：账本审计要逐章报出来。
+
+        真实事故：调度只检查「即将规划的那一章」，被修订重建的后缀或就地改过的
+        章计划可以带着一个没有档案的发言人进入执笔与审稿。
+        """
+        self.prepare();self.write();engine.approve(self.db)
+        state=replay(self.db,'main')
+        self.assertTrue(characters.usable(self.db,'main','ally',state))
+        # Drop the ally profile the way a branch change or a rebuild can.
+        from novel_core.store import put
+        record=characters.current(self.db,'main','ally')
+        with transaction(self.db):
+            record['active']=False
+            put(self.db,characters.key('main','ally'),record)
+        report=engine.audit(self.db,'main')
+        gaps=[p for p in report['problems'] if p['code']=='character_table_gap']
+        self.assertTrue(gaps,'缺档案的章必须被报出')
+        self.assertEqual(gaps[0]['entities'],['ally'])
+        self.assertEqual(gaps[0]['chapter'],1)
+        self.assertFalse(report['character_coverage']['complete'])
+        self.assertFalse(report['ok'])
+        # The dispatcher refuses to write the next chapter while a planned
+        # speaker has no usable profile.
+        self.submit(self.task(),{'chapters':[self.plan(2)]})
+        job=self.task()
+        self.assertEqual(job['stage'],'character_plan')
+        self.assertEqual(envelope(job)['payload']['entities'],['ally'])
 
 
 class ProfileErrorDirectionTests(unittest.TestCase):

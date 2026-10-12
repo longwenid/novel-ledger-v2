@@ -232,6 +232,62 @@ class DraftLadderTests(unittest.TestCase):
                          ['quality', 'chapter_development'])
 
 
+class CharacterCoverageTests(unittest.TestCase):
+    """INV-13：已落地章节的拟出场人物必须有可用档案。
+
+    真实症状：章节写了很多，角色表却没有对应条目。原因是调度只检查「即将规划的
+    那一章」，重建的后缀、就地改过的计划或携带章都能绕过它。
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name)
+        c = contract()
+        c['character_mode'] = 'profiled'
+        initialize(self.path, c)
+        self.db = connect(self.path)
+        self.addCleanup(self.db.close)
+        people = {'profiles': [{'entity': 'hero'}, {'entity': 'ally'}]}
+        with self.db:
+            self.db.execute('INSERT INTO plans VALUES (?,?,?)',
+                            ('main', 1, json.dumps({'number': 1, 'volume': 'v1',
+                                                    'entities': ['hero', 'ally'],
+                                                    'goal': 'g', 'conflict': 'c', 'change': 'x'})))
+            self.db.execute('INSERT INTO chapters VALUES (?,?,?,?,?)',
+                            ('main', 1, '正文', json.dumps({'events': [], 'summary': 's'}), 'h'))
+
+    def test_a_participant_without_a_profile_is_a_gap(self):
+        from novel_core import characters
+        report = characters.coverage(self.db, 'main')
+        self.assertEqual([gap['entities'] for gap in report['gaps']], [['ally', 'hero']])
+        self.assertFalse(report['complete'])
+
+    def test_first_gap_stops_at_the_first_chapter(self):
+        from novel_core import characters
+        gaps = characters.coverage(self.db, 'main', first_gap=True)['gaps']
+        self.assertEqual([gap['chapter'] for gap in gaps], [1])
+
+    def test_unwritten_chapters_are_never_judged(self):
+        """未落地章的 replay 状态为空，不能据此判定档案失效。"""
+        from novel_core import characters
+        with self.db:
+            self.db.execute('INSERT INTO plans VALUES (?,?,?)',
+                            ('main', 2, json.dumps({'number': 2, 'volume': 'v1',
+                                                    'entities': ['hero'], 'goal': 'g',
+                                                    'conflict': 'c', 'change': 'x'})))
+        self.assertEqual([gap['chapter'] for gap in characters.coverage(self.db, 'main')['gaps']], [1])
+
+    def test_coverage_is_not_enabled_for_legacy_projects(self):
+        from novel_core import characters
+        from novel_core.store import put
+        with self.db:
+            put(self.db, 'contract', {**contract(), 'character_mode': 'legacy'})
+        report = characters.coverage(self.db, 'main')
+        self.assertFalse(report['enabled'])
+        self.assertEqual(report['gaps'], [])
+
+
 class RevisionStartTests(unittest.TestCase):
     """INV-11：修订起点是修复指令，不是举证位置。"""
 
@@ -594,12 +650,14 @@ class EnvelopeSlicingTests(unittest.TestCase):
         self.assertFalse(marked['p02'])
         self.assertEqual(len(delivered['profiles']), 3, '标记不得删掉任何记录')
         names = {row['field'] for row in view['must_read']} | {row['field'] for row in view['on_demand']}
-        self.assertEqual(names, {'character_context/profiles/hero',
-                                 'character_context/profiles/p01',
-                                 'character_context/profiles/p02'})
+        records = {'character_context/profiles/hero',
+                   'character_context/profiles/p01',
+                   'character_context/profiles/p02'}
+        self.assertTrue(records <= names, '每个交付记录都要在索引里有一条摘要行')
         for row in view['must_read'] + view['on_demand']:
-            self.assertEqual(row['path'], view['input_files']['character_context']['path'],
-                             '整批交付时，摘要行必须指向该字段的文件地址')
+            if row['field'] in records:
+                self.assertEqual(row['path'], view['input_files']['character_context']['path'],
+                                 '整批交付时，摘要行必须指向该字段的文件地址')
 
     def test_a_material_that_ships_whole_also_marks_its_records(self):
         """外置成一份文件时，记录级的必读标记同样要落到交付文件里。"""

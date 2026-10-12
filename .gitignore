@@ -4,5 +4,8 @@ __pycache__/
 *.sqlite3-shm
 validation/runs/
 .pytest_cache/
+.pytest-tmp/
 .zcode/
 .probe-tmp/
+validation/story-base/
+validation/story-check/

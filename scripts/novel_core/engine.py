@@ -260,9 +260,17 @@ def _choose_single(db):
         if get(db,'contract').get('chapter_target_han'):
             payload['chapter_target_han']=get(db,'contract')['chapter_target_han']
         return 'plan',n+1,payload
-    from .characters import next_job,next_index_job
+    from .characters import next_job,next_index_job,coverage
     character_job=next_job(db,branch,n+1,json.loads(next_plan[0]))
     if character_job:return character_job
+    # The next chapter is covered, but a chapter already written or already
+    # planned earlier can have lost its profile afterwards (rebuilt suffix,
+    # edited plan, carried chapter). Fix the table before writing another word
+    # for that person. The next chapter is excluded: `next_job` above owns it.
+    gap=coverage(db,branch,n,first_gap=True)['gaps']
+    if gap:
+        return ('character_plan',gap[0]['chapter'],
+                {'entities':gap[0]['entities'],'instruction':'本章此前已规划，但下列拟出场人物在当前分支没有可用档案（修订重建、计划就地修改或章被携带后常见）。先核对当前事实与成长证据再补建档案；只补表达与行为依据，不改正文，不把提案当已发生事实。'})
     character_index_job=next_index_job(db,branch,n+1,json.loads(next_plan[0]))
     if character_index_job:return character_index_job
     payload = {}
