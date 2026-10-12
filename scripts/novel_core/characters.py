@@ -83,13 +83,19 @@ def coverage(db,branch,through=None,first_gap=False):
     if not enabled(db):return {'enabled':False,'chapters':0,'gaps':[],'instruction':'本书未启用人物档案模式。'}
     limit=min(through,head(db,branch)) if through is not None else head(db,branch)
     gaps=[];checked=0
+    # Profiles are branch-level artifacts (based_on_chapter=head): a record saved
+    # after chapter N's development carries the full-branch growth hash, which a
+    # chapter-scoped replay prefix can never match — judging historical chapters
+    # against their own snapshot made coverage re-dispatch character_plan forever.
+    # The chapter scope decides only who participates; usability is judged at head.
+    full=replay(db,branch)
     for row in db.execute('SELECT number,data FROM plans WHERE branch=? AND number<=? ORDER BY number',(branch,limit)):
         plan=json.loads(row['data'])
         if not plan.get('entities'):continue
         checked+=1
         state=replay(db,branch,row['number'])
         people=participants(plan,state)
-        missing=sorted(e for e in people if not usable(db,branch,e,state))
+        missing=sorted(e for e in people if not usable(db,branch,e,full))
         if missing:
             gaps.append({'chapter':row['number'],'entities':missing,
                          'recover':'next/advance 会先派 character_plan 补齐；已落地的章按 characters.md 更新档案，不改正文'})
