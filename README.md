@@ -66,7 +66,7 @@ python3 scripts/observe.py import-antigravity <transcript_full.jsonl> --tree --o
 python3 scripts/observe.py summary <observations.jsonl>
 ```
 
-详见 [交互架构](references/interaction-architecture-design.md) 与 [协议](references/protocol.md)。
+详见 [交互架构](docs/interaction-architecture-design.md)（已实施归档）与 [协议](references/protocol.md)。
 
 ## 派工模型
 

@@ -43,7 +43,7 @@ description: >-
 
 | 使用时机 | 读取资料 |
 |---|---|
-| 修改任务交付、证据、时间或宿主交接 | [交互架构](references/interaction-architecture-design.md) |
+| 修改任务交付、证据、时间或宿主交接 | [架构契约](references/architecture.md) |
 | 修改引擎、新增命令、调整守卫之前 | [架构契约](references/architecture.md) |
 | 查看整体流程、持续派工与局部返修关系 | [流程图](references/workflow.md) |
 | 选方向、开新书、试章定调 | [creation](references/creation.md) / [hatch-ideas](references/hatch-ideas.md) / [voices](references/voices.md) |
@@ -54,5 +54,5 @@ description: >-
 | 账本一致性、时空连续性 | [continuity](references/continuity.md) / [spatial-continuity](references/spatial-continuity.md) |
 | 段落返修、补丁格式 | [repairs](references/repairs.md) |
 | JSON 字段与事件结果协议 | [protocol](references/protocol.md) |
-| 调度运行、批次接力与恢复 | [runtime](references/runtime.md) / [context-runtime](references/context-runtime.md) |
+| 调度运行、连续会话与恢复 | [runtime](references/runtime.md) / [context-runtime](references/context-runtime.md) |
 | 验证方法、独立正文盲测与边界测试 | [validation](references/validation.md) / [literary-evaluation](references/literary-evaluation.md) |
