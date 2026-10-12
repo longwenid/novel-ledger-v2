@@ -677,6 +677,42 @@ class EnvelopeSlicingTests(unittest.TestCase):
         for part in entries:
             self.assertTrue((self.path / part['path']).is_file(), '被标为可选的分片仍须交付')
 
+    def test_ledger_projections_are_delivered_without_routing_keys(self):
+        """账本投影（state/continuity）不得被注入交付标记。
+
+        `needed` 是给 Worker 的阅读路由。写进 `state.entities` 这类账本对象里，
+        就等于改了交付内容：任何把账本对象按字节比较的消费者都会看到账本没有
+        的字段。标记只允许出现在人物/设计这类「解读」材料里。
+        """
+        work = self.task(state={'clock': 3,
+                                'entities': {'hero': {'id': 'hero', 'name': '周行'}},
+                                'facts': {'hero:mood': '警觉'}},
+                         continuity={'anchors': {'hero:mood': '警觉'}},
+                         character_context={'profiles': {'hero': {'voice': 'a' * 2000},
+                                                         'p01': {'voice': 'b' * 2000}}})
+        view, _ = self.sliced(work)
+        state = view.get('state') or {}
+        for name, record in (state.get('entities') or {}).items():
+            self.assertNotIn('needed', record, f'state.entities[{name}] 被注入了交付标记')
+        self.assertEqual(state, work['state'], 'state 必须与账本投影逐字节一致')
+        self.assertEqual(view.get('continuity'), work['continuity'],
+                         'continuity 必须与账本投影逐字节一致')
+        # The routing information still exists — it lives in the index summary.
+        names = {row['field'] for row in view.get('must_read', [])} | \
+                {row['field'] for row in view.get('on_demand', [])}
+        self.assertIn('state/entities/hero', names, '路由信息必须留在索引摘要里')
+
+    def test_interpretation_material_may_carry_the_marking(self):
+        """人物档案是解读材料，可以带 needed；它不与账本逐字节比较。"""
+        line = '她在旧案里反复核对过交接顺序，知道每一步该留下什么凭证。'
+        work = self.task(character_context={'profiles': {'hero': {'voice': line * 40},
+                                                         'p01': {'voice': line * 40}}})
+        view, _ = self.sliced(work)
+        delivered = json.loads((self.path / view['input_files']['character_context']['path'])
+                               .read_text(encoding='utf-8'))
+        self.assertTrue(delivered['profiles']['hero']['needed'])
+        self.assertFalse(delivered['profiles']['p01']['needed'])
+
     def test_an_unsliced_envelope_keeps_the_old_shape(self):
         """没有超过阈值的内容时不得凭空添加路由字段。"""
         work = {'branch': 'main', 'stage': 'plan', 'chapter': 1,

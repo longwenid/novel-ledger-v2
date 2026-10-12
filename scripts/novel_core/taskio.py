@@ -64,6 +64,14 @@ ALWAYS_SLICED = ('contract', 'guide')
 # still get them as required reading.
 REQUIRED_DOCUMENT_STAGES = ('chapter_review', 'batch_review', 'volume_review', 'revision_review',
                             'book_review', 'world_plan', 'volume_plan', 'character_index')
+# Materials whose records may carry `needed` inside the delivered data. These
+# are interpretations, not ledger facts: nothing compares them against the
+# ledger byte for byte. `state` and `continuity` are excluded on purpose.
+RECORD_MARKED_MATERIALS = ('character_context', 'design_context')
+# Named collections that hold one record per key, across every material shape.
+COLLECTION_KEYS = ('profiles', 'developments', 'entities', 'facts', 'knowledge', 'resources',
+                   'hooks', 'clock_threads', 'placements', 'anchors', 'places', 'links',
+                   'relations', 'clocks')
 # Ordering matters: the largest blocks leave the envelope first, so the inline
 # index keeps the identity, location and instruction fields a worker needs even
 # when the material is enormous.
@@ -133,8 +141,12 @@ def _entry_needed(entry, context):
         ident = pointer[1] if len(pointer) > 1 else None
         if isinstance(ident, int):
             return True
-        name = str(ident).split(':', 1)[0] if ident is not None else None
-        return bool(name and name in context['keys'])
+        if ident is None:
+            return False
+        # Keys are `entity:detail` in facts, knowledge and anchors; the entity is
+        # the part the scene scope names.
+        name = str(ident)
+        return name in context['keys'] or name.split(':', 1)[0] in context['keys']
     if key in ('world', 'volume', 'previous_design'):
         return True
     if key == 'clocks':
@@ -185,11 +197,15 @@ def typed_delivery(project, root, view, materials=None):
             if (part.get('view') or {}).get('scope'):
                 flag = True
             part['needed'] = flag
-            # A material that shipped whole has no per-record file address; its
-            # marking lives inside the record, which *is* the delivered file.
-            record = part.get('record')
-            if isinstance(record, dict):
-                record['needed'] = flag
+            # Only interpretation material carries the marking inside its own
+            # records. `state` and `continuity` are ledger projections: adding a
+            # key to them would change the delivered data, and every consumer
+            # that compares a ledger object must keep seeing what the ledger
+            # actually holds. Their routing lives in the index-level summary.
+            if field in RECORD_MARKED_MATERIALS:
+                record = part.get('record')
+                if isinstance(record, dict):
+                    record['needed'] = flag
             pointer = '/'.join(str(p) for p in (part.get('pointer') or []))
             summary(field, pointer, flag, part.get('path'), part.get('bytes'))
 
@@ -198,9 +214,7 @@ def typed_delivery(project, root, view, materials=None):
         if not isinstance(value, dict):
             return
         rows = []
-        for collection in ('profiles', 'developments', 'entities', 'facts', 'knowledge',
-                           'resources', 'hooks', 'clock_threads', 'placements', 'anchors',
-                           'places', 'links', 'relations', 'clocks'):
+        for collection in COLLECTION_KEYS:
             entries = value.get(collection)
             if isinstance(entries, dict):
                 rows += [{'pointer': [collection, key], 'record': record}
