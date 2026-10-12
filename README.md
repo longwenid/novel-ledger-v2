@@ -66,8 +66,6 @@ python3 scripts/observe.py import-antigravity <transcript_full.jsonl> --tree --o
 python3 scripts/observe.py summary <observations.jsonl>
 ```
 
-详见 [交互架构](docs/interaction-architecture-design.md)（已实施归档）与 [协议](references/protocol.md)。
-
 ## 派工模型
 
 - **`advance` 主控交接**：一次返回 `action`、短状态、任务信封与恢复点；Worker 结束后 `advance --after 最后已提交任务ID` 核实真实提交并接续。信封自带程序生成的 `worker_prompt`，主控只收短状态，不自行读写正文。
