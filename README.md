@@ -1,6 +1,6 @@
 # novel-ledger-v2
 
-跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.52.0**。
+跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.52.1**。
 
 ## 核心理念
 
@@ -59,10 +59,12 @@ validation/           端到端验证脚本与测量工具（delivery_probe / se
 python validation/run_tests.py                        # 全量测试（单行进度条 + 预计剩余时间）
 python -m pytest tests/ -q                            # 等价的直接调用
 python validation/run_story.py --project <新项目目录>   # 端到端故事验证
-python validation/delivery_probe.py --keep            # 量每个阶段的交付成本（索引/分片/必读）
+python validation/delivery_probe.py --keep            # 量每个阶段的交付成本（索引/分片/必读/派工数）
 python validation/session_cost.py <会话导出目录>        # 量一次真实运行的 token 与读入量
+python validation/stage_cost.py <会话导出目录>          # 把成本按阶段归因（占了总成本的百分之几）
+python validation/worker_trace.py <会话目录> <子会话ID> # 追一个 Worker 的每一轮：读了什么、多大
 ```
 
-交付成本改动必须用 `delivery_probe.py` 给出前后数字，并用 `EnvelopeSlicingTests` 锁住判据；只缩小索引而让必读量变大不算降耗。
+交付成本改动必须用 `delivery_probe.py` 给出前后数字，并用 `EnvelopeSlicingTests` 锁住判据；只缩小索引而让必读量变大不算降耗。任何「为了省 token 而多派一次工」的改动，都要先出示 `characters.worth_indexing` 那条算式：省下的字节必须大于这次派工的成本。
 
 版本沿用 `scripts/novel_core/store.py` 的 `VERSION`，升级就地生效：旧任务按库内存储输入恢复，账本快照版本不符时走慢路径重放，无需迁移。
