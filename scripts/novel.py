@@ -24,7 +24,13 @@ for _stream in (sys.stdout, sys.stderr):
 
 
 def read(path):
-    return json.loads(Path(path).read_text(encoding='utf-8'))
+    try:
+        text=Path(path).read_text(encoding='utf-8')
+    except UnicodeDecodeError:
+        raise Error('encoding', f'{path} 不是 UTF-8——Windows 默认编码（GBK）写文件会损坏中文。用宿主文件写入工具整体重写；走脚本必须显式 encoding="utf-8"', {'path': str(path)}) from None
+    if text.startswith(chr(0xfeff)):
+        raise Error('encoding', f'{path} 带 UTF-8 BOM（PowerShell 重定向常见）。用宿主文件写入工具整体重写为 UTF-8 无 BOM', {'path': str(path)})
+    return json.loads(text)
 
 
 def read_receipt(db, project, given, record=True):

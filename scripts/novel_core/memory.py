@@ -165,7 +165,7 @@ def guide(stage, instruction=None):
     lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的登记事实为准。')
     if stage=='plan':lines.append('[时间坐标] '+time_contract()['rule'])
     helpers='信封提供时用 commands.patch 定位补丁、commands.preflight 只读验证完整回执；' if stage in ('plan','draft','repair','redesign','chapter_review') else ''
-    lines.append('[纠错] '+helpers+'回执/result 文件用 Python 脚本 UTF-8 无 BOM 整体写入，不在命令行内联 JSON（弯引号与转义易错，PowerShell 写文件会带 BOM）。'
+    lines.append('[纠错] '+helpers+'回执/result 文件优先用宿主的文件写入工具整体写入（天然 UTF-8 无 BOM）；确需程序组装才写 Python 脚本，脚本读写任何文件显式 encoding="utf-8"（Windows 默认 GBK 会损坏中文）；都不在命令行内联 JSON（弯引号与转义易错，PowerShell 重定向会带 BOM）。'
                  '错误定位按 message/details 修正，details.issues 一次列出全部不合格项，逐项修完再重提，不逐条试探。落定结果以前后值和 settlement 为准，不从自评推算数量；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
     lines.append('[观测] 协议字符仅观测，不是配额；缺项可用 recall/material 定向补读，未选入不表示不存在。')
     return '\n'.join(lines)

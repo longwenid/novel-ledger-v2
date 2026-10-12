@@ -1,0 +1,39 @@
+"""Result files that are not UTF-8 (GBK hosts, BOM) fail with recovery guidance."""
+import tempfile
+import unittest
+from pathlib import Path
+
+import support  # registers scripts/ on sys.path for `import novel`
+import novel
+from novel_core.store import Error
+
+
+class ResultEncodingTests(unittest.TestCase):
+    def test_gbk_result_reports_recovery_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'result.json'
+            path.write_text('{"summary":"他把柴刀放回了渡口"}', encoding='gbk')
+            with self.assertRaises(Error) as ctx:
+                novel.read(path)
+            self.assertEqual(ctx.exception.code, 'encoding')
+            self.assertIn('宿主文件写入工具', str(ctx.exception))
+            self.assertEqual(ctx.exception.details, {'path': str(path)})
+
+    def test_bom_result_reports_recovery_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'result.json'
+            path.write_bytes((chr(0xfeff)+'{"ok":1}').encode('utf-8'))
+            with self.assertRaises(Error) as ctx:
+                novel.read(path)
+            self.assertEqual(ctx.exception.code, 'encoding')
+            self.assertIn('UTF-8 BOM', str(ctx.exception))
+
+    def test_plain_utf8_still_parses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'result.json'
+            path.write_text('{"summary":"灯又亮了"}', encoding='utf-8')
+            self.assertEqual(novel.read(path), {'summary': '灯又亮了'})
+
+
+if __name__ == '__main__':
+    unittest.main()
