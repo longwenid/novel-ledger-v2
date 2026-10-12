@@ -51,6 +51,13 @@ python3 validation/material_efficiency.py --project "$PROJECT" --branch BRANCH -
 
 工具只读原项目，备份到临时账本后重放输入，逐字段核验来源保真。统计完整交付 JSON 与每任务引用的去重正文文件；有可用 tiktoken 时附 o200k_base 分词对比。这是统一比较尺度，不是 Gemini 计费；不含系统提示、聊天、回执和工具包装，不测宿主真实耗时或文学质量。较大的来源仍需连续准备，不能用此直读对比工具声称消除了全部准备。
 
+宿主会话的真实 token 观测走独立流，不改故事账本：
+
+```bash
+python3 scripts/observe.py import-antigravity <transcript_full.jsonl> --tree --out <observations.jsonl>
+python3 scripts/observe.py summary <observations.jsonl>
+```
+
 文学质量按 [独立正文评测](literary-evaluation.md) 使用实际正文、定位变体和新 Worker 验证，再复审修稿。合成回执只验证工程流转；误报率需要独立裁决，跨卷质量需要真实卷界与兑现证据。
 
 恢复回归覆盖正式稿/候选稿分离、暂停保留 pending 或显式取消后同卷恢复、嵌套修订目标继承、旧输入哈希保持、首读前隐藏目标、修订范围结束不跳转新卷，以及继承目标未满足时阻止合并。
