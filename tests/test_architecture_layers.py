@@ -26,7 +26,7 @@ LAYERS = {
     0: ('store', 'transitions', 'execution'),
     1: ('access', 'atoms', 'wire', 'ledger', 'patches', 'budget', 'spatial',
         'sources', 'projections', 'dependencies', 'recovery', 'reviewflow',
-        'characters', 'design', 'contextflow', 'taskio', 'taskview', 'schedule', 'hostflow', 'observability'),
+        'characters', 'design', 'contextflow', 'taskio', 'taskview', 'schedule', 'hostflow', 'observability', 'recontract'),
     2: ('batchflow', 'settlement', 'memory', 'reviewrun'),
     3: ('bookpage', 'carriage', 'numeric', 'engine'),
 }
@@ -44,6 +44,7 @@ LATE_BINDING = {
     'settlement': ('engine',),
     'store': ('budget', 'dependencies', 'ledger', 'projections', 'sources'),
     'taskio': ('batchflow', 'engine'),
+    'recontract': ('batchflow',),
 }
 
 

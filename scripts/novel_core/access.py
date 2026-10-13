@@ -28,6 +28,7 @@ COMMAND_LEVEL = {
     'init': PUBLIC, 'status': PUBLIC, 'next': PUBLIC, 'advance': PUBLIC,
     'submit': PUBLIC, 'preflight': PUBLIC, 'measure': PUBLIC,
     'pause': PUBLIC, 'resume': PUBLIC, 'complete': PUBLIC, 'replan': PUBLIC,
+    'recontract': PUBLIC,
     'doctor': PUBLIC, 'tidy': PUBLIC, 'checkpoint': PUBLIC,
     'approve': PUBLIC, 'pilot': PUBLIC, 'first-read': PUBLIC,
     'revise': PUBLIC, 'evidence': PUBLIC, 'dependencies': PUBLIC,

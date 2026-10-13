@@ -23,7 +23,7 @@
 
 每个可变状态只有一个地方决定它的值。谁都可以读，只有权威能写。
 
-- **权威归属**：`execution` 与运行版本升级 → `execution`；`draft` → `engine`（作者/审稿流程）；`batch` → `batchflow`；`branch` → `engine.begin_revision` / `promote` / `discard`；`task` → `engine`（除节流的 lease/state 字段）；`plans` → `validate_plan` / `design.save` / `replan`。
+- **权威归属**：`execution` 与运行版本升级 → `execution`；`draft` → `engine`（作者/审稿流程）；`batch` → `batchflow`；`branch` → `engine.begin_revision` / `promote` / `discard`；`task` → `engine`（除节流的 lease/state 字段）；`plans` → `validate_plan` / `design.save` / `replan` / `recontract`（改订分支，记录哈希同步重算）。
 - **反例**：`draft['stage']` 曾被 `engine.repair`（语义阶梯）与 `engine.develop_short_draft`（篇幅阶梯）各自写一次，后写者覆盖前者 —— 已升级到 `redesign` 的章被短稿降级回 `repair`，返修上限被突破。
 - **判据**：如果两处代码都能让同一字段取不同值，必须合并为一个转换函数。
 
@@ -143,7 +143,7 @@ L3  engine                   编辑状态机：choose / submit / commit / revisi
 L2  batchflow settlement memory reviewrun
 L1  access atoms wire ledger patches budget spatial sources projections
     dependencies recovery reviewflow characters design contextflow taskio
-    taskview schedule hostflow observability
+    taskview schedule hostflow observability recontract
 L0  store transitions execution
 ```
 
@@ -158,6 +158,7 @@ L0  store transitions execution
 | `design` | `engine` | `save` 需要 `load_draft` 判断"有草稿的章计划不得删" |
 | `reviewflow` | `engine` `batchflow` | `seal` 物化信封并读取批次正文 |
 | `taskio` | `engine` `batchflow` | 模板与信封生成需要状态机常量；交接边界要判断当前是否处于写作批次 |
+| `recontract` | `batchflow` | 契约改订的结构性分支归档活动批次，与 `replan` 同一出口 |
 | `batchflow` | `engine` | 候选入账复用 `draft_job` / `save_draft` |
 | `contextflow` | `memory` | 归并页需要记忆视图 |
 | `reviewrun` | `engine` | 会话续接需要 `next_task` |

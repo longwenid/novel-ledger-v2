@@ -8,7 +8,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-VERSION = '1.56.0'
+VERSION = '1.57.0'
 SCHEMA = 'novel-ledger-v2/2'
 
 
@@ -139,9 +139,9 @@ def put(db, key, value):
     db.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', (key, dump(value)))
 
 
-def initialize(project, contract):
-    from .ledger import seed
-    from .execution import initial_mode, SINGLE_OPTIONS
+def validate_contract(contract):
+    """Shared init/amendment gate; returns (execution_mode, style_anchor)."""
+    from .execution import initial_mode
     required = ('title', 'reader_promise', 'protagonist_drive', 'world_rules', 'ending', 'arcs', 'volumes', 'word_range')
     require(isinstance(contract, dict) and all(contract.get(k) for k in required), 'contract', '缺少创作约定必填项')
     execution_mode=initial_mode(contract)
@@ -162,7 +162,15 @@ def initialize(project, contract):
     require(type(contract.get('writer_batch',10)) is int and 1<=contract.get('writer_batch',10)<=10,'contract','writer_batch 为 1~10 章的执笔会话上限')
     require(contract.get('writer_session_policy','batch') in ('batch','chapter'),'contract','writer_session_policy 为 batch/chapter')
     require(type(contract.get('review_chunk',3)) is int and 1<=contract.get('review_chunk',3)<=5,'contract','review_chunk 为 1~5 章的跨章复审粒度')
+    require(contract.get('preparation_policy','adaptive') in ('adaptive','semantic'),'config','preparation_policy 为 adaptive/semantic')
     style_anchor = validate_style(contract['style']) | {'source': 'author'} if isinstance(contract.get('style'), dict) else None
+    return execution_mode, style_anchor
+
+
+def initialize(project, contract):
+    from .ledger import seed
+    from .execution import SINGLE_OPTIONS
+    execution_mode, style_anchor = validate_contract(contract)
     seed(contract)
     project = Path(project).resolve()
     project.mkdir(parents=True, exist_ok=True)

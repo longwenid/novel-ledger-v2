@@ -29,7 +29,10 @@ def read(path):
     except UnicodeDecodeError:
         raise Error('encoding', f'{path} 不是 UTF-8——Windows 默认编码（GBK）写文件会损坏中文。用宿主文件写入工具整体重写；走脚本必须显式 encoding="utf-8"', {'path': str(path)}) from None
     if text.startswith(chr(0xfeff)):
-        raise Error('encoding', f'{path} 带 UTF-8 BOM（PowerShell 重定向常见）。用宿主文件写入工具整体重写为 UTF-8 无 BOM', {'path': str(path)})
+        # PowerShell '>' redirection prefixes a UTF-8 BOM. The bytes are
+        # unambiguous, so strip instead of bouncing a full worker retry;
+        # genuinely broken encodings (GBK) still fail below.
+        text = text[1:]
     return json.loads(text)
 
 
@@ -51,7 +54,7 @@ def parser():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--version',action='version',version=VERSION)
     sub=p.add_subparsers(dest='command',required=True)
-    for name in ('init','status','next','advance','submit','measure','preflight','patch','approve','recall','audit','revise','pause','resume','export','complete','config','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot','first-read','evidence','checkpoint','task-view'):
+    for name in ('init','status','next','advance','submit','measure','preflight','patch','approve','recall','audit','revise','pause','resume','export','complete','config','recontract','replan','doctor','map','design','character','candidate','material','dependencies','tidy','html','impact','pilot','first-read','evidence','checkpoint','task-view'):
         s=sub.add_parser(name)
         s.add_argument('--project',required=True)
         if name in ('recall','map','design','character','candidate','material'):
@@ -60,6 +63,8 @@ def parser():
         if name=='material':
             s.add_argument('--task',required=True);s.add_argument('--bundle',required=True);s.add_argument('--document',required=True);s.add_argument('--start',type=int,default=0)
         if name=='init': s.add_argument('--contract',required=True)
+        if name=='recontract':
+            s.add_argument('--contract',required=True);s.add_argument('--reason',default='')
         if name in ('submit','measure','preflight','first-read'): s.add_argument('--result',required=True)
         if name in ('status','submit'): s.add_argument('--brief',action='store_true')
         if name in ('advance','status','submit','first-read','preflight'):s.add_argument('--compact',action='store_true')
@@ -113,7 +118,7 @@ def dispatch(args):
     value=dispatch_raw(args)
     if args.command in ('advance','next') and value.get('action',value.get('stage'))=='revision_promoted':
         _auto_render_html(args.project)
-    if args.command in ('submit','approve','pause','resume','revise','complete','replan','pilot'):
+    if args.command in ('submit','approve','pause','resume','revise','complete','replan','pilot','recontract'):
         from novel_core.taskio import checkpoint
         db=connect(args.project)
         try:checkpoint(db,args.project)
@@ -580,6 +585,12 @@ def dispatch_raw(args):
             result={args.key:value}
             if args.key.startswith('context_') and args.key!='context_mode':result['deprecated']='字符配置仅兼容旧项目，不形成内容或读取限制；分页按完整语义单元。'
             return result
+        if cmd=='recontract':
+            from novel_core import recontract
+            with transaction(db):
+                res=recontract.apply(db,read(args.contract),args.reason)
+            failed=_auto_render_html(args.project)
+            return {**res,**({'html_render_error':failed} if failed else {})}
         if cmd=='replan':
             with transaction(db):
                 require(not db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone(),'pending','先完成或取消当前任务')

@@ -26,8 +26,8 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 - `causal_spine`：主要因果节点字符串数组（必填非空）。
 - `event_spine`：四层事件脊柱（`main` / `subplot` / `timeline` / `tension`），触点格式 `{"id":"sp:...","span":"幕跨度","event":"触点推进"}`。重大转折必须引用脊柱触点。
 - `factions`：势力组织数组（`name/drive/limits`）。这里的势力是设计意图；需要逐项追踪的势力（阵营战争、补给军械、结盟与背叛）应注册为 entity（kind 如 org），补给兵力走 `resource` 事件登记，阵营间立场用 `relation` 有向边表达——设计层写目标，事实层记事实，两层不混。
-- `geography`：宏观区域 `regions` 与连接 `connections`。
-- `core_locations`：候选场所数组（`id/name/purpose`，可选 `canon_place`）。
+- `geography`：恰为 `{"regions":[非空字符串],"connections":[字符串]}` 两键，不加其他键。
+- `core_locations`：候选场所数组（`id/name/purpose`，可选 `layout/constraints` 与 `canon_place`）。**`id` 必须以 `design:` 前缀**（候选场所与事实实体分开命名）；`canon_place` 只能引用已登记的物理地点，未定就留 `null`，不要写不存在的地点。
 - `ending_dependencies`：终局所需的空间、机制或关系前置条件。
 
 ### volume_plan.data
@@ -36,6 +36,7 @@ planning_mode=layered 按 world_plan → volume_plan → plan 流转，生成 wr
 - `carries_in` / `climax` / `handoff`：承接上卷遗留压力、本卷高潮走向与下卷交接说明。
 - `sequence`：因果推进节拍数组。字符串为主线节拍；支线/时间线节拍用 `{"line":"sp:触点ID","text":"节拍"}` 声明服务线，夹在主线节拍之间交织排布——支线在对应主线触点前后切入并合流，不是平铺在卷尾的后缀。
 - `choice_log`：方向与关键节拍裁决。按 [创意工具箱](hatch-ideas.md) 给至少 2 个候选，含至少一个 wild:true；每项 direction/payoff/cost/risk，记录 chosen/reason。
+- `new_locations`：本卷新增候选场所（字段同 `core_locations`）；**`id` 同样用 `design:` 前缀，且不得与全书 `core_locations` 的 id 重复**。`location_ids` 只能引用全书地点或本卷新地点。
 
 卷纲说明冲突、选择和后果如何承载预算。sequence/sequence_refs 是导航，编号用完不等于展开充分。多线卷把 subplot/tension 触点织进 sequence：支线节拍穿插在主线节拍之间，合流点与主线互证，避免整卷单线推土；章以 sequence_refs 指向支线节拍即声明本章服务该线。volume_end 前结合正文和 volume_budget 核对过程、代价与余波；偏离时说明原因及后卷承载，不机械移预算或补字。
 
@@ -91,5 +92,6 @@ python3 "$ROOT/scripts/novel.py" design --project "$PROJECT" --scope world
 python3 "$ROOT/scripts/novel.py" design --project "$PROJECT" --scope v1 --history
 python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope volume --volume v1 --reason "原因"
 python3 "$ROOT/scripts/novel.py" replan --project "$PROJECT" --scope world --reason "原因"
+python3 "$ROOT/scripts/novel.py" recontract --project "$PROJECT" --contract contract.json --reason "改名/改约定"
 ```
-replan 仅清理未写计划，已提交正文与事实记录保持完好。
+replan 仅清理未写计划，已提交正文与事实记录保持完好。recontract 是契约层的原地改订（见 [开书与滚动规划](creation.md)）：实体改名会同步进已存设计、人物与章计划并重算哈希，不重跑规划；结构性变更（实体增删、卷 ID、初始事实等）使受影响层失效并清理未写计划，advance 重新派发；正文落笔后拒绝，改走修订流程。

@@ -14,7 +14,7 @@ description: >-
 
 ## 核心操作流
 
-- **开书**：读 [creation](references/creation.md) 与 [hatch-ideas](references/hatch-ideas.md)。每步给 2～3 个候选，含至少一个可落地的高概念脑爆项；换组时切换透镜。确定约定后 `init --project "$PROJECT" --contract contract.json`，试写首章，由作者定调 `approve`。
+- **开书**：读 [creation](references/creation.md) 与 [hatch-ideas](references/hatch-ideas.md)。每步给 2～3 个候选，含至少一个可落地的高概念脑爆项；换组时切换透镜。确定约定后 `init --project "$PROJECT" --contract contract.json`，试写首章，由作者定调 `approve`。init 后要改契约（主角改名、删风格条目等）用 `recontract` 原地改订：改名同步进已存回执不重跑，结构变更仅失效受影响层；不删库重新 init。
 - **续写 / 无人值守 / 恢复**：读 [runtime](references/runtime.md)，用 `advance --compact` 一次取得任务、短状态和恢复点；Worker 结束后用 `advance --compact --after 任务ID` 核实提交并接续，沿用当前模型。无人值守只用单章写审：新执笔会话只写 1 章并自查，新的独立审稿会话先首读再完成读者与事实核验，通过后写下一章。旧 v2 项目打开时自动备份升级；当前旧任务按冻结协议完成后结束，候选稿保留逐章重审；跨章复审由新的独立审稿者在同次执行内连续处理分块与综合判断，按需查 [材料准备](references/context-runtime.md)。本版本自动升级旧 v2 运行版本；不猜测不兼容账本 schema。
 - **局部返修与修订**：局部问题读 [局部修订](references/repairs.md) 提交版本补丁；简单数字字面笔误可在支持的独立审稿任务内定点修正并完成两类核验。历史大修读 [记忆与修订](references/continuity.md) 建候选分支。
 - **验收与审计**：读 [审稿与完本](references/editorial.md)；执行 `audit --project "$PROJECT"` 复核全书账本，`complete` 进行完本验证。

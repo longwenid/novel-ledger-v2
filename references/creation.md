@@ -27,6 +27,21 @@
 - 名字契合阶层、出身与行当，避免无依据的模板名或成名作主角同名。
 - 定名前 `recall --entity <名字>` 查重；外号通过 alias 登记。
 
+## 契约改订（init 之后）
+
+契约在 `init` 时整体入账，之后作者要改（换主角名、删一条风格红线、改读者承诺）用 `recontract` 原地改订，**不要删除 `novel.sqlite3` 重新 init**——那会丢掉全部任务历史并迫使每个规划 Worker 重跑：
+
+```bash
+python3 "$ROOT/scripts/novel.py" recontract --project "$PROJECT" --contract contract.json --reason "主角改名"
+```
+
+- **实体改名**（同 id 同 kind，name/alias 文本变化）：旧名按映射全局替换进契约、已存设计、人物档案与章计划，记录哈希同步重算，规划与档案**无需重跑**，流水线从当前阶段继续。
+- **结构性变更**（实体增删、卷 ID、初始事实/关系/资源、规划模式）：受影响设计层标记失效、未写计划清理，`advance` 重新派发对应阶段；任务与日志历史保留。
+- **方向性条款**（world_rules/arcs/ending/reader_promise 等）：原样更新并提示；已提交设计是旧方向下的提案，实质转向用 `replan` 重跑受影响层，小改动由后续任务吸收。
+- **守卫**：有 pending 任务先完成或取消；已有正文或候选稿时拒绝——落笔后的改动走 `pilot`/`revise` 修订流程。`config` 设置过的 `chapter_target_han`/`character_views` 在新契约未提及时自动保留。
+
+写契约文件时若宿主写入工具报「file no longer exists / FS_STALE_VERSION」（文件曾被外部删除）：对同一文件**执行一次 read**（404 也算，这一步重置版本跟踪），再重试 write；不要用 Test-Path/glob 代替，也不需要先写占位文件。仍失败时用 Python 脚本 `encoding="utf-8"` 写入，不用 PowerShell `>` 重定向。
+
 ## 分层世界设计与卷纲推进
 
 按 [分层设计](design-and-brief.md) 顺序流转：

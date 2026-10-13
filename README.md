@@ -1,6 +1,6 @@
 # novel-ledger-v2
 
-**懒人长篇写作**——作者只做关键决策，其余交给引擎。跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.56.0**。
+**懒人长篇写作**——作者只做关键决策，其余交给引擎。跨模型连续创作长篇网络小说的 Skill：以 **SQLite 账本为唯一真源**、按需检索与独立审稿支撑百万字工程，支持分批续接、历史修订与全书视图。当前版本 **v1.57.0**。
 
 ## 懒人长篇写作是什么
 
@@ -75,7 +75,7 @@
 python scripts/novel.py <command> --project "$PROJECT"
 ```
 
-常用子命令：`init`（开书）、`advance`/`next`/`submit`（派工与提交）、`approve`（首章定调）、`pilot`（文风驳回）、`measure`（篇幅）、`preflight`（完整预检）、`patch`（定点定位）、`recall`（定向检索）、`revise`（修订分支）、`audit`（全书审计）、`export`/`html`（导出与书刊视图）、`doctor`（环境诊断）、`status`/`pause`/`resume`/`complete`（运行管理），以及 `config`/`replan`/`candidate`/`design`/`character`/`map`/`material`/`impact`/`first-read`/`evidence`/`checkpoint`/`dependencies`/`tidy`/`task-view` 等视图与治理命令。
+常用子命令：`init`（开书）、`advance`/`next`/`submit`（派工与提交）、`approve`（首章定调）、`pilot`（文风驳回）、`measure`（篇幅）、`preflight`（完整预检）、`patch`（定点定位）、`recall`（定向检索）、`revise`（修订分支）、`recontract`（契约原地改订：实体改名传播进已存设计/人物/章计划，结构变更使受影响层失效重跑，正文落笔后拒绝）、`audit`（全书审计）、`export`/`html`（导出与书刊视图）、`doctor`（环境诊断）、`status`/`pause`/`resume`/`complete`（运行管理），以及 `config`/`replan`/`candidate`/`design`/`character`/`map`/`material`/`impact`/`first-read`/`evidence`/`checkpoint`/`dependencies`/`tidy`/`task-view` 等视图与治理命令。
 
 依赖：Python 3.9+，仅标准库，无第三方包（开发测量工具的可选 tiktoken 除外）。
 

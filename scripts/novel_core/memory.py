@@ -73,10 +73,15 @@ STAGE_PRIMERS = {
     'redesign': 'data 同 draft 的 prose/summary（可带 reads），另必交 design_change 说明设计改变，须产生实际变化的正文;可附 plan_update 仅调当章 goal/conflict/change/entities/topics/hooks/dependencies/scenes/reader_experience/character_choices/expression_space/execution/rhythm,不可改卷序、终局标记或篇幅目标。',
     'facts': '另必交 events:[{op,evidence:{chapter,quote},...}] 和非空 summary（覆盖选择/后果/未决压力）。'+EVIDENCE_RULE+'事件字段见信封 event_contract_path（events.json），返修去向按 prior_events_note；前态照抄 state，不重报 auto_carry 沿用事件。',
     'reader': '另必交 first_read={desire,obstacle,change,read_on_reason}（四项均非空），保留读取 input 前记录的首读体验；档案不能替正文辩护。',
-    'world_plan': 'data 只含引擎允许字段(报错会列出收到键与允许键);不能提交正文事件或覆盖作者约定;event_spine 四层 main/subplot/timeline/tension,触点 id 用 sp: 前缀。',
-    'volume_plan': 'data 必含 volume/purpose/carries_in/climax/handoff/sequence/action_constraints/ending_setup/choice_log;choice_log 每条 kind=direction|beat、mode、candidates≥2 且含 wild:true、chosen、reason;sequence 支线节拍用 {line:"sp:触点ID",text} 与主线节拍交织。',
+    'world_plan': 'data 只含引擎允许字段(报错会列出收到键与允许键);不能提交正文事件或覆盖作者约定;event_spine 四层 main/subplot/timeline/tension,触点 id 用 sp: 前缀。'
+                  'geography 恰为 {"regions":[非空字符串],"connections":[字符串]} 两键,不加其他键;'
+                  'core_locations 每项 id 用 design: 前缀(候选场所与事实实体分开),canon_place 只能引用已登记的物理地点,未定就留 null。',
+    'volume_plan': 'data 必含 volume/purpose/carries_in/climax/handoff/sequence/action_constraints/ending_setup/choice_log;choice_log 每条 kind=direction|beat、mode、candidates≥2 且含 wild:true、chosen、reason;sequence 支线节拍用 {line:"sp:触点ID",text} 与主线节拍交织。'
+                   'new_locations 每项 id 用 design: 前缀且不得与全书 core_locations 的 id 重复;location_ids 只能引用全书地点或本卷新地点。',
     'plan': 'data={chapters:[...]} 每批 1~10 章,章号连续;每章必含 number/goal/conflict/change/volume/entities/ending_shape(类别:说明,类别见 guide 纪律),sequence_refs 对齐卷纲节拍,服务支线的章指向支线节拍,历史依赖只能引用已提交章。',
-    'character_plan': 'data={profiles:[{entity,tier,biography:{public_role,desire,experiences:[{text,status:design|established}]},voice:{register,tactics:[非空字符串],relationship_modes:[{audience,approach}],avoid:[字符串]}}]}。tier=major|supporting|walk_on；major 还需 biography.fear/values（非空数组）/boundary/contradiction、voice.rhythm/stress_shift、arc={direction,not_yet_earned:[字符串]}；已确立经历须 evidence={chapter,start,quote}，设计经历不附 evidence；更新须 change_reason，引擎自管字段不要提交。',
+    'character_plan': 'data={profiles:[{entity,tier,biography:{public_role,desire,experiences:[{text,status:design|established}]},voice:{register,tactics:[非空字符串],relationship_modes:[{audience,approach}],avoid:[字符串]}}]}。tier=major|supporting|walk_on；'
+                      'major 另需 biography.fear/boundary/contradiction(非空字符串)与 biography.values(非空字符串数组)——这四项都放 biography 内,不是档案顶层字段;voice 另需 rhythm/stress_shift、arc={direction,not_yet_earned:[字符串]};'
+                      '已确立经历须 evidence={chapter,start,quote}，设计经历不附 evidence；更新须 change_reason，based_on_chapter/status/growth_hash/sources 等引擎自管字段不要提交。',
     'character_index': '按 instruction 对每条档案建立适用范围与因果依赖索引;relevance 只是提案,穷尽且可解释才写 scoped,不确定写 unknown;sources 原章用 recall --chapter 完整补读。',
 }
 
@@ -165,7 +170,7 @@ def guide(stage, instruction=None):
     lines.append('[事实边界] 事实只能来自有效正文与作者约定；selected 中的 recent_summary/memory 为派生视图，与正文冲突时以 recall 重放的登记事实为准。')
     if stage=='plan':lines.append('[时间坐标] '+time_contract()['rule'])
     helpers='信封提供时用 commands.patch 定位补丁、commands.preflight 只读验证完整回执；' if stage in ('plan','draft','repair','redesign','chapter_review') else ''
-    lines.append('[纠错] '+helpers+'回执/result 文件优先用宿主的文件写入工具整体写入（天然 UTF-8 无 BOM）；确需程序组装才写 Python 脚本，脚本读写任何文件显式 encoding="utf-8"（Windows 默认 GBK 会损坏中文）；都不在命令行内联 JSON（弯引号与转义易错，PowerShell 重定向会带 BOM）。'
+    lines.append('[纠错] '+helpers+'回执/result 文件优先用宿主的文件写入工具整体写入；确需程序组装才写 Python 脚本，脚本读写任何文件显式 encoding="utf-8"（Windows 默认 GBK 会损坏中文且无法自愈）；都不在命令行内联 JSON（弯引号与转义易错）。前置 UTF-8 BOM 程序会剥离，仍优先无 BOM 写入。'
                  '错误定位按 message/details 修正，details.issues 一次列出全部不合格项，逐项修完再重提，不逐条试探。落定结果以前后值和 settlement 为准，不从自评推算数量；不读 scripts 源码、不自建校验脚本。同一任务修正两轮仍失败：保留现场，返回最后已提交任务ID与错误原文，由主控 advance 接续。')
     lines.append('[观测] 协议字符仅观测，不是配额；缺项可用 recall/material 定向补读，未选入不表示不存在。')
     return '\n'.join(lines)

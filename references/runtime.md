@@ -51,6 +51,8 @@ Worker 仅在 guide 字段说明不足、报错或有疑问时查对应阶段指
 
 命令用绝对路径，不依赖父环境变量、不嵌套派工。结果写成 `result/1` JSON 文件后直接执行 `commands.submit`；程序合成全文并核对实际篇幅，短稿保留并派定向返修。需提前查看计数时可选只读 `commands.measure`，纯 expand_context/context_more 请求无需测量。表达、人物选择和因果仍由执笔自查与独立审稿核验。
 
+宿主写入工具报「file no longer exists / FS_STALE_VERSION」（目标文件曾被外部删除）时：对同一文件执行一次 read（404 也算，这一步重置版本跟踪）再重试 write；不用 Test-Path/glob 代替，不必先写占位文件。仍失败则用 Python 脚本 `encoding="utf-8"` 写入；前置 UTF-8 BOM 程序会剥离，GBK 损坏无法自愈。
+
 材料信封带 `preparation_session` 时，生成的提交命令附 `--continue-preparation`：成功后只返回同一 bundle 的下一准备任务，或结束状态。Worker 按响应 task 连续处理，简洁视图先读新 task_path，不重复读已读且未变的来源；批次结束、暂停、依赖变化、上下文不足时返回最后已提交任务 ID。正式执笔/审稿、作者批准或另一材料批次均由主控接手。旧信封仍单页交接；中断时主控确认旧执行结束后恢复现有 pending。
 
 character_index 须完整阅读档案和来源章，不能证明适用范围时标 unknown/global，保留原文。
