@@ -1,8 +1,10 @@
 """v1.46.0 revision scope: carry provably unaffected chapters (carriage.py).
 
-Three detectors must each be able to demote a chapter back to normal
+Every refusal source must be able to demote a chapter back to normal
 dispatch, and a clean carry must reach the range review without any worker
-touching the carried chapter.
+touching the carried chapter — including an expression-level fix whose
+ledger delta is empty (v1.58.0: the old refusal handed the suffix to worker
+re-drafts, whose drift fed the next revision chain).
 """
 import json
 import tempfile
@@ -246,29 +248,90 @@ class RevisionCarryTests(unittest.TestCase):
         self.assertIsNone(self.db.execute(
             'SELECT data FROM chapters WHERE branch=? AND number=3', (branch,)).fetchone())
 
-    def test_empty_delta_never_carries_worker_path_stays_authoritative(self):
-        # 表达类修订（无账本变化）：隐式自由文本读取不可分析（test_revision_scope 的
-        # 既有裁决），自动携带不得触发，由 worker fast-commit 路径裁决。
+    def test_expression_level_revision_carries_the_suffix(self):
+        # 表达类修订（账本零变化）：后缀章由引擎原文结转，不再派 Worker 重写。
+        # 旧裁决（worker fast-commit 路径裁决）实测代价是创造性重写引入新缺陷，
+        # 反喂下一条修订链（会话 14006c71）；结转章保持逐字不变，不可能漂移，
+        # 未经逐章重审由整体复核的 carried_chapters 抽查兜底。
         p3 = '第3天，周行翻出旧案卷宗，按自己的计划排好了顺序。'
         self._book_three_chapters(
             [self._state_event('hero', 'plan', None, '追索', '旧案', p3, 3)], p3)
-        engine.begin_revision(self.db, 2, '文风统一，不涉及事实')
+        branch = self._revise_ch2(new=CH2_OLD)          # 措辞变化，账本值不变 → 空 delta
+        following = self.task()
+        self.assertEqual(following['stage'], 'revision_review')       # ch3 引擎结转，不再派 draft
+        row = self.db.execute('SELECT data FROM chapters WHERE branch=? AND number=3', (branch,)).fetchone()
+        self.assertEqual(json.loads(row['data'])['carried_from'], 'main')
+
+    def test_wording_echo_blocks_carry(self):
+        """会话 14006c71 的实测漏网形态：一个外文残留词同时出现在多章。
+        修订删掉了第2章的 bell，第3章正文还写着 bell——空 delta 的值级探测
+        全部失明，回声扫描按"上游被删措辞的残留"拒绝结转，回落正常派发定点修。"""
+        p1 = '第1天，周行在铺子把收据交给宋禾。'
+        self._chapter(p1, [self._state_event('hero', 'mood', None, '警觉', '收据', p1, 1)])
+        if self.task().get('stage') == 'await_author':
+            engine.approve(self.db)
+        p2 = '第2天，宋禾在柜台记下半文旧账，敲了敲那口 bell。'
+        self._chapter(p2, [self._state_event('ally', 'ledger_note', None, CH2_OLD, '半文旧账', p2, 2)])
+        p3 = '第3天，周行翻出旧案卷宗，又听见那口 bell 响了一声。'
+        self._chapter(p3, [self._state_event('hero', 'plan', None, '追索', '旧案', p3, 3)],
+                      plan_entities=['hero'])
+        engine.begin_revision(self.db, 2, json.dumps([
+            {'severity': 'quality', 'impact': '正文残留外文词，读者出戏',
+             'goal': '删除第2章的 bell 改为中文', 'target_chapter': 2,
+             'evidence': {'chapter': 2, 'quote': 'bell', 'start': p2.index('bell')}}], ensure_ascii=False))
         branch = get(self.db, 'work_branch')
-        task = self.task(); self.assertEqual(task['stage'], 'draft')   # ch2 仍派 worker
-        p2 = '第2天，宋禾在灯下把半文旧账重新誊清了一遍。'
+        task = self.task(); self.assertEqual(task['stage'], 'draft')
+        fixed = '第2天，宋禾在柜台记下半文旧账，敲了敲那口铜铃。'
+        respond(self.db, self.path, task, prose=fixed)
+        task = self.task(); self.assertEqual(task['stage'], 'chapter_review')
+        work = envelope(task)
+        text = pack_prose(self.path, work)
+        data = review(work['payload']['facts_checks'], text, 2)
+        data.update(events=[self._state_event('ally', 'ledger_note', None, CH2_OLD, '半文旧账', fixed, 2)],
+                    summary='仅删外文残留，账本值不变。',
+                    prior_dispositions=[{'index': 0, 'disposition': 'replaced', 'reason': '措辞变化，事件重锚，值不变'}])
+        submit_review(self.db, task, data)
+        self.assertEqual(head(self.db, branch), 2)
+        following = self.task()
+        self.assertEqual(following['stage'], 'draft')                  # ch3 残留 bell，拒绝结转
+        self.assertEqual(following['chapter'], 3)
+        self.assertIsNone(self.db.execute(
+            'SELECT data FROM chapters WHERE branch=? AND number=3', (branch,)).fetchone())
+
+    def test_implicated_chapter_is_never_carried(self):
+        """修订自己的 findings 点名了第4章：即使账本零变化、回声干净，第4章也
+        必须重新执行——结转它会原样保下本次修订要修的缺陷。中间未点名的第3章照常结转。"""
+        p3 = '第3天，周行翻出旧案卷宗，按自己的计划排好了顺序。'
+        self._book_three_chapters(
+            [self._state_event('hero', 'plan', None, '追索', '旧案', p3, 3)], p3)
+        self._chapter('第4天，周行把卷宗按口岸重新分了堆。', [], plan_entities=['hero'])
+        self.assertEqual(head(self.db, 'main'), 4)
+        engine.begin_revision(self.db, 2, json.dumps([
+            {'severity': 'quality', 'impact': '口径不一', 'goal': '统一第2章记账口径',
+             'target_chapter': 2, 'evidence': {'chapter': 2, 'quote': CH2_OLD, 'start': 0}},
+            {'severity': 'quality', 'impact': '第4章分堆依据沿用旧口径', 'goal': '第4章对齐新口径',
+             'target_chapter': 4, 'evidence': {'chapter': 4, 'quote': '分了堆', 'start': 12}}], ensure_ascii=False))
+        branch = get(self.db, 'work_branch')
+        task = self.task(); self.assertEqual(task['stage'], 'draft')   # ch2 起点章
+        p2 = '第2天，宋禾在柜台记下' + CH2_NEW + '，声音很轻。'
         respond(self.db, self.path, task, prose=p2)
         task = self.task(); self.assertEqual(task['stage'], 'chapter_review')
         work = envelope(task)
         text = pack_prose(self.path, work)
         data = review(work['payload']['facts_checks'], text, 2)
-        data.update(events=[self._state_event('ally', 'ledger_note', None, '半文旧账', '半文旧账', p2, 2)],
-                    summary='仅文风调整，账本值不变。',
-                    prior_dispositions=[{'index': 0, 'disposition': 'replaced', 'reason': '措辞变化，事件重锚，值不变'}])
+        data.update(events=[self._state_event('ally', 'ledger_note', None, CH2_NEW, CH2_NEW, p2, 2)],
+                    summary='统一口径。',
+                    prior_dispositions=[{'index': 0, 'disposition': 'replaced', 'reason': '口径由旧账统一为新账'}])
         submit_review(self.db, task, data)
         self.assertEqual(head(self.db, branch), 2)
+        self.task()                                                    # 引擎结转第3章（未点名）
+        row = self.db.execute('SELECT data FROM chapters WHERE branch=? AND number=3', (branch,)).fetchone()
+        self.assertEqual(json.loads(row['data'])['carried_from'], 'main')
         following = self.task()
-        self.assertEqual(following['stage'], 'draft')                  # ch3 回落正常派发
-        self.assertEqual(following['chapter'], 3)
+        self.assertEqual(following['stage'], 'draft')                  # 第4章被点名：重新执行
+        self.assertEqual(following['chapter'], 4)
+        self.assertIsNone(self.db.execute(
+            'SELECT data FROM chapters WHERE branch=? AND number=4', (branch,)).fetchone())
 
 
 if __name__ == '__main__':

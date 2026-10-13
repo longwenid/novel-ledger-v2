@@ -124,7 +124,7 @@ Worker 的成本 ≈ **读入量 × 轮数**，而每一轮都要重发全部历
 | INV-8 | 首读一旦冻结不可改写；冻结前不得读取约定、账本或他人产物 | `reviewflow.seal` / `access.guard` |
 | INV-9 | 每个 CLI 子命令都在访问分级表与文档索引中登记 | 守护测试 |
 | INV-10 | 模块级 import 只能指向同层或更低层 | 守护测试（分层见第四节） |
-| INV-11 | 修订起点是**修复指令**（`target_chapter` / `repair_route`），不得从举证位置推断；未声明时就地修最新章 | `transitions.revision_start` |
+| INV-11 | 修订起点是**修复指令**（`target_chapter` / `repair_route`），不得从举证位置推断；跨章范围未声明的 fix 回执被拒收，单章范围未声明时就地修该章 | `engine.validate_review` / `transitions.revision_start` |
 | INV-12 | 章节可声明自身账本读取集（`reads`）；该声明**只收窄**携带判定，不得放宽 | `engine.validate_reads` / `carriage._declared_reads` |
 | INV-13 | 每个已落地章节的拟出场人物都有可用档案；缺口由 `audit` 报出并在派发下一章前补齐 | `characters.coverage` / `engine.audit` / `engine.next_task` |
 | INV-14 | 信封字段按类型分片；分片标记只决定必读与本任务分工，不得减少交付内容 | `taskio.envelope` / `taskio.typed_delivery` |

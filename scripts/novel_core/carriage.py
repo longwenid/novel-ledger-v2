@@ -2,7 +2,16 @@
 
 A revision branch used to redo the whole positional suffix (start..through):
 every downstream chapter was re-drafted and re-reviewed even when the fix
-never touched it (session e354 redid ch2-7 for two ch2/ch3 findings).
+never touched it (session e354 redid ch2-7 for two ch2/ch3 findings; session
+14006c71 re-drafted ch3-10 for one leftover Latin word, and the re-drafts'
+own drift became the next review's findings — a self-feeding loop).
+
+The revision's findings define its scope: chapters they name are re-executed,
+everything else is carried verbatim unless a detector refuses. An empty
+delta (expression-level fix, no ledger change) now CARRIES too — the
+measured alternative was worse: the suffix fell back to worker dispatch,
+creative re-writes drifted (a carried-verbatim chapter cannot drift), and
+each drift fed the next revision chain.
 
 P3 honest capability — read this before trusting a carry. Carry decides "this
 chapter is unaffected" by structural means, and structure cannot prove a
@@ -14,7 +23,11 @@ exactly the direction of what prose can do that keys cannot:
     writer can declare the coordinate in `reads`, and a declared read always
     refuses the carry. Without a declaration the blind spot stands;
   * a surface form the sweep does not enumerate (paraphrase, dropped unit,
-    a number spelled in a way `_value_forms` does not generate).
+    a number spelled in a way `_value_forms` does not generate);
+  * on an empty delta, a downstream chapter that PARAPHRASES the changed
+    wording. The echo sweep below catches the literal echo (another chapter
+    still containing the removed wording — the measured multi-site glyph
+    case); a paraphrase is invisible and is the range review's to catch.
 
 Measured example: ledger value 30 → 20, chapter prose says 三十五文 and never
 names the owner — the chapter carried, and `audit` still reported ok. The
@@ -23,10 +36,9 @@ instance; the class is closed only by the review net below, not by detection.
 
 Detectors, each of which may independently refuse a carry:
 
-  0. non-empty delta — an empty delta means the fix is expression-level or
-     event-less; unregistered free-text reads are unanalysable there
-     (test_revision_scope encodes this), so the worker-mediated fast-commit
-     path stays authoritative and carry never fires;
+  0. implicated chapters — a chapter named by the revision's own findings
+     (target_chapter or evidence) is never carried: the fix verdict placed
+     it under repair, so it must re-execute;
   1. declared dependencies — every chapter named in `plan['dependencies']`
      must be byte-identical between parent and branch;
   2. declared reads — the chapter's own `reads` list must not intersect the
@@ -38,7 +50,11 @@ Detectors, each of which may independently refuse a carry:
   4. surface sweep — literal forms of the old/new values, their Chinese
      numeric spelling, and the owning entities' names must not appear in the
      chapter's prose;
-  5. replay — the chapter's own events must re-apply against the new branch
+  5. echo sweep — for every upstream chapter whose prose changed between
+     parent and branch, the removed literal segments must not appear in the
+     chapter's prose (closes "another chapter still writes the old wording",
+     including on an empty delta);
+  6. replay — the chapter's own events must re-apply against the new branch
      prefix, and the parent's stored review verdicts must actually have passed.
 
 The net that actually closes the class: carried chapters stay inside the
@@ -49,6 +65,7 @@ surfaced in `status` and in book.html, because a chapter that skipped
 per-chapter independent review must be visible to the author.
 """
 import copy
+import difflib
 import json
 from .store import Error, digest, dump, get, head, log, transaction
 from .ledger import append_events, replay
@@ -267,6 +284,60 @@ def carried_chapters(db, branch):
     return out
 
 
+def implicated_chapters(db, branch):
+    """Chapters the revision's own findings placed under repair.
+
+    The branch reason carries the fix verdict's findings: `target_chapter`
+    names the repair site, and a finding's `evidence` chapter is quoted by
+    the verdict and owed a spot-check. Either way the chapter must re-execute
+    on this branch — carrying it verbatim would ship the very defect the
+    revision exists to fix. Author-side `revise` passes a free-text reason;
+    it names no chapters, so nothing is implicated.
+    """
+    row = db.execute('SELECT reason FROM branches WHERE id=?', (branch,)).fetchone()
+    try:
+        findings = json.loads(row['reason']) if row and row['reason'] else None
+    except ValueError:
+        return set()
+    if not isinstance(findings, list):
+        return set()
+    out = set()
+    for finding in findings:
+        if not isinstance(finding, dict) or finding.get('severity') not in ('blocker', 'quality'):
+            continue
+        if type(finding.get('target_chapter')) is int:
+            out.add(finding['target_chapter'])
+        ref = finding.get('evidence')
+        if isinstance(ref, dict) and type(ref.get('chapter')) is int:
+            out.add(ref['chapter'])
+    return out
+
+
+def _removed_wordings(db, branch, parent, upto):
+    """Literal segments the revision deleted from upstream prose.
+
+    For every chapter below `upto` whose prose changed between parent and
+    branch, collect the removed runs (difflib gaps in the old text). This is
+    the only prose-level view an empty-delta carry gets: the ledger delta is
+    empty exactly when the fix re-worded text, and a downstream chapter that
+    still contains the removed wording — the measured multi-site glyph case —
+    must not ride through on it.
+    """
+    forms = set()
+    for row in db.execute(
+            '''SELECT c.number AS number, p.prose AS old, c.prose AS new
+               FROM chapters c JOIN chapters p ON p.branch=? AND p.number=c.number
+               WHERE c.branch=? AND c.number<? AND c.hash!=p.hash''',
+            (parent, branch, upto)):
+        for tag, i1, i2, _j1, _j2 in difflib.SequenceMatcher(
+                None, row['old'], row['new']).get_opcodes():
+            if tag in ('delete', 'replace'):
+                segment = row['old'][i1:i2].strip()
+                if len(segment) >= 2:
+                    forms.add(segment)
+    return forms
+
+
 def _carry_one(db, branch, parent, n, chapter_row):
     prose = chapter_row['prose']
     data = json.loads(chapter_row['data'])
@@ -286,8 +357,11 @@ def _carry_one(db, branch, parent, n, chapter_row):
         # follows — letting it escape here turned a recoverable integrity
         # problem into a hard dispatch failure.
         return None
-    if not delta:
-        return None  # expression-level or event-less fix: unregistered reads unanalysable
+    # An empty delta (expression-level fix, no ledger change) carries: every
+    # value-based detector is vacuous precisely because no coordinate moved.
+    # The wording that DID move is checked below by the echo sweep — the old
+    # refusal here pushed the whole suffix into worker re-drafts, and the
+    # re-drafts' own drift became the next review's findings.
     for verdict in (data.get('facts_review', {}).get('verdict'), data.get('reader_review', {}).get('verdict')):
         if verdict != 'pass':
             return None  # the verdict being carried must actually have passed
@@ -302,6 +376,9 @@ def _carry_one(db, branch, parent, n, chapter_row):
         return None
     forms = _sweep_forms(delta, entities_index)
     if forms and any(form in prose for form in forms):
+        return None
+    echoes = _removed_wordings(db, branch, parent, n)
+    if echoes and any(segment in prose for segment in echoes):
         return None
     stored = copy.deepcopy(data)
     stored['carried_from'] = parent
@@ -325,6 +402,10 @@ def fast_forward(db, branch):
     rev = db.execute('SELECT * FROM branches WHERE id=?', (branch,)).fetchone()
     if not rev or rev['status'] != 'candidate':
         return []
+    if get(db, 'style_only_branch') == branch:
+        # A style-only revision re-words every chapter; carrying any of them
+        # verbatim would ship exactly the style inconsistency it exists to fix.
+        return []
     if db.execute("SELECT 1 FROM tasks WHERE state='pending'").fetchone() or get(db, 'status') != 'ready':
         return []
     if head(db, branch) < rev['start']:
@@ -332,12 +413,15 @@ def fast_forward(db, branch):
         # means "the fix has not happened", not "the chapter is unaffected".
         return []
     parent = rev['parent']
+    implicated = implicated_chapters(db, branch)
     from .engine import load_draft
     carried = []
     while True:
         n = head(db, branch) + 1
         if n > rev['through']:
             break
+        if n in implicated:
+            break  # the findings named this chapter: it re-executes, never carries
         if load_draft(db, branch, n):
             break  # a worker already holds this chapter; normal flow continues
         chapter = db.execute('SELECT * FROM chapters WHERE branch=? AND number=?', (parent, n)).fetchone()

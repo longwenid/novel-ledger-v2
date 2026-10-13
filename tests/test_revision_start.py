@@ -8,8 +8,13 @@ suffix backwards and re-drafted chapters nobody had implicated, and a
 rewritten correct chapter can come back worse. `repair_route` was documented
 and instructed but never read by the engine.
 
-These tests lock the routing: declared intent is honoured, undeclared fixes
-stay in the newest chapter, and backtracking must be asked for explicitly.
+Guessing was then removed rather than re-weighted: on a chunked review the
+"newest chapter in range" fallback is the CHUNK's edge, not the defect's
+chapter (session 14006c71: a chunk covering ch4-6 returned fix for ch5, the
+branch began at ch6, and the defective ch5 was copied into the branch base
+untouched — the chain could never fix its own trigger). So a cross-chapter
+fix verdict must now declare its repair site (`target_chapter` or
+`repair_route`); the fallback only ever sees a single-chapter range.
 """
 import json
 import tempfile
@@ -99,14 +104,31 @@ class RevisionStartTests(unittest.TestCase):
         self.assertIsNone(self.db.execute(
             'SELECT * FROM branches WHERE status=?', ('candidate',)).fetchone())
 
-    def test_undeclared_fix_repairs_the_newest_chapter(self):
-        """Regression: proof quoted from chapter 1 must not drag the revision
-        back to chapter 1 when nothing says the fix belongs there."""
-        payload = self._fix(1)
-        self.assertEqual((payload['first'], payload['through']), (1, 3))
+    def test_undeclared_cross_chapter_fix_is_refused(self):
+        """The engine does not guess the repair site on a multi-chapter review.
+
+        Proof quoted from chapter 1 could mean the defect lives in chapter 1
+        or in the newest chapter contradicting it; a chunk's edge can also sit
+        one chapter PAST the defect (session 14006c71 started a branch at ch6
+        for a ch5 finding). An undeclared blocker/quality finding is refused
+        at submit with the declaration contract in the answer; the branch
+        stays untouched."""
+        with self.assertRaises(Error) as caught:
+            self._fix(1)
+        self.assertEqual(caught.exception.code, 'finding')
+        self.assertIn('target_chapter', str(caught.exception))
+        self.assertEqual(get(self.db, 'work_branch'), 'main', '拒收不得开链')
+        self.assertIsNone(self.db.execute(
+            'SELECT * FROM branches WHERE status=?', ('candidate',)).fetchone())
+
+    def test_declared_fix_targets_the_cited_middle_chapter(self):
+        """Session 14006c71, chain 2 shape: a chunk covering ch4-6 cited ch5.
+        Declared `target_chapter` must land the branch exactly on ch5 — never
+        on the chunk's edge, never past the defect."""
+        self._fix(2, target_chapter=2)
         revision = self._revision()
-        self.assertEqual((revision['start'], revision['through']), (3, 3))
-        self.assertEqual(engine.next_task(self.db, self.path)['chapter'], 3)
+        self.assertEqual((revision['start'], revision['through']), (2, 3))
+        self.assertEqual(engine.next_task(self.db, self.path)['chapter'], 2)
 
     def test_target_chapter_declares_the_repair_location(self):
         self._fix(3, target_chapter=2)

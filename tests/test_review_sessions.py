@@ -128,7 +128,8 @@ class ReviewSessionTests(unittest.TestCase):
         # 见 outside_revision_scope）。
         start=self.db.execute('SELECT start FROM branches WHERE id=?',(t['branch'],)).fetchone()['start']
         prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',(t['branch'],start)).fetchone()[0]
-        d['findings']=[{'severity':'quality','impact':'跨章选择缺乏承接','goal':'补充前因与代价','evidence':ev(prose,start)}]
+        d['findings']=[{'severity':'quality','impact':'跨章选择缺乏承接','goal':'补充前因与代价',
+                        'target_chapter':start,'evidence':ev(prose,start)}]
         reply=self.submit(t,r)
         self.assertEqual(reply['action'],'resync')
         self.assertNotEqual(get(self.db,'work_branch'),t['branch'])
@@ -140,7 +141,8 @@ class ReviewSessionTests(unittest.TestCase):
         self.prepare(start=3);t=self.cli('advance')['task'];r=self.receipt(t);d=r['data']
         d['verdict']='fix';d['checks'][0]['result']='fix'
         prose=self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=1',(t['branch'],)).fetchone()[0]
-        d['findings']=[{'severity':'quality','impact':'旧章遗留的口径问题','goal':'由作者决定是否另开修订','evidence':ev(prose,1)}]
+        d['findings']=[{'severity':'quality','impact':'旧章遗留的口径问题','goal':'由作者决定是否另开修订',
+                        'target_chapter':1,'evidence':ev(prose,1)}]
         self.submit(t,r)
         self.assertEqual(get(self.db,'status'),'paused')
         self.assertEqual((get(self.db,'pause_reason') or {}).get('code'),'outside_revision_scope')

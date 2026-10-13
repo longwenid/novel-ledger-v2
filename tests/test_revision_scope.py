@@ -36,25 +36,26 @@ class FastCommitTests(unittest.TestCase):
     def test_unchanged_chapters_fast_commit_without_re_review(self):
         self._two_chapters()
         engine.begin_revision(self.db,1,'定点复核')
-        for n in (1,2):
-            t=self.task();self.assertEqual(t['stage'],'draft')
-            payload=envelope(t)['payload']
-            outcome=engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
-            self.assertTrue(outcome['fast_committed'])
-            self.assertEqual(head(self.db,get(self.db,'work_branch')),n)
-            nxt=self.task()
-            self.assertNotEqual(nxt.get('stage'),'chapter_review')          # no re-review dispatched
-            if nxt.get('stage')=='revision_review':
-                break
+        t=self.task();self.assertEqual(t['stage'],'draft')
+        payload=envelope(t)['payload']
+        outcome=engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
+        self.assertTrue(outcome['fast_committed'])
+        self.assertEqual(head(self.db,get(self.db,'work_branch')),1)
+        nxt=self.task()
+        self.assertNotEqual(nxt.get('stage'),'chapter_review')      # no re-review dispatched
+        # 起点章零变化 → 后缀章由引擎原文结转（v1.58.0），连 Worker 派发都不发生
+        self.assertEqual(nxt.get('stage'),'revision_review')
+        row=self.db.execute('SELECT data FROM chapters WHERE branch=? AND number=2',
+                            (get(self.db,'work_branch'),)).fetchone()
+        self.assertEqual(json.loads(row[0])['carried_from'],'main')
         self.assertEqual(head(self.db,'main'),2)                    # main untouched
 
     def test_patch_route_only_touches_cited_chapter(self):
         self._two_chapters()
-        engine.begin_revision(self.db,1,'第2章收束段定点修改')
-        t=self.task()                                               # ch1 draft
-        payload=envelope(t)['payload']
-        engine.submit(self.db,result(t,{'base_hash':payload['base_hash'],'reuse_original':True}))
-        self.assertEqual(head(self.db,get(self.db,'work_branch')),1)
+        engine.begin_revision(self.db,2,json.dumps([
+            {'severity':'quality','impact':'收束段同质化','goal':'第2章收束段定点修改',
+             'target_chapter':2,
+             'evidence':{'chapter':2,'quote':'两人核对每一行。','start':0}}],ensure_ascii=False))
         t=self.task();self.assertEqual(t['stage'],'draft')          # ch2 draft (patch target)
         payload=envelope(t)['payload']
         from novel_core.patches import source
@@ -159,11 +160,31 @@ class FastCommitTests(unittest.TestCase):
         self.assertNotIn('fast_committed',outcome)
         self.assertEqual(self.task()['stage'],'chapter_review')
 
-    def test_unregistered_historical_change_rechecks_implicit_read(self):
+    def test_unregistered_historical_change_carries_and_surfaces_for_range_review(self):
+        """v1.58.0 改判：上游表达层改写（账本零变化、无被删措辞残留）的后缀章由
+        引擎原文结转，不再回落逐章重审。隐式的散文级依赖（第1章取消开庭，第2章
+        仍写赴庭）结构上不可见——由整体复核的 carried_chapters 抽查名单兜底，
+        这是唯一的安全网，所以携带必须显式出现在复核负载里。"""
         self._historical_read_without_write()
-        outcome=self._change_first_then_reuse_second('周行决定取消明日开庭，宋禾答应不再到场。')
-        self.assertNotIn('fast_committed',outcome)
-        self.assertEqual(self.task()['stage'],'chapter_review')
+        prose='周行决定取消明日开庭，宋禾答应不再到场。'
+        engine.begin_revision(self.db,1,'修正第一章历史内容')
+        respond(self.db,self.path,self.task(),prose=prose)
+        t=self.task();work=envelope(t)
+        data=review(work['payload']['facts_checks'],prose,1)
+        data.update(events=[],summary='第一章历史内容已修正。')
+        submit_review(self.db,t,data)
+        nxt=self.task()
+        self.assertEqual(nxt.get('stage'),'revision_review')        # ch2 结转，不派 Worker
+        row=self.db.execute('SELECT data FROM chapters WHERE branch=? AND number=2',
+                            (get(self.db,'work_branch'),)).fetchone()
+        self.assertEqual(json.loads(row[0]).get('carried_from'),'main')
+        while json.loads(self.db.execute('SELECT input FROM tasks WHERE id=?',
+                                         (nxt['task_id'],)).fetchone()[0])['payload']['scope'].endswith('_chunk'):
+            respond(db=self.db,project=self.path,task=nxt)          # 分块复核仍是安全网
+            nxt=self.task()
+        payload=json.loads(self.db.execute('SELECT input FROM tasks WHERE id=?',
+                                           (nxt['task_id'],)).fetchone()[0])['payload']
+        self.assertEqual(payload.get('carried_chapters'),[2])       # 安全网可见
 
     def test_changed_explicit_dependency_rechecks_even_with_equal_state(self):
         self._historical_read_without_write(dependency=True)

@@ -114,7 +114,7 @@ class RecoveryPositionTests(unittest.TestCase):
         with self.assertRaises(Error):engine.submit(self.db,result(t,no_proof))
         intent=next(r for r in data['checks'] if r['id']=='revision_intent');intent['result']='fix'
         data['verdict']='fix';data['findings']=[{'severity':'quality','impact':'父级扩充目标仍未落实',
-          'goal':'重新核对第一卷收束与展开','evidence':ev(prose,1)}]
+          'goal':'重新核对第一卷收束与展开','target_chapter':1,'evidence':ev(prose,1)}]
         engine.submit(self.db,result(t,data))
         self.assertEqual(get(self.db,'active_branch'),'main')
         self.assertNotEqual(engine.next_task(self.db,self.path).get('stage'),'revision_promoted')

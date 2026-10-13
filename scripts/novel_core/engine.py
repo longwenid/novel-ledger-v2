@@ -284,9 +284,10 @@ def _choose_single(db):
     rev = db.execute('SELECT * FROM branches WHERE id=?',(branch,)).fetchone()
     if rev['status']=='candidate':
         original=atoms.ancestor_chapter_prose(db,rev['parent'],n+1)
-        payload = {'original_prose':original or '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。表达类发现(重复/收束/节奏/声线)优先在被点名章用 patches 定点修改;未受影响的章可提交 reuse_original 省去重传正文。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。事实/数字/清单类目标先逐项核对再动笔：用 impact 与正文检索列出该事实在各章的全部出现位置，一次把所有耦合章改平，对齐结论写进 repair_note；只改被点名章而其他章残留旧口径，修订整体复审判未完成。'}
+        payload = {'original_prose':original or '', 'revision_reason':rev['reason'], 'instruction':'检查修订传播。本章被修订目标点名、或与上游改动存在依赖（未被点名且无依赖的后缀章已由引擎按依赖差分原文结转，不会派发到 Worker）。表达类发现(重复/收束/节奏/声线)优先用 patches 定点修改;正文确实无需变化时提交 reuse_original 省去重传。只有该章及全部前文版本均未变化、原两类审稿通过且事件可复算时才免逐章审稿;上游发生变化时仍重新 facts/reader 核对正文历史依赖。事实/因果类发现需要检查是否改正文并重登记事件。事实/数字/清单类目标先逐项核对再动笔：用 impact 与正文检索列出该事实在各章的全部出现位置，一次把所有耦合章改平，对齐结论写进 repair_note；只改被点名章而其他章残留旧口径，修订整体复审判未完成。'}
         if execution.settings(db)['execution_mode']==execution.SINGLE:
-            payload['instruction']=('检查修订传播。表达类缺陷在被点名章优先用 patches 定点修改，仍成立的正文可用 reuse_original 避免重传；'
+            payload['instruction']=('检查修订传播。本章被修订目标点名、或与上游改动存在依赖（未被点名且无依赖的后缀章已由引擎按依赖差分原文结转，不会派发）。'
+                '表达类缺陷在被点名章优先用 patches 定点修改，仍成立的正文可用 reuse_original 避免重传；'
                 '本次任务提交后重新独立 facts/reader 核验，不沿用历史 pass。事实与数字目标先用 impact 和原文检索核对全部耦合章节，'
                 '一次修复相关口径，在 repair_note 记录对齐结果；保留父级未完成目标，修订整体复审核对传播。')
     observation=chapter_length(db,branch,n+1)
@@ -418,7 +419,7 @@ def review_job(db,branch,scope,first,n):
         chapter=end+1
     receipts = [{'chapter':r['through'],'input_hash':r['input_hash']} for r in db.execute('SELECT through,input_hash FROM reviews WHERE branch=? AND scope=? AND through BETWEEN ? AND ? ORDER BY through',(branch,scopekey,first,n))]
     payload={'scope':scope,'first':first,'through':n,'coverage_receipts':{'count':len(receipts),'first':first,'through':n,'scope':scopekey,'hash':digest(receipts)},
-             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。修订起点由 finding 决定，证据位置不等于修订位置：evidence 只用于举证，可以引用任意章（含与问题章冲突的早期章）；要指定从哪一章开始改，用 target_chapter。表达类(重复/收束/节奏/声线)标 repair_route:"patch"：定点改被点名章，其余章可原文复用省去重传。事实/因果/认知/时间类标 repair_route:"revise"：从最早受影响章重验后缀。两者都不声明时默认在本次范围的最新章就地修订——回溯重写没被点名的章代价高，且可能把已正确的正文改坏，只在确有必要时才声明。轻微缺陷（异体字、错别字、标点、体例）记 note 级 finding 随 pass 提交，不要判 fix：fix 需要 blocker/quality 级发现作依据，为留下记录而升格会触发整条修订链。本次修订范围之外的历史遗留问题（例如修订 5–10 章时在 1–3 章读到的旧缺陷）同样记 note 并写进报告——修订分支只负责本次修订的传播正确性，范围外的问题由主控决定是否另开修订。免逐章审稿须本章及全部前文版本未变。',
+             'instruction':'分段全文已审；按 recall 分页核对主线、人物弧、跨章重复用语和承诺的跨段证据，不能把本任务称为一次性全书通读。修订起点由 finding 决定，证据位置不等于修订位置：evidence 只用于举证，可以引用任意章（含与问题章冲突的早期章）。判 fix 时每条 blocker/quality 发必须声明修订位置——修哪一章用 target_chapter 指哪一章，或标 repair_route：表达类(重复/收束/节奏/声线)标 "patch" 定点改被点名章；事实/因果/认知/时间类标 "revise" 从最早受影响章重验后缀。不声明会被拒收：引擎不猜修订位置，猜错会跳过被点名章或重写未被点名的章。未被点名的后缀章由引擎按依赖差分原文结转，不重写。轻微缺陷（异体字、错别字、标点、体例）记 note 级 finding 随 pass 提交，不要判 fix：fix 需要 blocker/quality 级发现作依据，为留下记录而升格会触发整条修订链。本次修订范围之外的历史遗留问题（例如修订 5–10 章时在 1–3 章读到的旧缺陷）同样记 note 并写进报告——修订分支只负责本次修订的传播正确性，范围外的问题由主控决定是否另开修订。',
              'checks':checks + ('repetition',) + (('ending','length','core_promises') if scope=='book' else ())}
     if scope=='volume':
         payload['checks']+=('volume_development',)
@@ -932,6 +933,19 @@ def validate_review(data,checks,sources):
     batch.require((data.get('verdict')=='fix')==needs_fix,'review','结论与检查/发现不一致')
     batch.require(not needs_fix or any(isinstance(f,dict) and f.get('severity') in ('blocker','quality') for f in findings),
             'review','返工须提供可执行发现')
+    if len(sources)>1:
+        # The engine cannot derive the repair site from quoted evidence: the
+        # quote may be the defect itself or the canon the newest chapter
+        # contradicts. An undeclared start on a chunked review either skipped
+        # the cited chapter (branch began after the defect) or dragged
+        # innocent chapters into a re-draft. So a cross-chapter fix must say
+        # where it lands; the fallback in transitions.revision_start then
+        # only ever sees a single-chapter range, where it is unambiguous.
+        for index,item in enumerate(findings):
+            if isinstance(item,dict) and item.get('severity') in ('blocker','quality'):
+                batch.require(type(item.get('target_chapter')) is int or item.get('repair_route') in transitions.REPAIR_ROUTES,
+                        'finding','跨章复核的返工发现必须声明修订位置：修哪一章用 target_chapter 指哪一章；表达类缺陷可另标 repair_route:"patch"（定点改被点名章），事实/因果/认知/时间类标 "revise"（从最早受影响章重验后缀）。引擎不猜修订位置——未声明的起点会跳过被点名章或重写未被点名的章',
+                        **{'finding_index':index})
     batch.raise_if_any()
 
 

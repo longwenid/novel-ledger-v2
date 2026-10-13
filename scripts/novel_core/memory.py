@@ -91,12 +91,16 @@ def review_contract(checks_path='payload.checks'):
     ref=evidence_contract()['example']
     example={'verdict':'pass','checks':[{'id':'CHECK_ID','result':'pass',
               'reason':'具体核验理由','evidence':[ref]}],'findings':[]}
-    finding={'impact':'具体阅读影响','goal':'可执行修订目标','severity':'quality','evidence':ref}
+    finding={'impact':'具体阅读影响','goal':'可执行修订目标','severity':'quality',
+             'target_chapter':ref['chapter'],'evidence':ref}
     return ('data 示例='+dump(example)+'。CHECK_ID 替换为 '+checks_path+' 中的 ID，逐项提交完整 checks，'
             +EVIDENCE_RULE+'每项 result=pass|fix，reason 非空。'
             '可选项确不适用时 evidence=[] 并给非空 not_applicable，核心项仍须证据。'
             '需返工时 verdict=fix，相关检查 result=fix，findings 至少一项：'+dump(finding)+'；'
-            'severity=blocker|quality|note，整体结论须与检查及发现一致。')
+            'severity=blocker|quality|note，整体结论须与检查及发现一致；'
+            '审稿范围超过一章时 blocker/quality 发必须声明修订位置——target_chapter 填被点名章号，'
+            '或标 repair_route（patch 表达类定点改 / revise 事实类回溯重验后缀）；未声明整份回执被拒收，'
+            '引擎不猜修订位置。')
 
 
 def stage_primer(stage):

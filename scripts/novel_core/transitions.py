@@ -56,8 +56,8 @@ def revision_start(findings, through):
     quotes prose to prove a finding, and proof often lives in an EARLIER
     chapter (the one the newest chapter contradicts). Deriving the start from
     `min(evidence.chapter)` therefore pulled the whole suffix backwards and
-    re-drafted chapters that were correct — and `repair_route`, promised by the
-    protocol and by the review instruction, was never read at all.
+    re-drafted chapters that were correct — and `repair_route`, promised by
+    the protocol and by the review instruction, was never read at all.
 
     Precedence:
       1. an explicit `target_chapter` on any non-note finding — the reviewer
@@ -65,10 +65,18 @@ def revision_start(findings, through):
       2. otherwise, findings that declared a `repair_route` are routed to the
          chapter they name (patch = expression-level in place, revise =
          fact-level, re-verify the suffix from the earliest affected chapter);
-      3. otherwise the NEWEST chapter in range. Repairing in place is cheap and
-         recoverable — a rejected fix simply returns to repair. Reaching
-         backwards re-drafts chapters nobody implicated, and rewriting correct
-         prose can break it. Backtracking must be declared, never inferred.
+      3. otherwise the NEWEST chapter in range — reachable only for a
+         single-chapter review range, because validate_review refuses an
+         undeclared blocker/quality finding on a multi-chapter review.
+
+    Guessing was removed, not re-weighted. A fallback of "newest chapter in
+    the reviewed range" on a chunked review starts AFTER a chapter the finding
+    cited (measured: a chunk covering ch4-6 returned fix for ch5 and the
+    branch started at ch6, carrying the defective ch5 into the branch base
+    untouched — the whole chain could never fix its own trigger). The engine
+    does not know whether quoted evidence is the defect or the contradicted
+    canon; only the reviewer does, so on multi-chapter ranges the reviewer
+    must say (`target_chapter`), or route (`repair_route`).
     """
     live = [f for f in findings if isinstance(f, dict) and f.get('severity') != 'note']
     declared = [f['target_chapter'] for f in live if type(f.get('target_chapter')) is int]
