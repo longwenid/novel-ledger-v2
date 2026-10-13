@@ -43,7 +43,7 @@ from support import (
     review,
 )
 from novel_core import engine
-from novel_core.store import get, head
+from novel_core.store import get, head, put
 
 CHAPTERS = 12          # book length: crosses the ch10 batch-review gate
 INCIDENT = 5           # the chapter the batch-review fix names
@@ -97,6 +97,13 @@ class SoakDriver(unittest.TestCase):
 
     def incident_receipt(self, payload):
         raise NotImplementedError
+
+    def incident_site(self, payload):
+        """Which review task returns the fix verdict. The batch chunk (4,6)
+        also appears later inside volume/book reviews; scope-gate so the
+        incident lands at the batch gate, exactly once."""
+        return payload['scope'] == 'batch_chunk' and \
+            (payload['first'], payload['through']) == CHUNK
 
     def branch_prose(self, n, base):
         """Prose for a chapter re-drafted on the revision branch."""
@@ -157,7 +164,7 @@ class SoakDriver(unittest.TestCase):
         work = envelope(task)
         payload = work['payload']
         first, through = payload['first'], payload['through']
-        if not self.injected and (first, through) == CHUNK:
+        if not self.injected and self.incident_site(payload):
             data = self.incident_receipt(payload)
             self.injected = True
         else:
@@ -270,13 +277,25 @@ class ExpressionLevelSoak(SoakDriver):
     def branch_event(self, prose, n):
         return self.main_event(prose, n)
 
-    def test_expression_level_incident_rewrites_one_chapter(self):
-        self.run_unattended()
-        self.assertTrue(self.injected, '事故注入点未到达，浸泡未覆盖修订路径')
-        revision = self.audit_common(expect_redrafts=[INCIDENT], expect_carried=list(SUFFIX))
+    # per-variant expectations; the single test method below runs the loop
+    # once and audits against these, so subclasses only override hooks.
+    def expect_redrafts(self):
+        return [INCIDENT]
+
+    def expect_carried(self):
+        return list(SUFFIX)
+
+    def audit_incident(self, revision):
         fixed = self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
                                 (revision['id'], INCIDENT)).fetchone()[0]
         self.assertEqual(fixed, reworded(self.prose[INCIDENT]))
+
+    def test_unattended_incident_resolves_with_minimal_rewrites(self):
+        self.run_unattended()
+        self.assertTrue(self.injected, '事故注入点未到达，浸泡未覆盖修订路径')
+        revision = self.audit_common(expect_redrafts=self.expect_redrafts(),
+                                     expect_carried=self.expect_carried())
+        self.audit_incident(revision)
 
 
 class FactRippleSoak(SoakDriver):
@@ -357,6 +376,82 @@ class FactRippleSoak(SoakDriver):
                               (revision['id'], 8)).fetchone()
         self.assertIn(self.NEW, row[0])
         self.assertNotIn(self.OLD, row[0])
+
+
+class VolumeSoak(ExpressionLevelSoak):
+    """Cross-volume: the incident names a volume-1 chapter while volume 2
+    is already being written.
+
+    v1 = ch1..6 (volume_end at 6), v2 = ch7..12. The batch review at head=10
+    returns fix for ch5, so the revision range [5,10] spans the boundary and
+    must CARRY the volume-1 ending chapter (6) and the volume-2 chapters
+    (7..10) verbatim. After promote, both volumes' reviews must still cover
+    the promoted branch (v2 at ch12; v1 re-checked once at book end) and the
+    book must complete."""
+
+    V1_END = 6
+
+    def setUpWorld(self):
+        super().setUpWorld()
+        c = get(self.db, 'contract')
+        c['volumes'].append({'id': 'v2', 'purpose': '跨卷验证'})
+        put(self.db, 'contract', c)
+
+    def main_plan(self, n, task):
+        chapter = dict(plan(n, ending=(n == CHAPTERS)))
+        chapter['volume'] = 'v1' if n <= self.V1_END else 'v2'
+        chapter['volume_end'] = n in (self.V1_END, CHAPTERS)
+        chapter['entities'] = self.plan_entities(n)
+        return chapter
+
+    def audit_incident(self, revision):
+        super().audit_incident(revision)
+        # Both volumes' reviews covered the PROMOTED branch: v2 at its end
+        # (ch12) first, then v1 re-checked exactly once at book end — its
+        # receipt was not copied to the branch (through >= start), and the
+        # book-end recheck is the designed net for exactly that.
+        volume_rows = [(row[0], row[1]) for row in self.db.execute(
+            "SELECT branch,through FROM reviews WHERE scope='volume' ORDER BY rowid")]
+        self.assertEqual(volume_rows,
+                         [('main', self.V1_END), (revision['id'], CHAPTERS), (revision['id'], self.V1_END)],
+                         f'卷复核覆盖与预期不符：{volume_rows}')
+
+
+class MultiFindingSoak(ExpressionLevelSoak):
+    """Multi-chapter findings: one synthesis fix names ch5 AND ch8.
+
+    The whole-range batch synthesis (not a chunk) returns two findings with
+    their own target_chapter. The revision starts at min(5,8)=5, re-drafts
+    both implicated chapters (fast_forward must break at 8 and resume), and
+    carries everything else verbatim."""
+
+    def incident_site(self, payload):
+        return payload['scope'] == 'batch'   # the synthesis task, whole range
+
+    def incident_receipt(self, payload):
+        data = review(payload['checks'], self.prose[INCIDENT], INCIDENT)
+        data['verdict'] = 'fix'
+        data['checks'][0]['result'] = 'fix'
+        data['findings'] = [
+            {'severity': 'quality', 'impact': '正文残留拟声词外文，读者出戏',
+             'goal': f'第{INCIDENT}章改为中文拟声词', 'target_chapter': INCIDENT,
+             'evidence': ev(self.prose[INCIDENT], INCIDENT)},
+            {'severity': 'quality', 'impact': '第8章收束节奏与全书不合',
+             'goal': '第8章定点收束', 'target_chapter': 8,
+             'evidence': ev(self.prose[8], 8)}]
+        return data
+
+    def expect_redrafts(self):
+        return [INCIDENT, 8]
+
+    def expect_carried(self):
+        return [6, 7, 9, 10]
+
+    def audit_incident(self, revision):
+        for n in self.expect_redrafts():
+            fixed = self.db.execute('SELECT prose FROM chapters WHERE branch=? AND number=?',
+                                    (revision['id'], n)).fetchone()[0]
+            self.assertEqual(fixed, reworded(self.prose[n]), f'第{n}章未按点名修订')
 
 
 if __name__ == '__main__':
